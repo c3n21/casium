@@ -10,7 +10,9 @@
   "dependencies": {
     "@rentdelegate/shared": "workspace:*",
     "drizzle-orm": "^0.45.2",
-    "pg": "^8.22.0"
+    "hono": "^4.12.31",
+    "pg": "^8.22.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/pg": "^8.20.0",

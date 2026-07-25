@@ -344,6 +344,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Field | Value |
 |---|---|
 | Priority | P0 |
+| Status | DONE - merged via `feature/rd-010-provider-listing-endpoints`. |
 | Lane | L3 Provider API |
 | Objective | Implement listing API and DB cache of Sui listing objects. |
 | Suggested implementation | Add `POST /listings`, `GET /listings`, `GET /listings/:id`; provider creates Sui listing via frontend or returns tx hint. Store Sui listing object ID and authoritative fields. |
@@ -352,6 +353,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Blocks | RD-011, RD-104, RD-105. |
 | Acceptance criteria | Listings can be created/listed; response includes Sui object ID; seeded Lisbon eligible and ineligible listings exist. |
 | Tests | API route tests for create/list/detail. |
+| Verification | 2026-07-25: `pnpm --filter @rentdelegate/provider-api build` -> success; `pnpm --filter @rentdelegate/provider-api test` -> success, 2 files/4 tests covering health/list/create/detail/404 and seeded Lisbon/Porto listings; `pnpm -r --if-present build` -> success; `pnpm -r --if-present test` -> success; `~/.local/bin/sui move build --path packages/move` -> success; `~/.local/bin/sui move test --path packages/move` -> success, 21 tests passed. Route handoff documented in `docs/provider-api.md`; seed listing object IDs are synthetic placeholders until RD-007 is unblocked and real provider-created Sui listing IDs are available. |
 | Failure fallback | Seed DB from known Sui listing object IDs created by CLI. |
 | Sponsor | Sui. |
 | Demo impact | Prevents agent-supplied fake listing attributes. |
