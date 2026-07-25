@@ -2,54 +2,101 @@
 
 ## Current Repo State
 
-- This repo is currently planning-first: no `README`, package manifests, workspace config, lockfile, CI, or app source exists yet.
-- Treat `plan/backlog.md` as the source of truth for architecture, ticket IDs, dependencies, and demo definition of done until executable configs exist.
-- `spec/` exists but is empty.
+- This repo is no longer planning-only: it is a working pnpm monorepo
+  (`package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`) with a Sui Move
+  package published to **testnet** (package ID
+  `0x7e0130cdc105d06707f1f3abd4c76aac8211a09a5502692ba454d1b4b758af3d`,
+  see `packages/contracts-config/testnet.json` and `docs/sui-deployment.md`).
+- `plan/backlog.md` is the ticket-status source of truth (RD-001..RD-014 P0
+  are DONE; P1 RD-101..RD-108 are DONE or PARTIAL; P2 RD-201..RD-203 are not
+  started). `spec/development-spec.md` is the implementation contract for
+  object shapes, endpoints, and schemas — if it conflicts with executable
+  config, trust the code.
+- `README.md` is current and authoritative for setup, env vars, build/test
+  commands, and the demo quick-start; prefer it over this file for "how do I
+  run this" questions.
+- `docs/` contains `demo-script.md`, `sui-deployment.md`, `provider-api.md`,
+  `world-agentkit.md`, `walrus-adapter.md`, `duplicate-human-demo.md` — read
+  the relevant one before touching that subsystem.
 
 ## Environment
 
 - The user is working in Arch Linux inside distrobox; do not assume NixOS commands or Nix flakes for this repo unless a future repo file adds them.
 - Sui and Walrus are installed in `~/.local/bin/`, but the user does not want that directory exported into `PATH`. Use `~/.local/bin/sui` and `~/.local/bin/walrus` directly if `sui` or `walrus` are not found.
 - Do not edit shell startup files or export PATH globally for this repo.
-- Prefer project-local tooling once `package.json`/workspace files exist; do not suggest global npm installs for repo dependencies.
-- Browser inspection is configured project-locally via `opencode.json` using Playwright MCP and `pnpm dlx @playwright/mcp`.
+- Browser inspection is configured project-locally via `opencode.json` using Playwright MCP and `pnpm dlx @playwright/mcp`, pointed at a persistent profile in `.playwright-wallet-profile/`.
 - If Playwright MCP fails to launch after config changes, restart opencode; MCP config is loaded only at startup.
-- The current MCP command points at the Playwright-managed Chromium executable under `~/.cache/ms-playwright/`.
 
 ## Repo-Local Skills
 
-- Sui and Walrus reference skills are stored in `agent/skills/`. They may not be registered with the runtime `skill` tool, so discover them with file search and read their `SKILL.md` files directly when relevant.
+- Sui and Walrus reference skills exist in three parallel copies: `agent/skills/`, `.agents/skills/`, and `.claude/skills/` (same content). They may not be registered with the runtime `skill` tool, so discover them with file search and read their `SKILL.md` files directly when relevant.
 - Use `agent/skills/sui-client/SKILL.md` before Sui client setup, address management, faucet, balance, or gas work.
-- Use `agent/skills/sui-publish/SKILL.md` before RD-007 publish/deploy work, test-publish, dry-runs, upgrade caps, or package ID handoff.
-- Use `agent/skills/sui-move-project/SKILL.md`, `agent/skills/sui-build/SKILL.md`, `agent/skills/sui-move/SKILL.md`, `agent/skills/modern-move-syntax/SKILL.md`, `agent/skills/sui-object-model/SKILL.md`, `agent/skills/composable-move-functions/SKILL.md`, and `agent/skills/move-unit-testing/SKILL.md` for Move package, syntax, object-model, and test work.
-- Use `agent/skills/ptbs/SKILL.md` for Sui CLI PTB construction and transaction command patterns.
+- Use `agent/skills/sui-publish/SKILL.md` before publish/deploy work, test-publish, dry-runs, upgrade caps, or package ID handoff.
+- Use `agent/skills/sui-move-project/SKILL.md`, `agent/skills/sui-build/SKILL.md`, `agent/skills/sui-move/SKILL.md`, `agent/skills/modern-move-syntax/SKILL.md`, `agent/skills/sui-object-model/SKILL.md`, `agent/skills/composable-move-functions/SKILL.md`, and `agent/skills/move-unit-testing/SKILL.md` for Move package, syntax, object-model, and test work on `packages/move/`.
+- Use `agent/skills/ptbs/SKILL.md` for Sui CLI/PTB construction patterns.
 - Use `agent/skills/walrus-sites/`, `agent/skills/accessing-data/`, and related Walrus skills only for Walrus/storage work; keep Walrus mocks clearly labeled if used.
 - Repo-specific constraints still override skill docs: do not export `~/.local/bin` to `PATH`, do not edit shell startup files, do not commit secrets, and do not claim Sui or World integrations are real unless they are live-verified.
 
-## Planned Structure
+## Repository Structure
 
-- Planned monorepo package manager: `pnpm` workspaces.
-- Planned apps: `apps/web`, `apps/provider-api`, `apps/agent`.
-- Planned packages: `packages/move`, `packages/shared`, `packages/sui-client`, `packages/agentkit`, `packages/walrus`, `packages/seal`, `packages/contracts-config`.
-- Planned support dirs: `scripts`, `docs`, `plan`.
+```
+apps/
+  web/            Next.js 16 + Sui dApp Kit frontend (renter, provider, landlord)
+  provider-api/   Hono API — listings, application reservation, receipt verification
+  agent/          Deterministic Node.js agent — mandate-scoped, AgentKit-authenticated
+packages/
+  move/             Sui Move contracts (published to testnet)
+  shared/           Zod schemas, constants, errors, PacketDocument
+  sui-client/       Sui gRPC client + PTB builders
+  agentkit/         World AgentKit mock + real verifier
+  walrus/           Walrus mock + CLI adapter
+  contracts-config/ Deployed testnet package/object IDs
+  seal/             Stub only — P2 stretch, not implemented
+scripts/            demo-agentkit-duplicate.mjs, agentkit-live-request.html
+docs/               demo-script, sui-deployment, provider-api, world-agentkit,
+                    walrus-adapter, duplicate-human-demo
+plan/backlog.md     Ticket-level status and dependency graph
+spec/development-spec.md   Implementation contract (schemas, endpoints, Move spec)
+```
 
-## Dependency Order
+## Status / Remaining Work
 
-- Start with RD-001 project skeleton before adding real app/package work.
-- Freeze shared schemas/constants in RD-002 before backend, frontend, Walrus packet, or agent implementation.
-- Sui order is RD-003 -> RD-004 -> RD-005 -> RD-006 -> RD-007 -> RD-008.
-- Backend order is RD-009 -> RD-010 -> RD-011, with RD-012 AgentKit middleware required before real application reservation demo.
-- RD-013 receipt verification depends on RD-008 and RD-011.
-- RD-014 duplicate-human proof depends on RD-012 and RD-013.
-- Treat Seal as P2 only; do not risk the core Sui + AgentKit demo for it.
+- All P0 tickets (RD-001–RD-014) are DONE except RD-014, which is PARTIAL: the duplicate-human rejection is proven via a controlled fixture, but full live proof needs a second EVM agent registered to the *same* World human — do not claim that live proof exists until it's actually run.
+- P1 is DONE except two live-smoke gaps, both intentionally not run because they spend real resources / need secrets not committed to the repo:
+  - RD-101 Walrus real upload smoke (mock + CLI adapter code is done and tested; only the live network upload was skipped).
+  - RD-108 real agent Sui execution (code/tests are done; live execution needs an uncommitted `AGENT_SUI_PRIVATE_KEY`/`AGENT_SUI_PRIVATE_KEY_BASE64`).
+  Do not run either without the user's explicit go-ahead, since both touch live wallets/resources.
+- P2 (RD-201 Seal, RD-202 agent rotation, RD-203 zkLogin) is not started and is explicitly non-critical-path; do not risk core Sui/World demo stability for it.
+- Before starting new work, check `plan/backlog.md` for the ticket's current `Status` field rather than assuming from this file — statuses change.
 
-## Commands Currently Documented
+## Commands
 
-- After RD-001 exists, expected workspace checks are `pnpm -r --if-present build` and `pnpm -r --if-present test`.
-- After RD-003 exists, expected Move checks are `sui move build --path packages/move` and `sui move test --path packages/move`.
-- If `sui` is not on `PATH`, run `~/.local/bin/sui move build --path packages/move` and `~/.local/bin/sui move test --path packages/move` instead.
-- If `walrus` is not on `PATH`, run `~/.local/bin/walrus ...` instead.
-- Do not invent additional commands until manifests/scripts exist; read executable config first once added.
+```bash
+# Install (repo root)
+pnpm install
+
+# Build / test everything
+pnpm -r --if-present build
+pnpm -r --if-present test
+
+# Per-package (examples)
+pnpm --filter @rentdelegate/web build
+pnpm --filter @rentdelegate/web typecheck   # run after wallet/tx-result parsing changes
+pnpm --filter @rentdelegate/provider-api build
+pnpm --filter @rentdelegate/agent build
+
+# Move build/test
+~/.local/bin/sui move build --path packages/move
+~/.local/bin/sui move test --path packages/move
+
+# Duplicate-human demo
+pnpm demo:duplicate-human
+
+# Agent env/signer check
+pnpm --filter @rentdelegate/agent check:env
+```
+
+If `sui`/`walrus` are not on `PATH`, use `~/.local/bin/sui ...` / `~/.local/bin/walrus ...` instead. See `README.md` for the full run-the-demo sequence (provider API, frontend, agent) and required env vars.
 
 ## Local Web Server During Browser Testing
 
@@ -84,9 +131,9 @@
 ## Sponsor-Critical Constraints
 
 - Do not fake Sui or World integrations. Mock only Walrus/Seal fallbacks, and label mocks clearly in UI and README.
-- Core message to preserve: “World limits who the agent represents. Sui limits what the agent can do.”
-- World proof requires real AgentKit verification for at least one flow plus duplicate-human rejection by `UNIQUE(listing_id, human_id_hash)` or equivalent.
-- Sui proof requires real testnet Move objects enforcing mandate scope: `RentalMandate`, `OwnerCap`, `AgentCap`, `RentalListing`, and `ApplicationReceipt`.
+- Core message to preserve: "World limits who the agent represents. Sui limits what the agent can do."
+- Sui: real testnet Move package enforces mandate scope via `RentalMandate`, `OwnerCap`, `AgentCap`, `RentalListing`, and `ApplicationReceipt` — this is fully live (`docs/sui-deployment.md`).
+- World: real AgentKit verification is live for one registered EVM agent address on World Chain (`eip155:480`) — see `docs/world-agentkit.md`. Full duplicate-human rejection across *two* agents backed by the same human is still only fixture-proven (RD-014 PARTIAL); don't claim it's live-proven without checking `plan/backlog.md` first.
 - The agent must not use renter wallet custody; it must use its own Sui address plus `AgentCap`.
 - Listing eligibility must be checked against provider-created Sui `RentalListing` data, not attributes supplied by the agent.
 
@@ -101,6 +148,7 @@
 ## Cross-Agent Coordination
 
 - One agent should own one ticket at a time and respect `Blocks`/`Dependencies` in `plan/backlog.md`.
+- Most of the backlog is already merged; before starting new work, check whether it's covered by an existing ticket's `Status` field rather than re-implementing something that's DONE.
 - If using mocks to unblock parallel work, keep the same interface as the planned real integration and mark the mode clearly.
 - Move engineers must hand off package ID, function names, struct fields, error codes, and example tx commands before Sui TS/client work finalizes.
 - Backend engineers must hand off route docs, error codes, demo seed IDs, health endpoint, and AgentKit request requirements before frontend/agent E2E work finalizes.
