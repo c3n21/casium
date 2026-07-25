@@ -6,7 +6,7 @@ export function createListingRoutes(listingService: ListingService) {
 
   routes.post("/", async (c) => {
     const body = await c.req.json().catch(() => null);
-    const result = listingService.create(body);
+    const result = await listingService.create(body);
 
     if (!result.ok) {
       return c.json({ error: result.error }, 400);
@@ -15,10 +15,10 @@ export function createListingRoutes(listingService: ListingService) {
     return c.json(result.value, 201);
   });
 
-  routes.get("/", (c) => c.json({ listings: listingService.list() }));
+  routes.get("/", async (c) => c.json({ listings: await listingService.list() }));
 
-  routes.get("/:id", (c) => {
-    const listing = listingService.get(c.req.param("id"));
+  routes.get("/:id", async (c) => {
+    const listing = await listingService.get(c.req.param("id"));
 
     if (!listing) {
       return c.json({ error: "LISTING_NOT_FOUND" }, 404);

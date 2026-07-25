@@ -7,6 +7,8 @@ export const ERROR_CODES = {
   SUI_MANDATE_REJECTED: "SUI_MANDATE_REJECTED",
   RECEIPT_INVALID: "RECEIPT_INVALID",
   IDEMPOTENCY_CONFLICT: "IDEMPOTENCY_CONFLICT",
+  BLOB_UNAVAILABLE: "BLOB_UNAVAILABLE",
+  PACKET_HASH_MISMATCH: "PACKET_HASH_MISMATCH",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -20,6 +22,8 @@ export const ERROR_HTTP_STATUS: Record<ErrorCode, number> = {
   [ERROR_CODES.SUI_MANDATE_REJECTED]: 422,
   [ERROR_CODES.RECEIPT_INVALID]: 422,
   [ERROR_CODES.IDEMPOTENCY_CONFLICT]: 409,
+  [ERROR_CODES.BLOB_UNAVAILABLE]: 422,
+  [ERROR_CODES.PACKET_HASH_MISMATCH]: 422,
 };
 
 export const USER_FACING_ERRORS: Record<ErrorCode, string> = {
@@ -31,4 +35,6 @@ export const USER_FACING_ERRORS: Record<ErrorCode, string> = {
   [ERROR_CODES.SUI_MANDATE_REJECTED]: "Sui rejected the application under the mandate rules.",
   [ERROR_CODES.RECEIPT_INVALID]: "The Sui receipt does not match this application.",
   [ERROR_CODES.IDEMPOTENCY_CONFLICT]: "This idempotency key was reused with different application data.",
+  [ERROR_CODES.BLOB_UNAVAILABLE]: "The referenced Walrus blob is not available.",
+  [ERROR_CODES.PACKET_HASH_MISMATCH]: "The downloaded blob hash does not match the packet hash.",
 };

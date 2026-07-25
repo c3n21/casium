@@ -4,7 +4,10 @@ import {
   INELIGIBLE_LISTING_OBJECT_ID,
   PUBLISHER_ADDRESS,
 } from "@rentdelegate/contracts-config";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
+import type { Db } from "../db/client.js";
+import { listings as listingsTable } from "../db/schema.js";
 
 const CreateListingSchema = ListingSchema.omit({ id: true, createdAt: true }).extend({
   id: z.string().min(1).optional(),
@@ -42,11 +45,54 @@ const DEMO_LISTINGS: ProviderListing[] = [
   },
 ];
 
-export function createListingService(seedListings = DEMO_LISTINGS) {
-  const listings = new Map(seedListings.map((listing) => [listing.id, listing]));
+type DbListing = typeof listingsTable.$inferSelect;
+
+function toProviderListing(row: DbListing): ProviderListing {
+  return {
+    id: row.id,
+    listingObjectId: row.suiListingId,
+    externalListingId: row.externalListingId,
+    providerSuiAddress: row.providerSuiAddress,
+    landlordSuiAddress: row.landlordSuiAddress,
+    municipalityCode: row.municipalityCode,
+    monthlyRentEur: row.monthlyRentEur,
+    bedrooms: row.bedrooms,
+    active: row.active,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+async function seedDb(db: Db, listings: ProviderListing[]) {
+  for (const listing of listings) {
+    await db
+      .insert(listingsTable)
+      .values({
+        id: listing.id,
+        suiListingId: listing.listingObjectId,
+        externalListingId: listing.externalListingId,
+        providerSuiAddress: listing.providerSuiAddress,
+        landlordSuiAddress: listing.landlordSuiAddress,
+        municipalityCode: listing.municipalityCode,
+        monthlyRentEur: listing.monthlyRentEur,
+        bedrooms: listing.bedrooms,
+        active: listing.active,
+      })
+      .onConflictDoNothing();
+  }
+}
+
+export function createListingService(seedListings = DEMO_LISTINGS, db?: Db) {
+  const listingsMap = new Map(seedListings.map((listing) => [listing.id, listing]));
+
+  // Kick off DB seeding asynchronously; callers await dbReady before DB reads
+  const dbReady: Promise<void> = db
+    ? seedDb(db, seedListings).catch((err: unknown) => {
+        console.error("Failed to seed listings into DB:", err);
+      })
+    : Promise.resolve();
 
   return {
-    create(input: unknown): ListingResult {
+    async create(input: unknown): Promise<ListingResult> {
       const parsed = CreateListingSchema.safeParse(input);
 
       if (!parsed.success) {
@@ -54,14 +100,45 @@ export function createListingService(seedListings = DEMO_LISTINGS) {
       }
 
       const listing = toListing(parsed.data);
-      listings.set(listing.id, listing);
+
+      if (db) {
+        await db
+          .insert(listingsTable)
+          .values({
+            id: listing.id,
+            suiListingId: listing.listingObjectId,
+            externalListingId: listing.externalListingId,
+            providerSuiAddress: listing.providerSuiAddress,
+            landlordSuiAddress: listing.landlordSuiAddress,
+            municipalityCode: listing.municipalityCode,
+            monthlyRentEur: listing.monthlyRentEur,
+            bedrooms: listing.bedrooms,
+            active: listing.active,
+          })
+          .onConflictDoNothing();
+      }
+
+      // Always keep in-memory map in sync for fast reads
+      listingsMap.set(listing.id, listing);
       return { ok: true, value: listing };
     },
-    list(): ProviderListing[] {
-      return [...listings.values()];
+
+    async list(): Promise<ProviderListing[]> {
+      if (db) {
+        await dbReady;
+        const rows = await db.select().from(listingsTable);
+        return rows.map(toProviderListing);
+      }
+      return [...listingsMap.values()];
     },
-    get(id: string): ProviderListing | null {
-      return listings.get(id) ?? null;
+
+    async get(id: string): Promise<ProviderListing | null> {
+      if (db) {
+        await dbReady;
+        const [row] = await db.select().from(listingsTable).where(eq(listingsTable.id, id));
+        return row ? toProviderListing(row) : null;
+      }
+      return listingsMap.get(id) ?? null;
     },
   };
 }
