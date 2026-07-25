@@ -325,6 +325,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Field | Value |
 |---|---|
 | Priority | P0 |
+| Status | DONE - merged via `feature/rd-009-provider-db-schema`. |
 | Lane | L3 Provider API |
 | Objective | Create Postgres schema with uniqueness rule `UNIQUE(listing_id, human_id_hash)`. |
 | Suggested implementation | Use Drizzle migrations for `listings`, `applications`, `verified_agents`, `human_listing_usage`, `sui_receipts`, `document_access_grants`. |
@@ -333,6 +334,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Blocks | RD-010, RD-011, RD-012, RD-014. |
 | Acceptance criteria | Migration runs locally; unique constraint enforced; seed data works. |
 | Tests | Insert duplicate `(listing_id, human_id_hash)` fails. |
+| Verification | 2026-07-25: `pnpm --filter @rentdelegate/shared build && pnpm --filter @rentdelegate/provider-api build` -> success; `pnpm --filter @rentdelegate/provider-api test` -> success, pg-mem executed `drizzle/0001_initial.sql` and duplicate `(listing_id, human_id_hash)` insert failed; `pnpm -r --if-present build` -> success; `pnpm -r --if-present test` -> success; `~/.local/bin/sui move build --path packages/move` -> success; `~/.local/bin/sui move test --path packages/move` -> success, 21 tests passed. |
 | Failure fallback | SQLite/Postgres-lite only if Postgres setup blocks, but keep SQL-compatible schema. |
 | Sponsor | World. |
 | Demo impact | Duplicate-human rejection. |
