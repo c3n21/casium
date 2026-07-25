@@ -7,6 +7,20 @@
   "upgradeCapId": "0x2250bb6b4e9804285aa42d9dd7f2737ecdd93ed4b03edbf515459fb7223d62af",
   "publishTxDigest": "GvxTETJej5RH4U3rFD2PNCENW65tG8vynRF1xskTrxP7",
   "module": "rental",
+  "upgrade": {
+    "ticket": "RD-133",
+    "upgradedAtMs": 1784997806830,
+    "originalPackageId": "0x7e0130cdc105d06707f1f3abd4c76aac8211a09a5502692ba454d1b4b758af3d",
+    "latestPackageId": "0xbab0d70134d065a2f48ad8d18f2d8681de0464b7417485cbda8446eff31e8937",
+    "version": 2,
+    "upgradeTxDigest": "BLqv4XRxg5MEGAt4jDr1v2eeNzuauQ7MhixH5971HgyS",
+    "note": "Added seal_approve_packet entry function for Seal policy-controlled access (RD-132). Transaction targets and Seal identity namespace use latestPackageId.",
+    "sealIdentityNamespace": "latestPackageId",
+    "explorer": {
+      "upgradedPackage": "https://suivision.xyz/package/0xbab0d70134d065a2f48ad8d18f2d8681de0464b7417485cbda8446eff31e8937?network=testnet",
+      "upgradeTx": "https://suivision.xyz/txblock/BLqv4XRxg5MEGAt4jDr1v2eeNzuauQ7MhixH5971HgyS?network=testnet"
+    }
+  },
   "smoke": {
     "mandateId": "0x835478969ce38a0a1d0f981aa1a278a8862f9283de735ebba81c6169d388dbee",
     "ownerCapId": "0xcdb3924e29345c3be077f3c54de78435144ad141d0458a93f6fb6ae0381a571d",
@@ -41,5 +55,21 @@
     "liveAgentSubmitTx": "https://suivision.xyz/txblock/BatrGYNdmzXA8wdEJT4XC4LXa55fZ6ezMAFcsbvAd1dm?network=testnet",
     "liveAgentReceipt": "https://suivision.xyz/object/0xc6f490b959f23db9936090be9bdd52ede80cb685561cc528593f958978235865?network=testnet",
     "liveAgentRejectedTx": "https://suivision.xyz/txblock/6YRsTLLYKCEcWjnXBrfKwxwFc1tiTomLryxmvG7r71sA?network=testnet"
+  },
+  "walrus": {
+    "ticket": "RD-123",
+    "ranAtMs": 1784995204339,
+    "note": "Live Walrus upload smoke. HTTP adapter only (walrus CLI not configured). Synthetic bytes verified byte-identical.",
+    "httpAdapter": {
+      "blobId": "84g0OLjpe_P0nZYUqz2Vwy82C4EtTec0dNCXliXZCDc",
+      "packetHash": "0xbb247ab77e97539588f583534fe9631ebfc6c081ae176aa3325f0c44b1c95587",
+      "sizeBytes": 172,
+      "epochs": 5,
+      "publisherUrl": "https://publisher.walrus-testnet.walrus.space",
+      "aggregatorUrl": "https://aggregator.walrus-testnet.walrus.space"
+    },
+    "explorer": {
+      "blob": "https://walruscan.com/testnet/blob/84g0OLjpe_P0nZYUqz2Vwy82C4EtTec0dNCXliXZCDc"
+    }
   }
 }

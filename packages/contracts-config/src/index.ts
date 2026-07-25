@@ -11,8 +11,20 @@
 export const NETWORK = "testnet" as const;
 export const RPC_URL = "https://fullnode.testnet.sui.io:443";
 
-/** Published Move package ID (original, stable). */
+/** Published Move package ID (original, stable — v1). */
 export const PACKAGE_ID = "0x7e0130cdc105d06707f1f3abd4c76aac8211a09a5502692ba454d1b4b758af3d";
+
+/**
+ * Latest deployed Move package ID (v2, upgraded in RD-133).
+ * Contains seal_approve_packet. Use for:
+ *   - Transaction call targets
+ *   - Seal identity namespace (as specified in RD-131)
+ * The original PACKAGE_ID remains stable for compatibility.
+ */
+export const LATEST_PACKAGE_ID = "0xbab0d70134d065a2f48ad8d18f2d8681de0464b7417485cbda8446eff31e8937";
+
+/** Upgrade digest from RD-133 — adds seal_approve_packet on testnet. */
+export const UPGRADE_TX_DIGEST = "BLqv4XRxg5MEGAt4jDr1v2eeNzuauQ7MhixH5971HgyS";
 
 /** UpgradeCap — required for RD-133 package upgrade. */
 export const UPGRADE_CAP_ID = "0x2250bb6b4e9804285aa42d9dd7f2737ecdd93ed4b03edbf515459fb7223d62af";
