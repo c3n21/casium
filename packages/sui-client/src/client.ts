@@ -38,6 +38,31 @@ export function createRentDelegateClient(config: RentDelegateConfig, suiClient?:
     async getReceipt(id) {
       return parseReceipt(await getJsonObject(id));
     },
+    async findAgentCapForMandate(mandateId, agentSuiAddress) {
+      const response = await client.core.listOwnedObjects({
+        owner: agentSuiAddress,
+        type: `${config.packageId}::rental::AgentCap`,
+        include: { json: true },
+      });
+
+      const objects = response.objects ?? [];
+      const matches = objects.filter((obj) => {
+        const json = obj.json as Record<string, unknown> | undefined | null;
+        if (!json) return false;
+        const mandateIdField = json["mandate_id"] as { id: string } | string | undefined;
+        const fieldId = typeof mandateIdField === "string" ? mandateIdField : mandateIdField?.id;
+        return fieldId === mandateId;
+      });
+
+      if (matches.length === 0) return null;
+      if (matches.length > 1) {
+        throw new Error(
+          `Ambiguous AgentCap: found ${matches.length} caps for mandate ${mandateId}`,
+        );
+      }
+
+      return matches[0].objectId ?? null;
+    },
     buildCreateMandateTx(input) {
       return buildCreateMandateTx(config, input);
     },

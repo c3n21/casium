@@ -92,6 +92,7 @@ export type RentDelegateClient = {
   getMandate(id: string): Promise<RentalMandate>;
   getListing(id: string): Promise<RentalListing>;
   getReceipt(id: string): Promise<ApplicationReceipt>;
+  findAgentCapForMandate(mandateId: string, agentSuiAddress: string): Promise<string | null>;
   buildCreateMandateTx(input: CreateMandateInput): Transaction;
   buildCreateListingTx(input: CreateListingInput): Transaction;
   buildSubmitApplicationTx(input: SubmitApplicationInput): Transaction;
