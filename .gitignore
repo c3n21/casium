@@ -32,3 +32,6 @@ client.yaml
 .playwright-mcp/
 .playwright-wallet-profile/
 */**/tsconfig.tsbuildinfo
+
+apps/e2e/
+apps/web/.next-e2e/
