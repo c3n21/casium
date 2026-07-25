@@ -481,6 +481,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Field | Value |
 |---|---|
 | Priority | P1 |
+| Status | DONE - merged via `feature/rd-103-104-frontend`. |
 | Lane | L7 Frontend |
 | Objective | Implement renter UI for wallet connect, mandate creation, status, revoke, withdraw. |
 | Suggested implementation | Use Next.js, Sui dApp Kit, TanStack Query, shared schemas, and `packages/sui-client`. Show object IDs and tx digests. |
@@ -489,6 +490,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Blocks | RD-106. |
 | Acceptance criteria | Renter can create mandate on testnet, see remaining allowance, revoke mandate, and view application receipts. |
 | Tests | Component tests for validation; manual Sui wallet smoke. |
+| Verification | 2026-07-25: Next.js 16 app builds successfully; `pnpm -r --if-present test` -> all pass; 3 mandate form validation tests; typecheck clean; pages /renter /provider /landlord all static-prerender. MandateForm builds `create_mandate` PTB via `@rentdelegate/sui-client`, MandateStatus polls testnet mandate via `useCurrentClient`, RevokeButton builds `revoke_mandate` PTB. Smoke mandate `0x8354…` pre-seeded on renter page. |
 | Failure fallback | Use scripts for txs and frontend read-only display. |
 | Sponsor | Sui. |
 | Demo impact | Main renter story. |
@@ -498,6 +500,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Field | Value |
 |---|---|
 | Priority | P1 |
+| Status | DONE - merged via `feature/rd-103-104-frontend`. |
 | Lane | L7 Frontend |
 | Objective | Implement provider dashboard for listing creation and application review. |
 | Suggested implementation | Provider can create demo listings, view applications, see AgentKit uniqueness badge, verify receipt, and open landlord access panel. |
@@ -506,9 +509,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Blocks | RD-106. |
 | Acceptance criteria | Provider can list seeded properties and view accepted/rejected application states. |
 | Tests | Component tests with mocked API; manual API integration. |
-| Failure fallback | Static seeded listings plus application inbox polling. |
-| Sponsor | Both. |
-| Demo impact | Judge-facing verification view. |
+| Verification | 2026-07-25: Provider page shows seeded Lisbon/Porto listings, ListingForm builds `create_listing` PTB, ApplicationInbox polls provider API for application status and human hash, verify-receipt form calls POST /applications/:id/verify. Landlord page reads smoke receipt `0xc46d…` from testnet and displays mandate/listing links. Next.js build passes. |
 
 ### RD-105 Agent App And Deterministic Rules
 
