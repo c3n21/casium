@@ -5,8 +5,6 @@ import { useQuery } from "@tanstack/react-query";
 import { ListingForm } from "@/components/ListingForm";
 import { ApplicationInbox, type ReservedApplication } from "@/components/ApplicationInbox";
 import {
-  DEMO_LISTING_OBJECT_ID,
-  INELIGIBLE_LISTING_OBJECT_ID,
   EXPLORER_OBJECT,
   EXPLORER_TX,
   SMOKE,
@@ -15,9 +13,45 @@ import {
 
 const PROVIDER_API = process.env.NEXT_PUBLIC_PROVIDER_API_URL ?? "http://localhost:4021";
 
+const MUNICIPALITY_LABELS: Record<number, string> = {
+  1: "Lisbon",
+  2: "Oeiras",
+  3: "Cascais",
+  4: "Amadora",
+  5: "Almada",
+  6: "Porto (ineligible demo)",
+};
+
+type ProviderListing = {
+  id: string;
+  listingObjectId: string;
+  externalListingId: string;
+  municipalityCode: number;
+  monthlyRentEur: number;
+  bedrooms: number;
+  active: boolean;
+};
+
 export default function ProviderPage() {
   const [showForm, setShowForm] = useState(false);
   const [createdTx, setCreatedTx] = useState<string | null>(null);
+
+  const {
+    data: listingsResponse,
+    isLoading: listingsLoading,
+    error: listingsError,
+    refetch: refetchListings,
+  } = useQuery({
+    queryKey: ["listings"],
+    queryFn: async () => {
+      const response = await fetch(`${PROVIDER_API}/listings`);
+      if (!response.ok) throw new Error(`Failed to fetch listings: ${response.status}`);
+      return response.json() as Promise<{ listings: ProviderListing[] }>;
+    },
+    refetchInterval: 15_000,
+  });
+
+  const listings: ProviderListing[] = listingsResponse?.listings ?? [];
 
   const {
     data: applicationsResponse,
@@ -57,6 +91,7 @@ export default function ProviderPage() {
               onCreated={(_id, tx) => {
                 setCreatedTx(tx);
                 setShowForm(false);
+                void refetchListings();
               }}
             />
           </div>
@@ -65,7 +100,7 @@ export default function ProviderPage() {
         {createdTx && (
           <p style={{ marginTop: 8 }}>
             ✅ Listing created.{" "}
-            <a href={`https://suivision.xyz/txblock/${createdTx}?network=testnet`} target="_blank" rel="noreferrer">
+            <a href={EXPLORER_TX(createdTx)} target="_blank" rel="noreferrer">
               View tx
             </a>
           </p>
@@ -86,34 +121,57 @@ export default function ProviderPage() {
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td style={td}>listing_lisbon_eligible</td>
-                <td style={td}>
-                  <a href={EXPLORER_OBJECT(DEMO_LISTING_OBJECT_ID)} target="_blank" rel="noreferrer">
-                    <code>{DEMO_LISTING_OBJECT_ID.slice(0, 6)}…</code>
-                  </a>
-                </td>
-                <td style={td}>Lisbon</td>
-                <td style={td}>€1700</td>
-                <td style={td}>2</td>
-                <td style={td}>
-                  <span style={{ color: "#16a34a" }}>Active</span>
-                </td>
-              </tr>
-              <tr>
-                <td style={td}>listing_porto_ineligible</td>
-                <td style={td}>
-                  <a href={EXPLORER_OBJECT(INELIGIBLE_LISTING_OBJECT_ID)} target="_blank" rel="noreferrer">
-                    <code style={{ color: "#94a3b8" }}>{INELIGIBLE_LISTING_OBJECT_ID.slice(0, 6)}…</code>
-                  </a>
-                </td>
-                <td style={td}>Porto (demo)</td>
-                <td style={td}>€1200</td>
-                <td style={td}>2</td>
-                <td style={td}>
-                  <span style={{ color: "#f59e0b" }}>Ineligible</span>
-                </td>
-              </tr>
+              {listingsLoading && (
+                <tr>
+                  <td style={td} colSpan={6}>
+                    Loading listings…
+                  </td>
+                </tr>
+              )}
+              {listingsError && (
+                <tr>
+                  <td style={{ ...td, color: "#dc2626" }} colSpan={6}>
+                    Error loading listings:{" "}
+                    {listingsError instanceof Error ? listingsError.message : "unknown"}
+                  </td>
+                </tr>
+              )}
+              {!listingsLoading && !listingsError && listings.length === 0 && (
+                <tr>
+                  <td style={{ ...td, color: "#64748b" }} colSpan={6}>
+                    No listings yet.
+                  </td>
+                </tr>
+              )}
+              {listings.map((listing) => {
+                const ineligible = listing.municipalityCode === 6;
+                return (
+                  <tr key={listing.id}>
+                    <td style={td}>{listing.id}</td>
+                    <td style={td}>
+                      <a href={EXPLORER_OBJECT(listing.listingObjectId)} target="_blank" rel="noreferrer">
+                        <code style={ineligible ? { color: "#94a3b8" } : undefined}>
+                          {listing.listingObjectId.slice(0, 6)}…
+                        </code>
+                      </a>
+                    </td>
+                    <td style={td}>
+                      {MUNICIPALITY_LABELS[listing.municipalityCode] ?? `Code ${listing.municipalityCode}`}
+                    </td>
+                    <td style={td}>€{listing.monthlyRentEur}</td>
+                    <td style={td}>{listing.bedrooms}</td>
+                    <td style={td}>
+                      {!listing.active ? (
+                        <span style={{ color: "#94a3b8" }}>Inactive</span>
+                      ) : ineligible ? (
+                        <span style={{ color: "#f59e0b" }}>Ineligible</span>
+                      ) : (
+                        <span style={{ color: "#16a34a" }}>Active</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

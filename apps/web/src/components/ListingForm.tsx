@@ -7,6 +7,8 @@ import { useState } from "react";
 import { EXPLORER_TX, PACKAGE_ID } from "@/lib/constants";
 import { signAndExecuteWithExplicitGas } from "@/lib/walletTransaction";
 
+const PROVIDER_API = process.env.NEXT_PUBLIC_PROVIDER_API_URL ?? "http://localhost:4021";
+
 const MUNICIPALITY_LABELS: Record<number, string> = {
   1: "Lisbon",
   2: "Oeiras",
@@ -69,7 +71,24 @@ export function ListingForm({ onCreated }: { onCreated?: (listingId: string, txD
       });
 
       const result = await signAndExecuteWithExplicitGas(dAppKit, currentClient, tx, account.address);
-      onCreated?.("(see tx)", result.digest);
+
+      const listingObjectId = findCreatedListingId(result.objectTypes);
+      if (!listingObjectId) {
+        throw new Error("Listing created on-chain but no RentalListing object found in effects");
+      }
+
+      const listing = await registerListing({
+        listingObjectId,
+        externalListingId: fields.externalId,
+        providerSuiAddress: account.address,
+        landlordSuiAddress: fields.landlordAddress || account.address,
+        municipalityCode: fields.municipality,
+        monthlyRentEur: fields.monthlyRentEur,
+        bedrooms: fields.bedrooms,
+        active: fields.active,
+      });
+
+      onCreated?.(listing.id, result.digest);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -117,6 +136,40 @@ export function ListingForm({ onCreated }: { onCreated?: (listingId: string, txD
       </button>
     </form>
   );
+}
+
+/** `objectTypes` maps every changed object id to its full type; the listing is the one shared by `create_listing`. */
+function findCreatedListingId(objectTypes: Record<string, string> | undefined): string | null {
+  const entry = Object.entries(objectTypes ?? {}).find(([, type]) => type.endsWith("::rental::RentalListing"));
+  return entry?.[0] ?? null;
+}
+
+type RegisterListingInput = {
+  listingObjectId: string;
+  externalListingId: string;
+  providerSuiAddress: string;
+  landlordSuiAddress: string;
+  municipalityCode: number;
+  monthlyRentEur: number;
+  bedrooms: number;
+  active: boolean;
+};
+
+async function registerListing(input: RegisterListingInput): Promise<{ id: string }> {
+  const response = await fetch(`${PROVIDER_API}/listings`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(
+      `Listing is on-chain (${input.listingObjectId}) but the provider API rejected it: ${body?.error ?? response.status}`,
+    );
+  }
+
+  return response.json() as Promise<{ id: string }>;
 }
 
 const inputStyle: React.CSSProperties = { display: "block", width: "100%", marginTop: 4, padding: "0.5rem", border: "1px solid #cbd5e1", borderRadius: 4, fontSize: "inherit" };
