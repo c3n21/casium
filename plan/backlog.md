@@ -462,6 +462,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Field | Value |
 |---|---|
 | Priority | P1 |
+| Status | DONE - merged via `feature/rd-102-packet-encryption`. |
 | Lane | L5/L7 privacy + frontend |
 | Objective | Build synthetic document packet and encrypt client-side before Walrus upload. |
 | Suggested implementation | Use Web Crypto AES-GCM. Packet contains placeholders for ID, payslip, employment proof, references, cover letter, optional proof of funds. Display synthetic-data warning. |
@@ -470,6 +471,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Blocks | RD-105, RD-106, RD-201. |
 | Acceptance criteria | UI generates packet, encrypts it, uploads ciphertext, displays blob ID and packet hash; plaintext never sent to provider API. |
 | Tests | Unit test packet serialization and encryption round-trip; manual browser upload. |
+| Verification | 2026-07-25: `pnpm --filter @rentdelegate/shared build` -> success; `pnpm --filter @rentdelegate/shared test` -> success, 2 files/5 tests covering schema parse, makeSyntheticPacket, and rejection of invalid types; `pnpm --filter @rentdelegate/web build` -> success; `pnpm --filter @rentdelegate/web test` -> success, 1 file/3 tests covering AES-GCM round-trip, IV randomness, and byte length; `pnpm -r --if-present build` -> success; `pnpm -r --if-present test` -> success; `~/.local/bin/sui move test` -> success, 21 tests passed. PacketBuilder React component includes synthetic-data warning banner; plaintext is never serialized to provider API. |
 | Failure fallback | Pre-generate encrypted packet fixture. |
 | Sponsor | Sui/Walrus. |
 | Demo impact | Shows document privacy. |
