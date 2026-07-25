@@ -175,6 +175,7 @@ describe("runAgent", () => {
 
   it("throws when no private key is provided", async () => {
     await expect(runAgent({ ...BASE_INPUT, privateKey: undefined })).rejects.toThrow(/No private key provided/);
+    expect(mockCreateProvider).not.toHaveBeenCalled();
   });
 
   it("calls onProgress with the expected stages", async () => {

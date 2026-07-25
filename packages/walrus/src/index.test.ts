@@ -59,6 +59,14 @@ describe("createWalrusAdapter factory", () => {
     expect(typeof adapter.status).toBe("function");
   });
 
+  it("treats mode='real' as the HTTP adapter", () => {
+    const adapter = createWalrusAdapter("real");
+    expect(adapter).toBeDefined();
+    expect(typeof adapter.upload).toBe("function");
+    expect(typeof adapter.download).toBe("function");
+    expect(typeof adapter.status).toBe("function");
+  });
+
   it("returns cli adapter for mode='cli'", () => {
     const adapter = createWalrusAdapter("cli");
     expect(adapter).toBeDefined();
@@ -101,8 +109,8 @@ describe("getWalrusMode", () => {
   });
 
   it("returns value from WALRUS_MODE", () => {
-    process.env["WALRUS_MODE"] = "http";
-    expect(getWalrusMode()).toBe("http");
+    process.env["WALRUS_MODE"] = "real";
+    expect(getWalrusMode()).toBe("real");
   });
 
   it("returns value from NEXT_PUBLIC_WALRUS_MODE when WALRUS_MODE is unset", () => {

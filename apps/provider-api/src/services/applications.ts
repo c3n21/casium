@@ -280,6 +280,17 @@ export function createApplicationService(
           );
 
         if (usageRow) {
+          const existing = await dbGetApplication(usageRow.applicationId);
+          if (
+            existing &&
+            existing.mandateId === parsed.data.mandateId &&
+            existing.agentEvmAddress.toLowerCase() === parsed.data.agentEvmAddress.toLowerCase() &&
+            existing.walrusBlobId === parsed.data.walrusBlobId &&
+            existing.packetHash === parsed.data.packetHash
+          ) {
+            return { ok: true, value: existing, replayed: true };
+          }
+
           return { ok: false, error: ERROR_CODES.DUPLICATE_HUMAN_LISTING };
         }
 
@@ -320,6 +331,18 @@ export function createApplicationService(
       const usageKey = `${listingId}:${agentContext.humanIdHash}`;
 
       if (humanListingUsage.has(usageKey)) {
+        const existingId = humanListingUsage.get(usageKey);
+        const existing = existingId ? applicationsMap.get(existingId) : null;
+        if (
+          existing &&
+          existing.mandateId === parsed.data.mandateId &&
+          existing.agentEvmAddress.toLowerCase() === parsed.data.agentEvmAddress.toLowerCase() &&
+          existing.walrusBlobId === parsed.data.walrusBlobId &&
+          existing.packetHash === parsed.data.packetHash
+        ) {
+          return { ok: true, value: existing, replayed: true };
+        }
+
         return { ok: false, error: ERROR_CODES.DUPLICATE_HUMAN_LISTING };
       }
 

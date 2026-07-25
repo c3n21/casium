@@ -16,6 +16,7 @@ export function createWalrusAdapter(mode?: WalrusAdapterMode): WalrusAdapter {
     "mock";
 
   switch (resolvedMode) {
+    case "real":
     case "http":
       return createWalrusHttpAdapter();
     case "cli":

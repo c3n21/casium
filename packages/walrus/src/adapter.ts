@@ -20,7 +20,7 @@ export type WalrusAdapter = {
   extend?(blobId: string, epochs: number): Promise<void>; // optional
 };
 
-export type WalrusAdapterMode = "mock" | "http" | "cli";
+export type WalrusAdapterMode = "mock" | "http" | "cli" | "real";
 
 /** Walrus testnet epoch duration in milliseconds (approximately 1 day = 86400000 ms) */
 export const WALRUS_EPOCH_DURATION_MS = 86_400_000;

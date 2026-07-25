@@ -66,10 +66,24 @@ describe("application reservation routes", () => {
     const duplicate = await reserve(app, {
       ...reserveRequest,
       idempotencyKey: "123e4567-e89b-12d3-a456-426614174001",
+      walrusBlobId: "mock:different-packet",
     });
 
     expect(duplicate.status).toBe(409);
     expect(await duplicate.json()).toEqual({ error: ERROR_CODES.DUPLICATE_HUMAN_LISTING });
+  });
+
+  it("replays an exact duplicate human/listing/mandate/packet reservation", async () => {
+    const app = createApp();
+    expect((await reserve(app, reserveRequest)).status).toBe(202);
+
+    const replay = await reserve(app, {
+      ...reserveRequest,
+      idempotencyKey: "123e4567-e89b-12d3-a456-426614174001",
+    });
+
+    expect(replay.status).toBe(200);
+    expect(await replay.json()).toMatchObject({ id: "app_1", mandateId: reserveRequest.mandateId });
   });
 
   it("rejects EVM and Sui agent mismatches (header vs request body)", async () => {

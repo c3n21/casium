@@ -28,6 +28,8 @@ const DEMO_PROVIDER_LISTING_ID = "listing_lisbon_eligible";
 // for the adapter default of 5 epochs (~5 days). Promising a longer window than the
 // blob survives would put an unbacked claim on chain, which the check below rejects.
 const DEFAULT_ACCESS_WINDOW_DAYS = 3;
+const VERIFY_RECEIPT_ATTEMPTS = 5;
+const VERIFY_RECEIPT_RETRY_MS = 2_000;
 
 function accessWindowDays(): number {
   const configured = Number(process.env["AGENT_ACCESS_WINDOW_DAYS"]);
@@ -101,6 +103,13 @@ export async function runAgent(
   } = input;
 
   const listingObjectId = input.listingObjectId ?? DEMO_LISTING_OBJECT_ID;
+  const privateKey = input.privateKey;
+  if (!privateKey) {
+    throw new Error(
+      "No private key provided. Set AGENT_SUI_PRIVATE_KEY or pass privateKey in RunInput.",
+    );
+  }
+
   // Use the listing's Sui object ID as provider listing ID unless it's the demo listing,
   // in which case use the well-known provider-side key.
   const providerListingId =
@@ -223,13 +232,6 @@ export async function runAgent(
 
   // 6. Execute Sui submit_application PTB
   report("submitting");
-  const privateKey = input.privateKey;
-  if (!privateKey) {
-    throw new Error(
-      "No private key provided. Set AGENT_SUI_PRIVATE_KEY or pass privateKey in RunInput.",
-    );
-  }
-
   const executed = await executeSubmitApplication({
     suiClient,
     executionClient,
@@ -252,14 +254,18 @@ export async function runAgent(
       "Sui transaction succeeded but ApplicationReceipt ID was not found in events/effects",
     );
   }
+  const receiptId = executed.receiptId;
 
   // 7. Verify receipt
   report("verifying");
-  await provider.verifyReceipt(reserved.id, {
-    applicationId: reserved.id,
-    txDigest: executed.txDigest,
-    receiptId: executed.receiptId,
-  });
+  await verifyReceiptWithRetry(
+    () => provider.verifyReceipt(reserved.id, {
+      applicationId: reserved.id,
+      txDigest: executed.txDigest,
+      receiptId,
+    }),
+    { txDigest: executed.txDigest, receiptId },
+  );
 
   report("complete");
   return {
@@ -267,8 +273,33 @@ export async function runAgent(
     mandateId,
     applicationId: reserved.id,
     txDigest: executed.txDigest,
-    receiptId: executed.receiptId,
+    receiptId,
     blobId,
     status: "complete",
   };
+}
+
+async function verifyReceiptWithRetry(
+  verify: () => Promise<unknown>,
+  executed: { txDigest: string; receiptId: string },
+): Promise<void> {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= VERIFY_RECEIPT_ATTEMPTS; attempt++) {
+    try {
+      await verify();
+      return;
+    } catch (err) {
+      lastError = err;
+      const message = err instanceof Error ? err.message : String(err);
+      const retryable = message.includes("RECEIPT_INVALID");
+      if (!retryable || attempt === VERIFY_RECEIPT_ATTEMPTS) break;
+      await new Promise((resolve) => setTimeout(resolve, VERIFY_RECEIPT_RETRY_MS));
+    }
+  }
+
+  const message = lastError instanceof Error ? lastError.message : String(lastError);
+  throw new Error(
+    `${message} (submitted tx ${executed.txDigest}, receipt ${executed.receiptId})`,
+  );
 }
