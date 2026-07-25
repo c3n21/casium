@@ -14,6 +14,7 @@ Ticket detail lives in the epic files. `spec/development-spec.md` is the impleme
 | `plan/backlog-walrus.md` | RD-121 … RD-126 | **Epic W — Live Walrus Storage.** Active. |
 | `plan/backlog-seal.md` | RD-131 … RD-138 | **Epic S — Seal Access Control.** Active. |
 | `plan/backlog-e2e.md` | RD-141 … RD-152 | **Epic E — Playwright E2E Tests.** Active. Not front-to-back: start with Phase 1 (RD-141 → RD-144 → RD-147, RD-145, RD-146, RD-149), which needs no wallet. See that file's *Recommended Order*. |
+| `plan/backlog-identity.md` | RD-161 … RD-166 | **Epic I — Agent Identity Binding.** Active. Closes the gap where the renter hand-types the agent's Sui and EVM addresses and nothing ever reads `agent_evm`. Start with RD-161 ‖ RD-162 — two agents, zero shared files. |
 | `plan/backlog-stretch.md` | RD-202, RD-203 | Optional. RD-201 superseded by Epic S. |
 
 ## Current State
@@ -27,8 +28,8 @@ environment variables and hardcoded fixtures rather than by code.
 | Area | Real today | Missing |
 |---|---|---|
 | Sui Move | Published testnet package, 6 functions, live agent submission, live Move-enforced rejection | `seal_approve` policy function (RD-132) |
-| World AgentKit | Real signature/message verification | Live same-human/two-agent proof (RD-014, still open) |
-| Provider API | AgentKit middleware, real Sui receipt verification | Durable storage — state is in `Map`s (RD-109); application listing, withdraw, access grants (RD-110) |
+| World AgentKit | Real signature/message verification | Live same-human/two-agent proof (RD-014, still open); the mandate's `agent_evm` is recorded but never read by anything (Epic I) |
+| Provider API | AgentKit middleware, real Sui receipt verification | Durable storage — state is in `Map`s (RD-109); application listing, withdraw, access grants (RD-110); reserve never checks the mandate's on-chain identity pair (RD-164) |
 | Agent | Deterministic rules, real signing, receipt parsing | Service mode and cap discovery — mandate and cap come from env (RD-112, RD-113) |
 | Web | Wallet connect, mandate/listing PTBs, packet encryption UI | Live data — pages read hardcoded fixtures (RD-114); `/agent` route does not exist (RD-116) |
 | Walrus | Adapter interface, mock, CLI adapter | Any byte ever reaching the network; a browser-usable adapter (Epic W) |
@@ -54,15 +55,15 @@ environment variables and hardcoded fixtures rather than by code.
 |---|---|---|---|
 | L0 Project setup | DevOps/full-stack | root, `scripts/`, `packages/contracts-config/` | RD-115, RD-133 |
 | L1 Sui Move | Move engineer | `packages/move/` | RD-132, RD-133 |
-| L2 Sui TS | Full-stack Sui | `packages/sui-client/` | RD-112 |
-| L3 Provider API | Backend | `apps/provider-api/` | RD-109, RD-110, RD-117, RD-118, RD-126 |
+| L2 Sui TS | Full-stack Sui | `packages/sui-client/` | RD-112, RD-162 |
+| L3 Provider API | Backend | `apps/provider-api/` | RD-109, RD-110, RD-117, RD-118, RD-126, RD-164 |
 | L4 World AgentKit | World specialist | `packages/agentkit/`, provider middleware | RD-014 follow-up only |
 | L5 Walrus/privacy | Storage engineer | `packages/walrus/`, packet flow | RD-111, RD-121 … RD-126, RD-135 |
 | L6 Seal | Privacy engineer | `packages/seal/`, Move policy | RD-131 … RD-137 |
-| L7 Frontend | Frontend | `apps/web/` | RD-114, RD-116, RD-117, RD-135, RD-136, RD-142 |
-| L8 Agent | Agent/full-stack | `apps/agent/` | RD-111, RD-112, RD-113 |
-| L9 Demo/docs | Writer | `README.md`, `docs/`, `plan/` | RD-138, RD-152 |
-| L10 QA/E2E | Test engineer | `apps/e2e/` | RD-141, RD-143 … RD-151 |
+| L7 Frontend | Frontend | `apps/web/` | RD-114, RD-116, RD-117, RD-135, RD-136, RD-142, RD-163 |
+| L8 Agent | Agent/full-stack | `apps/agent/` | RD-111, RD-112, RD-113, RD-161 |
+| L9 Demo/docs | Writer | `README.md`, `docs/`, `plan/` | RD-138, RD-152, RD-165 |
+| L10 QA/E2E | Test engineer | `apps/e2e/` | RD-141, RD-143 … RD-151, RD-166 |
 
 ## Dependency Graph
 
@@ -117,7 +118,16 @@ flowchart TD
   S137 --> D138[RD-138 Docs and evidence]
   W126 --> D138
   W123 --> D138
+
+  I161[RD-161 Agent identity endpoint] --> I163[RD-163 Agent card]
+  I162[RD-162 Parse agent_evm] --> I164[RD-164 Provider enforces pair]
+  I163 --> I165[RD-165 Identity docs]
+  I164 --> I165
+  C110 --> I164
 ```
+
+Epic I (RD-161…RD-166) hangs off the completed Epic C work and is otherwise independent — it shares no
+files with Epic W or Epic S. Detail and its own graph live in `plan/backlog-identity.md`.
 
 ## Parallel Execution Evaluation
 
@@ -157,8 +167,11 @@ genuinely independent early work is in the leaf packages: `packages/move`, `pack
 
 | File | Wanted by | Rule |
 |---|---|---|
-| `apps/provider-api/src/services/applications.ts` | RD-109, RD-110, RD-117, RD-126 | One owner at a time, in dependency order. |
+| `apps/provider-api/src/services/applications.ts` | RD-109, RD-110, RD-117, RD-126, RD-164 | One owner at a time, in dependency order. |
 | `apps/web/src/components/PacketBuilder.tsx` | RD-111, RD-125, RD-135 | Same owner should take all three. |
+| `apps/web/src/components/MandateForm.tsx` | RD-163 | Sole owner; announce if any other L7 work is live. |
+| `apps/web/app/agent/page.tsx` | RD-142, RD-163 | RD-163's edit is one shared-constant import — announce, do not serialize. |
+| `apps/agent/src/server.ts` | RD-161 | Sole owner. |
 | `apps/web/app/landlord/page.tsx` | RD-114, RD-136 | RD-114 lands first, always. |
 | `apps/agent/src/index.ts` | RD-111, RD-112, RD-113, RD-115, RD-124 | RD-115 first (mechanical), then one owner for the rest. |
 | `packages/move/sources/rental.move` | RD-132, RD-202 | Single owner; RD-133 deploys it. |
