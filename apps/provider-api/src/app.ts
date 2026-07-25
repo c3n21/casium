@@ -73,7 +73,7 @@ export function createApp(receiptVerifier?: ReceiptVerificationService) {
   app.route("/listings", createListingRoutes(listingService));
   app.use("/listings/:id/applications", createAgentKitMiddleware());
   app.route("/", createApplicationRoutes(applicationService));
-  app.route("/packets", createPacketRoutes());
+  app.route("/packets", createPacketRoutes(db));
 
   return app;
 }

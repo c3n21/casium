@@ -1,9 +1,15 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { newDb } from "pg-mem";
 import { describe, expect, it } from "vitest";
 
-const migrationSql = readFileSync(resolve(import.meta.dirname, "../../drizzle/0001_initial.sql"), "utf8");
+// Apply every migration in order, so a new file is covered the moment it is added.
+const drizzleDir = resolve(import.meta.dirname, "../../drizzle");
+const migrationSql = readdirSync(drizzleDir)
+  .filter((file) => file.endsWith(".sql"))
+  .sort()
+  .map((file) => readFileSync(resolve(drizzleDir, file), "utf8"))
+  .join("\n");
 
 describe("provider database schema", () => {
   it("enforces one human hash per listing", () => {
@@ -27,5 +33,30 @@ describe("provider database schema", () => {
         values ('listing_1', 'sha256:human', 'app_2');
       `),
     ).toThrow();
+  });
+
+  it("keeps one packet per mandate, replacing on re-upload", () => {
+    const db = newDb();
+    db.public.none(migrationSql);
+
+    db.public.none(`
+      insert into packets (mandate_id, walrus_blob_id, packet_hash, size_bytes, encryption_mode, registered_at_ms)
+      values ('0xmandate', 'blob_first', '0xhash1', 128, 'seal', 1000)
+      on conflict (mandate_id) do update set
+        walrus_blob_id = excluded.walrus_blob_id,
+        packet_hash = excluded.packet_hash,
+        registered_at_ms = excluded.registered_at_ms;
+
+      insert into packets (mandate_id, walrus_blob_id, packet_hash, size_bytes, encryption_mode, registered_at_ms)
+      values ('0xmandate', 'blob_second', '0xhash2', 256, 'seal', 2000)
+      on conflict (mandate_id) do update set
+        walrus_blob_id = excluded.walrus_blob_id,
+        packet_hash = excluded.packet_hash,
+        registered_at_ms = excluded.registered_at_ms;
+    `);
+
+    const rows = db.public.many("select walrus_blob_id from packets where mandate_id = '0xmandate'");
+    expect(rows).toHaveLength(1);
+    expect(rows[0].walrus_blob_id).toBe("blob_second");
   });
 });

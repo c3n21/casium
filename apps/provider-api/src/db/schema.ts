@@ -66,6 +66,23 @@ export const suiReceipts = pgTable(
   (table) => [uniqueIndex("sui_receipts_tx_digest_unique").on(table.txDigest)],
 );
 
+/**
+ * Renter packet registrations, keyed by mandate. One packet per mandate: a
+ * re-upload replaces the previous record, which is what the renter expects when
+ * they rebuild a packet after changing a document.
+ *
+ * Durable because the agent reads this before every run — losing it on restart
+ * surfaces three steps later as "No packet registered for mandate …".
+ */
+export const packets = pgTable("packets", {
+  mandateId: text("mandate_id").primaryKey(),
+  walrusBlobId: text("walrus_blob_id").notNull(),
+  packetHash: text("packet_hash").notNull(),
+  sizeBytes: integer("size_bytes").notNull(),
+  encryptionMode: text("encryption_mode").notNull(),
+  registeredAtMs: bigint("registered_at_ms", { mode: "number" }).notNull(),
+});
+
 export const documentAccessGrants = pgTable("document_access_grants", {
   id: text("id").primaryKey(),
   applicationId: text("application_id").notNull().references(() => applications.id),
