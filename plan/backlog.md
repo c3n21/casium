@@ -516,6 +516,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Field | Value |
 |---|---|
 | Priority | P1 |
+| Status | DONE - merged via `feature/rd-105-agent`. |
 | Lane | L8 Agent |
 | Objective | Build constrained agent that discovers listings, explains eligibility, calls provider via AgentKit, submits Sui transaction, and verifies receipt. |
 | Suggested implementation | Node TypeScript process. Deterministic rules evaluate Sui mandate/listing data. Use LLM only for optional explanation. Use `agentkit.fetch` for provider requests. |
@@ -524,6 +525,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Blocks | RD-106. |
 | Acceptance criteria | Agent identifies one eligible and one ineligible listing, submits only eligible one, reports tx digest and receipt, refuses out-of-scope listing. |
 | Tests | Rules unit tests; dry-run with mock provider; live testnet smoke. |
+| Verification | 2026-07-25: `pnpm --filter @rentdelegate/agent build` -> success; `pnpm --filter @rentdelegate/agent test` -> success, 1 file/10 tests; live smoke: loaded mandate from testnet, Lisbon listing eligible, Porto ineligible/unavailable; mock Walrus upload; PTB serialized; graceful missing-header fallback when provider not running. Agent private key execution is out of scope and not committed. |
 | Failure fallback | Manual button in Agent UI triggers same deterministic flow. |
 | Sponsor | World and Sui. |
 | Demo impact | Core “AI agent under mandate” proof. |
