@@ -17,8 +17,8 @@
     "note": "Added seal_approve_packet entry function for Seal policy-controlled access (RD-132). Transaction targets use latestPackageId; the Seal identity namespace uses the original packageId because @mysten/seal requires a first-version package for encrypt and SessionKey.create.",
     "sealIdentityNamespace": "packageId",
     "explorer": {
-      "upgradedPackage": "https://suivision.xyz/package/0xbab0d70134d065a2f48ad8d18f2d8681de0464b7417485cbda8446eff31e8937?network=testnet",
-      "upgradeTx": "https://suivision.xyz/txblock/BLqv4XRxg5MEGAt4jDr1v2eeNzuauQ7MhixH5971HgyS?network=testnet"
+      "upgradedPackage": "https://testnet.suivision.xyz/package/0xbab0d70134d065a2f48ad8d18f2d8681de0464b7417485cbda8446eff31e8937",
+      "upgradeTx": "https://testnet.suivision.xyz/txblock/BLqv4XRxg5MEGAt4jDr1v2eeNzuauQ7MhixH5971HgyS"
     }
   },
   "smoke": {
@@ -49,12 +49,12 @@
     "rejectedSubmitAbortName": "EMUNICIPALITY_NOT_ALLOWED"
   },
   "explorer": {
-    "package": "https://suivision.xyz/package/0x7e0130cdc105d06707f1f3abd4c76aac8211a09a5502692ba454d1b4b758af3d?network=testnet",
-    "publishTx": "https://suivision.xyz/txblock/GvxTETJej5RH4U3rFD2PNCENW65tG8vynRF1xskTrxP7?network=testnet",
-    "submitApplicationTx": "https://suivision.xyz/txblock/6vKuZNC3p5uoaSni2N5NifW1eQjqdLDesBAj9gN799Lh?network=testnet",
-    "liveAgentSubmitTx": "https://suivision.xyz/txblock/BatrGYNdmzXA8wdEJT4XC4LXa55fZ6ezMAFcsbvAd1dm?network=testnet",
-    "liveAgentReceipt": "https://suivision.xyz/object/0xc6f490b959f23db9936090be9bdd52ede80cb685561cc528593f958978235865?network=testnet",
-    "liveAgentRejectedTx": "https://suivision.xyz/txblock/6YRsTLLYKCEcWjnXBrfKwxwFc1tiTomLryxmvG7r71sA?network=testnet"
+    "package": "https://testnet.suivision.xyz/package/0x7e0130cdc105d06707f1f3abd4c76aac8211a09a5502692ba454d1b4b758af3d",
+    "publishTx": "https://testnet.suivision.xyz/txblock/GvxTETJej5RH4U3rFD2PNCENW65tG8vynRF1xskTrxP7",
+    "submitApplicationTx": "https://testnet.suivision.xyz/txblock/6vKuZNC3p5uoaSni2N5NifW1eQjqdLDesBAj9gN799Lh",
+    "liveAgentSubmitTx": "https://testnet.suivision.xyz/txblock/BatrGYNdmzXA8wdEJT4XC4LXa55fZ6ezMAFcsbvAd1dm",
+    "liveAgentReceipt": "https://testnet.suivision.xyz/object/0xc6f490b959f23db9936090be9bdd52ede80cb685561cc528593f958978235865",
+    "liveAgentRejectedTx": "https://testnet.suivision.xyz/txblock/6YRsTLLYKCEcWjnXBrfKwxwFc1tiTomLryxmvG7r71sA"
   },
   "walrus": {
     "ticket": "RD-123",

@@ -100,8 +100,11 @@ export const SMOKE_RECEIPT_ID = SMOKE.receiptId;
 // Explorer URL helpers
 // ---------------------------------------------------------------------------
 
+// SuiVision selects the network by subdomain, not by a `?network=` query param:
+// the apex domain always resolves against mainnet, so testnet digests render as
+// "Invalid Transaction digest".
 export const EXPLORER_TX = (digest: string): string =>
-  `https://suivision.xyz/txblock/${digest}?network=testnet`;
+  `https://testnet.suivision.xyz/txblock/${digest}`;
 
 export const EXPLORER_OBJECT = (id: string): string =>
-  `https://suivision.xyz/object/${id}?network=testnet`;
+  `https://testnet.suivision.xyz/object/${id}`;

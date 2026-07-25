@@ -241,8 +241,8 @@ before building a transaction, and Move rejects it even when a submission is for
 4. Click the object ID and tx links to verify on SuiVision.
 
 **Explorer links:**
-- Package: https://suivision.xyz/package/0x7e0130cdc105d06707f1f3abd4c76aac8211a09a5502692ba454d1b4b758af3d?network=testnet
-- Submit tx: https://suivision.xyz/txblock/6vKuZNC3p5uoaSni2N5NifW1eQjqdLDesBAj9gN799Lh?network=testnet
+- Package: https://testnet.suivision.xyz/package/0x7e0130cdc105d06707f1f3abd4c76aac8211a09a5502692ba454d1b4b758af3d
+- Submit tx: https://testnet.suivision.xyz/txblock/6vKuZNC3p5uoaSni2N5NifW1eQjqdLDesBAj9gN799Lh
 
 ---
 

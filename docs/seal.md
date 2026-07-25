@@ -166,7 +166,7 @@ upgrade:
 | Original package ID | `0x7e0130cdc105d06707f1f3abd4c76aac8211a09a5502692ba454d1b4b758af3d` |
 | Latest package ID | `0xbab0d70134d065a2f48ad8d18f2d8681de0464b7417485cbda8446eff31e8937` |
 | Upgrade tx digest | `BLqv4XRxg5MEGAt4jDr1v2eeNzuauQ7MhixH5971HgyS` |
-| Explorer | https://suivision.xyz/package/0xbab0d70134d065a2f48ad8d18f2d8681de0464b7417485cbda8446eff31e8937?network=testnet |
+| Explorer | https://testnet.suivision.xyz/package/0xbab0d70134d065a2f48ad8d18f2d8681de0464b7417485cbda8446eff31e8937 |
 
 All transaction targets use `latestPackageId`, including the `seal_approve_packet` PTB. The Seal
 identity namespace, however, uses the **original** `packageId` — `@mysten/seal` enforces a
