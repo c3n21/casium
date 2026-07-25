@@ -232,6 +232,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Field | Value |
 |---|---|
 | Priority | P0 |
+| Status | DONE - merged via `feature/rd-004-move-core-objects`. |
 | Lane | L1 Sui Move |
 | Objective | Implement `RentalMandate`, `OwnerCap`, `AgentCap`, `RentalListing`, `ApplicationReceipt`, events, constants, and error codes. |
 | Suggested implementation | Use shared `RentalMandate`, shared `RentalListing`, renter-owned `OwnerCap`, agent-owned `AgentCap`, shared `ApplicationReceipt`. Use `vector<u64>` municipalities and `u64` permission bitset. |
@@ -240,6 +241,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Blocks | RD-005, RD-006, RD-008. |
 | Acceptance criteria | Move structs compile; `create_mandate` creates mandate and caps; `create_listing` creates provider-controlled listing; events emitted. |
 | Tests | Create mandate and listing tests; verify caps transfer to correct addresses. |
+| Verification | 2026-07-25: `~/.local/bin/sui move build --path packages/move` -> success; `~/.local/bin/sui move test --path packages/move` -> success, 3 tests passed; `pnpm -r --if-present build` -> success; `pnpm -r --if-present test` -> success. |
 | Failure fallback | Keep receipt immutable/owned if shared status updates slow down implementation. |
 | Sponsor | Sui. |
 | Demo impact | Core Sui object topology. |
