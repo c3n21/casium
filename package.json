@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "pnpm -r --if-present build",
+    "demo:duplicate-human": "pnpm --filter @rentdelegate/provider-api build && node scripts/demo-agentkit-duplicate.mjs",
     "test": "pnpm -r --if-present test"
   }
 }
