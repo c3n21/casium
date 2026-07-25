@@ -2,6 +2,15 @@ import { ReserveApplicationSchema } from "@rentdelegate/shared";
 import type { VerifyReceiptInput } from "@rentdelegate/shared";
 import type { ReservedApplication } from "./types.js";
 
+export type PacketRecord = {
+  mandateId: string;
+  walrusBlobId: string;
+  packetHash: string;
+  sizeBytes: number;
+  encryptionMode: "aes-gcm" | "seal" | "mock";
+  registeredAtMs: number;
+};
+
 /**
  * Mock-mode headers understood by a provider API running AGENTKIT_MODE=mock.
  * These prove nothing about World: they are only for local Sui-focused smokes.
@@ -77,6 +86,16 @@ export function createProviderClient(options: ProviderClientOptions) {
 
     async verifyReceipt(applicationId: string, input: VerifyReceiptInput): Promise<ReservedApplication> {
       return post<ReservedApplication>(`/applications/${applicationId}/verify`, input);
+    },
+
+    async getPacketForMandate(mandateId: string): Promise<PacketRecord | null> {
+      const response = await fetchImpl(
+        `${baseUrl}/packets/${encodeURIComponent(mandateId)}`,
+        { headers: { "content-type": "application/json" } },
+      );
+      if (response.status === 404) return null;
+      if (!response.ok) throw new Error(`getPacketForMandate failed: ${response.status}`);
+      return response.json() as Promise<PacketRecord>;
     },
   };
 }

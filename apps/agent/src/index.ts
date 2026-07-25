@@ -11,10 +11,6 @@
  * The agent uses its own Sui address + AgentCap — never the renter's wallet.
  */
 
-import { createRentDelegateClient } from "@rentdelegate/sui-client";
-import { SuiGrpcClient } from "@mysten/sui/grpc";
-import { createMockWalrusAdapter } from "@rentdelegate/walrus";
-import { makeSyntheticPacket } from "@rentdelegate/shared";
 import {
   DEMO_LISTING_OBJECT_ID,
   INELIGIBLE_LISTING_OBJECT_ID,
@@ -23,10 +19,11 @@ import {
   RPC_URL as DEFAULT_RPC_URL,
   SMOKE as SMOKE_OBJECTS,
 } from "@rentdelegate/contracts-config";
+import { createRentDelegateClient } from "@rentdelegate/sui-client";
 import { evaluateEligibility } from "./rules.js";
 import { createProviderClient } from "./providerClient.js";
 import type { DemoAgentKitHeaders } from "./providerClient.js";
-import { executeSubmitApplication } from "./suiSubmit.js";
+import { runAgent } from "./run.js";
 
 const PACKAGE_ID = process.env.SUI_PACKAGE_ID ?? DEFAULT_PACKAGE_ID;
 const RPC_URL = process.env.SUI_RPC_URL ?? DEFAULT_RPC_URL;
@@ -64,37 +61,48 @@ async function main() {
   console.log(`Provider:  ${PROVIDER_API_BASE}`);
   console.log(`Mandate:   ${SMOKE_MANDATE_ID}`);
 
-  const suiClient = createRentDelegateClient({ network: "testnet", rpcUrl: RPC_URL, packageId: PACKAGE_ID });
-  const executionClient = new SuiGrpcClient({ network: "testnet", baseUrl: RPC_URL });
-  const walrus = createMockWalrusAdapter();
   const demoHeaders = readDemoAgentKitHeaders();
-  const provider = createProviderClient({
-    baseUrl: PROVIDER_API_BASE,
-    ...(process.env.AGENTKIT_HEADER ? { agentkitHeader: process.env.AGENTKIT_HEADER } : {}),
-    ...(demoHeaders ? { demoAgentKitHeaders: demoHeaders } : {}),
-  });
 
   if (!process.env.AGENTKIT_HEADER && demoHeaders) {
     console.log("AgentKit:  [MOCK] demo headers — requires provider AGENTKIT_MODE=mock, proves no World identity");
   }
 
-  // 1. Load mandate
-  console.log("\n[1] Loading mandate from testnet...");
-  const mandate = await suiClient.getMandate(SMOKE_MANDATE_ID);
-  console.log(`    Mandate owner:  ${mandate.owner}`);
-  console.log(`    Remaining:      ${mandate.remainingApplications}`);
-  console.log(`    Max rent:       €${mandate.maxMonthlyRentEur}`);
-  console.log(`    Municipalities: [${mandate.allowedMunicipalities.join(", ")}]`);
-  console.log(`    Revoked:        ${mandate.revoked}`);
+  // Discover AgentCap
+  let agentCapId: string;
+  if (process.env.AGENT_CAP_ID) {
+    agentCapId = process.env.AGENT_CAP_ID;
+    console.log(`    AgentCap:  ${agentCapId} (from env override)`);
+  } else {
+    const suiClient = createRentDelegateClient({
+      network: "testnet",
+      rpcUrl: RPC_URL,
+      packageId: PACKAGE_ID,
+    });
+    const discovered = await suiClient.findAgentCapForMandate(SMOKE_MANDATE_ID, SMOKE_AGENT_SUI_ADDRESS);
+    if (!discovered) {
+      // Fall back to smoke object for backwards compatibility with the testnet smoke setup
+      agentCapId = SMOKE_OBJECTS.agentCapId;
+      console.log(`    AgentCap:  ${agentCapId} (smoke fallback — no cap found for mandate)`);
+    } else {
+      agentCapId = discovered;
+      console.log(`    AgentCap:  ${agentCapId} (discovered)`);
+    }
+  }
 
-  // 2. Evaluate listings
+  // Show eligibility info for both demo listings before running the pipeline
   console.log("\n[2] Evaluating listings...");
+  const suiClient = createRentDelegateClient({
+    network: "testnet",
+    rpcUrl: RPC_URL,
+    packageId: PACKAGE_ID,
+  });
   const listings = await Promise.all([
     suiClient.getListing(SMOKE_LISTING_ID),
     suiClient.getListing(SMOKE_INELIGIBLE_LISTING_ID).catch(() => null),
   ]);
-
   const [eligible, ineligible] = listings;
+
+  const mandate = await suiClient.getMandate(SMOKE_MANDATE_ID);
 
   if (eligible) {
     const result = evaluateEligibility(mandate, eligible);
@@ -112,110 +120,50 @@ async function main() {
     console.log(`    Porto listing: not readable (expected for mock object)`);
   }
 
-  if (!eligible) {
-    console.log("\n  No eligible listing found. Stopping.");
-    return;
-  }
-
-  const eligibilityCheck = evaluateEligibility(mandate, eligible);
-  if (!eligibilityCheck.eligible) {
-    console.log(`\n  Listing not eligible: ${eligibilityCheck.reason}`);
-    return;
-  }
-
-  // 3. Upload encrypted packet (mock Walrus)
-  console.log("\n[3] Encrypting and uploading application packet...");
-  const packet = makeSyntheticPacket({ renterName: "Alice Demo Agent" });
-  const packetBytes = new TextEncoder().encode(JSON.stringify(packet));
-  const { blobId } = await walrus.upload(packetBytes);
-  console.log(`    Blob ID: ${blobId}`);
-  console.log(`    [MOCK] Walrus upload — labeled as mock in blob ID prefix`);
-
-  // packetHash = sha256 of uploaded bytes (used as on-chain commitment)
-  const hashBuffer = await crypto.subtle.digest("SHA-256", packetBytes);
-  const packetHashHex = `0x${Array.from(new Uint8Array(hashBuffer)).map((b) => b.toString(16).padStart(2, "0")).join("")}`;
-
-  // 4. Reserve with provider API
-  console.log("\n[4] Reserving application with provider API...");
-  const idempotencyKey = crypto.randomUUID();
-
+  // Run the pipeline via the shared runAgent function
   try {
-    const reserved = await provider.reserveApplication("listing_lisbon_eligible", {
+    const result = await runAgent({
       mandateId: SMOKE_MANDATE_ID,
       listingObjectId: SMOKE_LISTING_ID,
       agentSuiAddress: SMOKE_AGENT_SUI_ADDRESS,
       agentEvmAddress: SMOKE_AGENT_EVM_ADDRESS,
-      walrusBlobId: blobId,
-      packetHash: packetHashHex,
-      accessExpiresAtMs: Date.now() + 30 * 24 * 60 * 60 * 1000,
-      idempotencyKey,
+      agentCapId,
+      privateKey: process.env.AGENT_SUI_PRIVATE_KEY ?? process.env.AGENT_SUI_PRIVATE_KEY_BASE64,
+      packageId: PACKAGE_ID,
+      rpcUrl: RPC_URL,
+      providerApiBase: PROVIDER_API_BASE,
+      demoAgentKitHeaders: demoHeaders ?? undefined,
+      agentkitHeader: process.env.AGENTKIT_HEADER,
+    }, (progress) => {
+      const stageLabels: Record<string, string> = {
+        "loading-mandate": "[1] Loading mandate from testnet...",
+        "uploading": "[3] Encrypting and uploading application packet...",
+        "reserving": "[4] Reserving application with provider API...",
+        "submitting": "[5] Executing Sui submit_application PTB...",
+        "verifying": "[6] Verifying receipt with provider API...",
+        "complete": "=== Agent run complete ===",
+      };
+      const label = stageLabels[progress.stage];
+      if (label) console.log(`\n${label}`);
     });
 
-    console.log(`    Application ID: ${reserved.id}`);
-    console.log(`    Status:         ${reserved.status}`);
-    console.log(`    Human ID hash:  ${reserved.humanIdHash}`);
-    console.log(`    Submit hint:`);
-    console.log(`      package:   ${reserved.submitHint.packageId ?? "(set SUI_PACKAGE_ID)"}`);
-    console.log(`      function:  ${reserved.submitHint.module}::${reserved.submitHint.function}`);
-
-    // 5. Execute Sui PTB with the agent-owned key and AgentCap.
-    console.log("\n[5] Executing Sui submit_application PTB...");
-    const blobIdBytes = Array.from(new TextEncoder().encode(blobId));
-    const packetHashBytes = Array.from(new Uint8Array(hashBuffer));
-    const accessExpiresAtMs = Date.now() + 30 * 24 * 60 * 60 * 1000;
-
-    const submitInput = {
-      mandateId: SMOKE_MANDATE_ID,
-      listingObjectId: SMOKE_LISTING_ID,
-      agentCapId: process.env.AGENT_CAP_ID ?? SMOKE_OBJECTS.agentCapId,
-      walrusBlobIdBytes: blobIdBytes,
-      packetHashBytes,
-      accessExpiresAtMs,
-      worldRefHashBytes: [],
-    };
-
-    const privateKey = process.env.AGENT_SUI_PRIVATE_KEY ?? process.env.AGENT_SUI_PRIVATE_KEY_BASE64;
-    if (!privateKey) {
-      const tx = suiClient.buildSubmitApplicationTx(submitInput);
-      const serialized = await tx.toJSON();
-      console.log(`    PTB ready. Bytes (base64 prefix): ${serialized.slice(0, 48)}…`);
-      console.log(`    Set AGENT_SUI_PRIVATE_KEY=suiprivkey... or AGENT_SUI_PRIVATE_KEY_BASE64 to execute.`);
+    if (result.status === "ineligible") {
+      console.log(`\n  Listing not eligible: ${result.reason}`);
       return;
     }
 
-    const executed = await executeSubmitApplication({
-      suiClient,
-      executionClient,
-      packageId: PACKAGE_ID,
-      expectedAgentSuiAddress: SMOKE_AGENT_SUI_ADDRESS,
-      privateKey,
-      input: submitInput,
-    });
-
-    if (!executed.receiptId) {
-      throw new Error("Sui transaction succeeded but ApplicationReceipt ID was not found in events/effects");
-    }
-
-    console.log(`    Tx digest:  ${executed.txDigest}`);
-    console.log(`    Receipt ID: ${executed.receiptId}`);
-
-    console.log("\n[6] Verifying receipt with provider API...");
-    const verified = await provider.verifyReceipt(reserved.id, {
-      applicationId: reserved.id,
-      txDigest: executed.txDigest,
-      receiptId: executed.receiptId,
-    });
-    console.log(`    Status: ${verified.status}`);
-
-    console.log("\n=== Agent run complete ===");
+    console.log(`\n=== Agent run complete ===`);
     console.log(`Eligible listing: ${SMOKE_LISTING_ID}`);
-    console.log(`Application ID:   ${reserved.id}`);
-    console.log(`Receipt ID:       ${executed.receiptId}`);
-    console.log(`Blob ID:          ${blobId}`);
-    console.log(`Packet hash:      ${packetHashHex}`);
+    console.log(`Application ID:   ${result.applicationId}`);
+    console.log(`Receipt ID:       ${result.receiptId}`);
+    console.log(`Blob ID:          ${result.blobId}`);
+    console.log(`Tx digest:        ${result.txDigest}`);
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    if (msg.includes("AGENTKIT_UNVERIFIED") || msg.includes("No agentkit header")) {
+    if (msg.includes("No private key provided")) {
+      // Show the PTB-ready message without a key
+      console.log(`\n  No private key set. Set AGENT_SUI_PRIVATE_KEY=suiprivkey... to execute.`);
+    } else if (msg.includes("AGENTKIT_UNVERIFIED") || msg.includes("No agentkit header")) {
       console.log(`\n  Provider requires a real AgentKit header. Run with AGENTKIT_HEADER env or start`);
       console.log(`  provider in AGENTKIT_MODE=mock for local testing.`);
     } else {
