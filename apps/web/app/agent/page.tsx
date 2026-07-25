@@ -7,7 +7,9 @@ import {
   EXPLORER_TX,
   EXPLORER_OBJECT,
 } from "@rentdelegate/contracts-config";
+import { createRentDelegateClient } from "@rentdelegate/sui-client";
 import { AGENT_API } from "@/lib/agentApi";
+import { PACKAGE_ID, RPC_URL_TESTNET } from "@/lib/constants";
 import { demoSession } from "@/lib/demoSession";
 
 const PROVIDER_API = process.env.NEXT_PUBLIC_PROVIDER_API_URL ?? "http://localhost:4021";
@@ -16,6 +18,7 @@ type HealthResponse = {
   ok: boolean;
   service: string;
   agentSuiAddress: string;
+  agentEvmAddress: string | null;
   agentkitMode: string;
 };
 
@@ -152,6 +155,7 @@ function RunSection({
   description,
   mandateSource,
   smokeWarning,
+  agentEvmAddress,
 }: {
   title: string;
   mandateId: string;
@@ -161,6 +165,8 @@ function RunSection({
   mandateSource?: string;
   /** Show a warning banner that this is a smoke/archived mandate. */
   smokeWarning?: boolean;
+  /** Current agent EVM signer reported by the local agent service. */
+  agentEvmAddress?: string | null;
 }) {
   const [mandateInput, setMandateInput] = useState(mandateId);
   const [stage, setStage] = useState<Stage | null>(null);
@@ -190,6 +196,25 @@ function RunSection({
     setBusy(true);
 
     try {
+      if (!agentEvmAddress) {
+        throw new Error("Agent has no EVM signer configured.");
+      }
+
+      const rentDelegate = createRentDelegateClient({
+        network: "testnet",
+        rpcUrl: RPC_URL_TESTNET,
+        packageId: PACKAGE_ID,
+      });
+      const mandate = await rentDelegate.getMandate(mandateInput);
+      if (mandate.agentEvm?.toLowerCase() !== agentEvmAddress.toLowerCase()) {
+        demoSession.clearMandate();
+        demoSession.clearPacket();
+        setMandateInput("");
+        throw new Error(
+          `MANDATE_EVM_MISMATCH: mandate agent_evm ${mandate.agentEvm ?? "null"} does not match current agent EVM ${agentEvmAddress}`,
+        );
+      }
+
       // Preflight. The agent needs a packet registered for this mandate, and without
       // this check its absence surfaces four stages later as an opaque run failure.
       const packetRes = await fetch(
@@ -255,6 +280,7 @@ function RunSection({
 
   const result = runRecord?.result;
   const noMandate = mandateInput.trim() === "";
+  const agentIdentityLoading = agentEvmAddress === undefined;
   const evmMismatchError = isMandateEvmMismatch(error) || isMandateEvmMismatch(runRecord?.error);
 
   return (
@@ -339,18 +365,18 @@ function RunSection({
       ) : (
         <button
           onClick={startRun}
-          disabled={busy}
+          disabled={busy || agentIdentityLoading}
           style={{
             padding: "0.5rem 1rem",
-            background: busy ? "#94a3b8" : "#2563eb",
+            background: busy || agentIdentityLoading ? "#94a3b8" : "#2563eb",
             color: "#fff",
             border: "none",
             borderRadius: 4,
-            cursor: busy ? "default" : "pointer",
+            cursor: busy || agentIdentityLoading ? "default" : "pointer",
             fontSize: "inherit",
           }}
         >
-          {busy ? "Running…" : "Start run"}
+          {busy ? "Running…" : agentIdentityLoading ? "Connecting agent…" : "Start run"}
         </button>
       )}
 
@@ -474,6 +500,7 @@ export default function AgentPage() {
       <RunSection
         title="Run: Eligible listing (Lisbon)"
         mandateId={activeMandateId}
+        agentEvmAddress={health?.agentEvmAddress}
         mandateSource={mandateSource !== "none" ? SOURCE_LABELS[mandateSource] : undefined}
         description="Evaluates listing eligibility, uploads packet, reserves and submits application on Sui."
       />
@@ -506,6 +533,7 @@ export default function AgentPage() {
           <RunSection
             title="Smoke run: Eligible listing (Lisbon)"
             mandateId={SMOKE.mandateId}
+            agentEvmAddress={health?.agentEvmAddress}
             mandateSource="archived smoke"
             description="Archived smoke mandate + eligible Lisbon listing. Expected status: complete (if provider accepts stale mandate) or MANDATE_EVM_MISMATCH."
             smokeWarning
@@ -516,6 +544,7 @@ export default function AgentPage() {
             title="Smoke run: Ineligible listing proof (Porto)"
             mandateId={SMOKE.mandateId}
             listingObjectId={INELIGIBLE_LISTING_OBJECT_ID}
+            agentEvmAddress={health?.agentEvmAddress}
             mandateSource="archived smoke"
             description="Porto listing triggers EMUNICIPALITY_NOT_ALLOWED. Expected status: ineligible."
             smokeWarning
