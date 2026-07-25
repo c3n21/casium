@@ -1,4 +1,4 @@
-# Epic I — Agent Identity Binding (RD-161 … RD-166)
+# Epic I — Agent Identity Binding (RD-161 … RD-167)
 
 Parent index: `plan/backlog.md`. Prerequisite reading: `docs/world-agentkit.md`, `docs/provider-api.md`.
 
@@ -78,6 +78,7 @@ be typed, they need to be *fetched*. `GET /health` already publishes `agentSuiAd
 | RD-164 | Provider enforces the mandate's on-chain identity pair at reserve | L3 Provider | RD-162 |
 | RD-165 | Docs and honest-claim update for the identity binding | L9 Demo/docs | RD-163, RD-164 |
 | RD-166 | E2E coverage — agent card and mismatch denial (stretch) | L10 QA/E2E | RD-163, RD-164, RD-144 |
+| RD-167 | Live-demo mandate handoff UX — stop defaulting to smoke mandate | L7 Frontend | RD-163, RD-164 |
 
 RD-161 and RD-162 are leaf work in different packages with no shared files — **the natural first wave,
 two agents in parallel.**
@@ -216,6 +217,29 @@ two agents in parallel.**
 
 ---
 
+### RD-167 Live-Demo Mandate Handoff UX
+
+| Field | Value |
+|---|---|
+| Priority | P1-identity-demo |
+| Status | DONE |
+| Lane | L7 Frontend |
+| Objective | Make the real testnet demo path impossible to accidentally run against the archived smoke mandate, whose `agent_evm` is empty and now correctly fails RD-164 with `MANDATE_EVM_MISMATCH`. |
+| Problem | After RD-164, the old smoke mandate is no longer a valid default for the live AgentKit path: it predates the `agent_evm` binding (`parseMandate(SMOKE.mandateId).agentEvm === null`). `apps/web/app/renter/page.tsx` still falls back to `SMOKE.mandateId` for `PacketBuilder`, and `apps/web/app/agent/page.tsx` still defaults the eligible run card to `SMOKE.mandateId`. That is good evidence, but bad live-demo UX. |
+| Suggested implementation | Treat the live renter flow as a stepper and make the fresh mandate the source of truth. In `/renter`, do not render an active `PacketBuilder` until a mandate has been created or selected. Persist the created mandate in `localStorage` (`rentdelegate:lastMandateId`, `rentdelegate:lastOwnerCapId`, `rentdelegate:lastAgentCapId`, `rentdelegate:lastMandateTxDigest`) and restore it on page load. After packet upload, persist `rentdelegate:lastPacketMandateId`, `rentdelegate:lastPacketBlobId`, and `rentdelegate:lastPacketHash`. In `/agent`, choose the mandate in this priority order: `?mandateId` URL param → `rentdelegate:lastPacketMandateId` → `rentdelegate:lastMandateId` → no active mandate. Remove `SMOKE.mandateId` as the eligible-run default; keep smoke objects only inside a collapsed evidence/fallback section with explicit language that archived smoke mandates may not work with live AgentKit because their `agent_evm` is empty. Surface the mandate source next to the input (`from packet upload`, `from recent mandate`, `manual`, or `none`). |
+| Files/modules | `apps/web/app/renter/page.tsx`, `apps/web/app/agent/page.tsx`, `apps/web/src/components/PacketBuilder.tsx`, optional `apps/web/src/lib/demoSession.ts`, tests if existing web test harness supports these client components. |
+| Dependencies | RD-163, RD-164. |
+| Blocks | Demo rehearsal with real AgentKit; reduces RD-180/RD-164 confusion during live runs. |
+| Acceptance criteria | `/renter` no longer registers a packet against `SMOKE.mandateId` by default. A newly created mandate remains selected after reload. Uploading a packet records the mandate handoff, and `/agent` auto-fills that mandate without copying. `/agent` does not silently run the eligible listing against `SMOKE.mandateId`; if no active mandate exists, the Start button is disabled with a specific message. The smoke mandate remains available only in a clearly labeled evidence panel. `MANDATE_EVM_MISMATCH` is explained as likely stale/wrong mandate with instructions to create/select a fresh mandate for the current agent identity. `pnpm --filter @rentdelegate/web test`, `typecheck`, and `build` pass. |
+| Tests | Component/unit tests if practical: created mandate persists; packet upload callback persists `lastPacketMandateId`; `/agent` mandate priority order (`?mandateId` beats packet beats mandate beats none); no-active-mandate disables Start. If component tests are brittle, cover with Playwright under RD-166/RD-167 follow-up. |
+| Verification | Browser smoke (`docs/browser-testing.md` first): restart services with real AgentKit signer, create fresh mandate, upload packet, navigate to `/agent` without manual paste, confirm the selected mandate is the fresh one and the run reaches provider reserve without `MANDATE_EVM_MISMATCH`. Creating the mandate spends SUI gas — get user go-ahead before that verification. |
+| Failure fallback | If persistent browser storage is unavailable, keep the URL handoff (`/agent?mandateId=...`) as the canonical path and disable direct `/agent` Start until the operator pastes a non-smoke mandate. Do not reintroduce `SMOKE.mandateId` as the live default. |
+| Sponsor | Demo integrity across Sui + World. |
+| Demo impact | High — this is the path judges will click. |
+| Parallel safety | Owns `/renter`, `/agent`, and `PacketBuilder`. Coordinate with Epic E browser-test work and any frontend Seal/Walrus UI edits. |
+
+---
+
 ## Dependency Graph
 
 ```mermaid
@@ -226,6 +250,7 @@ flowchart TD
   I164[RD-164 Provider enforces the pair]
   I165[RD-165 Docs and honest claims]
   I166[RD-166 E2E coverage - stretch]
+  I167[RD-167 Live-demo mandate handoff]
 
   I161 --> I163
   I162 --> I164
@@ -233,6 +258,8 @@ flowchart TD
   I164 --> I165
   I163 --> I166
   I164 --> I166
+  I163 --> I167
+  I164 --> I167
 
   E144[RD-144 API stub fixtures - Epic E] -.-> I166
   E142[RD-142 Burner flag - Epic E] -.-> I166
@@ -248,7 +275,8 @@ at the docs.
 | 1 | 2 | **A** RD-161 · **B** RD-162 | Different packages (`apps/agent`, `packages/sui-client`), zero shared files. The cleanest split in the epic. |
 | 2 | 2 | **A** RD-163 · **B** RD-164 | Frontend and provider. `applications.ts` is contended — B must confirm no Epic C/W ticket holds it before starting. A's browser verification is live-spend gated. |
 | 3 | 1 | RD-165 | Needs both halves settled before any claim is written. |
-| 4 | 1 | RD-166 | Only once Epic E's scaffold exists; otherwise `DEFERRED`. |
+| 4 | 1 | RD-167 | Frontend-only UX fix for real testnet demo; do before rehearsal. |
+| 5 | 1 | RD-166 | Only once Epic E's scaffold exists; otherwise `DEFERRED`. |
 
 ### Contended Files
 
@@ -256,7 +284,9 @@ at the docs.
 |---|---|---|
 | `apps/provider-api/src/services/applications.ts` | RD-164, plus Epic C RD-110/117 and Epic W RD-126 | One owner at a time. Epic C is DONE, so RD-164 should have a clear run — confirm before starting. |
 | `apps/web/src/components/MandateForm.tsx` | RD-163 only | Sole owner within this epic. |
-| `apps/web/app/agent/page.tsx` | RD-163 (one import line), Epic E RD-142 | Announce; the edit is a single shared-constant import. |
+| `apps/web/app/agent/page.tsx` | RD-163 (one import line), RD-167, Epic E RD-142 | RD-167 owns the live-demo handoff. Announce before touching if Epic E is live. |
+| `apps/web/app/renter/page.tsx` | RD-167 | Sole owner for the handoff/stepper behavior. |
+| `apps/web/src/components/PacketBuilder.tsx` | RD-167, prior Walrus/Seal work | Keep packet registration semantics intact; only add handoff callback/storage. |
 | `apps/agent/src/server.ts` | RD-161 | Sole owner within this epic. |
 
 ## Definition Of Done
@@ -267,4 +297,5 @@ at the docs.
 4. `agent_evm` is read by at least one code path that can reject. It is no longer a write-only field.
 5. `docs/world-agentkit.md` states which layer enforces which half of the pair, and says plainly that on-chain EVM enforcement is out of scope, with the reason.
 6. The full demo path in `docs/demo-script.md` runs end to end unchanged apart from Step 4's simplified form.
-7. `pnpm -r --if-present test` and `build` are green; `pnpm lint:object-ids` is clean.
+7. The live demo path never silently defaults to a legacy smoke mandate; archived smoke IDs are evidence-only.
+8. `pnpm -r --if-present test` and `build` are green; `pnpm lint:object-ids` is clean.

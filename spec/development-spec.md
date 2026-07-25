@@ -23,6 +23,7 @@ Non-goals: lease signing, rent/deposit payments, legal identity verification, cr
 | `plan/backlog-completion.md` | Epic C tickets — RD-109 … RD-118. |
 | `plan/backlog-walrus.md` | Epic W tickets — RD-121 … RD-126. |
 | `plan/backlog-seal.md` | Epic S tickets — RD-131 … RD-138. |
+| `plan/backlog-identity.md` | Epic I tickets — RD-161 … RD-167. Agent identity binding and live-demo mandate handoff UX. |
 | `plan/backlog-archive.md` | Completed RD-001 … RD-108. Evidence trail; do not edit. |
 | `AGENTS.md` | Current repo state, environment constraints, coordination rules. |
 | `spec/development-spec.md` | Interface and implementation contract for builders. |
@@ -35,6 +36,7 @@ Critical ticket order for remaining work:
 | Provider | RD-109 -> RD-110 -> RD-117, RD-126 |
 | Agent | RD-112 -> RD-111 -> RD-113 |
 | Frontend | RD-114 -> RD-116, RD-136 |
+| Identity UX | RD-161/RD-162 -> RD-163/RD-164 -> RD-165 -> RD-167; RD-166 is stretch coverage |
 | Walrus | RD-121 -> RD-122 -> RD-123 -> RD-124, RD-126 |
 | Seal | RD-131 -> RD-132 -> RD-133 -> RD-135 -> RD-136 -> RD-137 |
 | Evidence | RD-138 last |
@@ -721,6 +723,56 @@ Data rules:
 | No page may render a hardcoded object ID outside a clearly labeled evidence panel. | RD-114 |
 | Every page renders a correct empty state, loading state, and error state. | RD-114 |
 | The active Walrus and encryption modes are derived from the data, never from a component prop default. | RD-125, RD-135 |
+
+### 12.1 Live Demo Mandate Handoff
+
+The real testnet demo path must use a fresh mandate created for the currently running agent identity.
+Legacy smoke objects remain useful evidence, but they must not be the default interactive path because
+old mandates may have `agent_evm = null` and will correctly fail the provider's identity binding check
+with `MANDATE_EVM_MISMATCH`.
+
+Mandate selection priority on `/agent`:
+
+| Priority | Source | Meaning |
+|---:|---|---|
+| 1 | URL `?mandateId=0x...` | Explicit handoff, usually from packet upload. |
+| 2 | `localStorage.rentdelegate:lastPacketMandateId` | Last mandate with a registered packet. |
+| 3 | `localStorage.rentdelegate:lastMandateId` | Last mandate created in the renter flow. |
+| 4 | none | No active mandate; disable Start and explain that a mandate + packet are required. |
+
+`SMOKE.mandateId` must not be used as priority 4. Smoke IDs may appear only inside a clearly labeled
+evidence/fallback panel. The UI must not imply that an archived smoke mandate is compatible with live
+AgentKit signing.
+
+Browser storage keys for demo handoff:
+
+| Key | Value | Written when |
+|---|---|---|
+| `rentdelegate:lastMandateId` | `RentalMandate` object ID | Mandate creation succeeds. |
+| `rentdelegate:lastOwnerCapId` | `OwnerCap` object ID | Mandate creation succeeds. |
+| `rentdelegate:lastAgentCapId` | `AgentCap` object ID | Mandate creation succeeds. |
+| `rentdelegate:lastMandateTxDigest` | Create mandate tx digest | Mandate creation succeeds. |
+| `rentdelegate:lastPacketMandateId` | Mandate ID used for packet registration | Packet registration succeeds. |
+| `rentdelegate:lastPacketBlobId` | Walrus blob ID | Packet registration succeeds. |
+| `rentdelegate:lastPacketHash` | Packet hash | Packet registration succeeds. |
+
+Renter page requirements:
+
+| State | Required behavior |
+|---|---|
+| No active mandate | Show the mandate form; disable packet upload with “Create a mandate first.” |
+| Mandate created/restored | Show mandate object IDs and enable packet upload for exactly that mandate. |
+| Packet uploaded | Show a prominent “Start agent run” link to `/agent?mandateId=<active mandate>`. |
+| Smoke evidence | Collapsed by default and labeled “archived evidence,” not “current demo state.” |
+
+Agent page requirements:
+
+| State | Required behavior |
+|---|---|
+| Mandate from URL/storage | Pre-fill the run card and show the source: URL, recent packet, recent mandate, or manual. |
+| No active mandate | Disable Start and link back to `/renter` to create/upload a packet. |
+| `MANDATE_EVM_MISMATCH` | Explain that the selected mandate was not created for the current agent EVM signer, and instruct the operator to create/select a fresh mandate after restarting the agent. |
+| Smoke mandate selected manually | Warn that archived smoke mandates may have empty `agent_evm` and can fail live AgentKit runs. |
 
 Transaction UX must show expected signer address, connected signer address, tx digest, object IDs, and readable error code.
 

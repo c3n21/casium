@@ -14,7 +14,7 @@ Ticket detail lives in the epic files. `spec/development-spec.md` is the impleme
 | `plan/backlog-walrus.md` | RD-121 … RD-126 | **Epic W — Live Walrus Storage.** Active. |
 | `plan/backlog-seal.md` | RD-131 … RD-138 | **Epic S — Seal Access Control.** Active. |
 | `plan/backlog-e2e.md` | RD-141 … RD-152 | **Epic E — Playwright E2E Tests.** Active. Not front-to-back: start with Phase 1 (RD-141 → RD-144 → RD-147, RD-145, RD-146, RD-149), which needs no wallet. See that file's *Recommended Order*. |
-| `plan/backlog-identity.md` | RD-161 … RD-166 | **Epic I — Agent Identity Binding.** Active. Closes the gap where the renter hand-types the agent's Sui and EVM addresses and nothing ever reads `agent_evm`. Start with RD-161 ‖ RD-162 — two agents, zero shared files. |
+| `plan/backlog-identity.md` | RD-161 … RD-167 | **Epic I — Agent Identity Binding.** Active. Closes the gap where the renter hand-types the agent's Sui and EVM addresses and nothing ever reads `agent_evm`; RD-167 removes the legacy smoke mandate as the live-demo default. Start with RD-167 if rehearsing the real testnet flow. |
 | `plan/backlog-deploy.md` | RD-171 … RD-179 | **Epic D — Demo Deployment.** Active. Hosting the three services on the NixOS VPS so a judge can open a URL. Everything runs on `localhost` today and there is no Dockerfile in the repo. Start with RD-171 (a decision the user must make) ‖ RD-172. |
 | `plan/backlog-stretch.md` | RD-202, RD-203 | Optional. RD-201 superseded by Epic S. |
 
@@ -173,7 +173,7 @@ flowchart TD
   C110 --> I164
 ```
 
-Epic I (RD-161…RD-166) hangs off the completed Epic C work and is otherwise independent — it shares no
+Epic I (RD-161…RD-167) hangs off the completed Epic C work and is otherwise independent — it shares no
 files with Epic W or Epic S. Detail and its own graph live in `plan/backlog-identity.md`.
 
 Epic D (RD-171…RD-179) is deliberately absent from the graph above: it depends on no feature ticket and

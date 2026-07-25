@@ -8,6 +8,8 @@ import {
   EXPLORER_OBJECT,
 } from "@rentdelegate/contracts-config";
 import { AGENT_API } from "@/lib/agentApi";
+import { demoSession } from "@/lib/demoSession";
+
 const PROVIDER_API = process.env.NEXT_PUBLIC_PROVIDER_API_URL ?? "http://localhost:4021";
 
 type HealthResponse = {
@@ -55,7 +57,6 @@ function StageList({ currentStage }: { currentStage: Stage | null }) {
       {ALL_STAGES.map((stage, i) => {
         const done = currentIdx > i;
         const active = currentIdx === i;
-        const pending = currentIdx < i;
         return (
           <li
             key={stage}
@@ -74,7 +75,14 @@ function StageList({ currentStage }: { currentStage: Stage | null }) {
   );
 }
 
+function isMandateEvmMismatch(text: string | null | undefined): boolean {
+  return !!text?.includes("MANDATE_EVM_MISMATCH");
+}
+
 function ResultPanel({ result }: { result: RunResult }) {
+  const evmMismatch =
+    isMandateEvmMismatch(result.error) || isMandateEvmMismatch(result.reason);
+
   return (
     <div
       style={{
@@ -88,12 +96,21 @@ function ResultPanel({ result }: { result: RunResult }) {
       <p style={{ margin: "0 0 0.5rem", fontWeight: 600 }}>
         Status: {result.status}
       </p>
-      {result.reason && (
+      {result.reason && !evmMismatch && (
         <p style={{ margin: "0 0 0.5rem", color: "#92400e" }}>
           Reason: {result.reason}
         </p>
       )}
-      {result.error && (
+      {evmMismatch && (
+        <p style={{ margin: "0 0 0.5rem", color: "#dc2626" }}>
+          <strong>Mandate EVM mismatch.</strong> This mandate was not created for the current
+          agent EVM signer — its <code>agent_evm</code> does not match the verified World
+          identity. Create a fresh mandate on the{" "}
+          <a href="/renter">Renter page</a> after confirming the agent identity, then upload a
+          packet and return here.
+        </p>
+      )}
+      {result.error && !evmMismatch && (
         <p style={{ margin: "0 0 0.5rem", color: "#dc2626" }}>
           Error: {result.error}
         </p>
@@ -133,14 +150,17 @@ function RunSection({
   mandateId,
   listingObjectId,
   description,
-  acceptQueryMandate,
+  mandateSource,
+  smokeWarning,
 }: {
   title: string;
   mandateId: string;
   listingObjectId?: string;
   description?: string;
-  /** Pre-fill from `?mandateId=`, so the renter arrives from the packet upload ready to run. */
-  acceptQueryMandate?: boolean;
+  /** Label shown next to the mandate input to communicate where the ID came from. */
+  mandateSource?: string;
+  /** Show a warning banner that this is a smoke/archived mandate. */
+  smokeWarning?: boolean;
 }) {
   const [mandateInput, setMandateInput] = useState(mandateId);
   const [stage, setStage] = useState<Stage | null>(null);
@@ -150,13 +170,10 @@ function RunSection({
   const [packetMissing, setPacketMissing] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Read the query param directly rather than via useSearchParams, which would force
-  // this whole page behind a Suspense boundary for a single optional prefill.
+  // Sync when the parent resolves the mandate (e.g. after localStorage read).
   useEffect(() => {
-    if (!acceptQueryMandate) return;
-    const fromQuery = new URLSearchParams(window.location.search).get("mandateId");
-    if (fromQuery) setMandateInput(fromQuery);
-  }, [acceptQueryMandate]);
+    setMandateInput(mandateId);
+  }, [mandateId]);
 
   function stopPolling() {
     if (pollRef.current) {
@@ -226,7 +243,8 @@ function RunSection({
         }
       }, 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg);
       setBusy(false);
       setStage(null);
     }
@@ -236,6 +254,8 @@ function RunSection({
   useEffect(() => () => stopPolling(), []);
 
   const result = runRecord?.result;
+  const noMandate = mandateInput.trim() === "";
+  const evmMismatchError = isMandateEvmMismatch(error) || isMandateEvmMismatch(runRecord?.error);
 
   return (
     <section
@@ -249,14 +269,46 @@ function RunSection({
       <h3 style={{ marginTop: 0 }}>{title}</h3>
       {description && <p style={{ color: "#64748b", fontSize: "0.9rem" }}>{description}</p>}
 
+      {smokeWarning && (
+        <div
+          style={{
+            padding: "0.5rem 0.75rem",
+            background: "#fef3c7",
+            border: "1px solid #f0c040",
+            borderRadius: 4,
+            fontSize: "0.8rem",
+            color: "#92400e",
+            marginBottom: "0.75rem",
+          }}
+        >
+          Archived smoke mandate — <code>agent_evm</code> is <code>null</code> and will fail{" "}
+          <code>MANDATE_EVM_MISMATCH</code> on the live provider. Use for on-chain inspection only.
+        </div>
+      )}
+
       <div style={{ marginBottom: "0.75rem" }}>
         <label style={{ display: "block", fontSize: "0.85rem", marginBottom: 4 }}>
           Mandate ID
+          {mandateSource && (
+            <span
+              style={{
+                marginLeft: "0.5rem",
+                padding: "0.1rem 0.4rem",
+                borderRadius: 3,
+                fontSize: "0.75rem",
+                background: "#dbeafe",
+                color: "#1e40af",
+              }}
+            >
+              {mandateSource}
+            </span>
+          )}
         </label>
         <input
           value={mandateInput}
           onChange={(e) => setMandateInput(e.target.value)}
           disabled={busy}
+          placeholder="0x… paste mandate ID or create one on the Renter page"
           style={{
             width: "100%",
             fontFamily: "monospace",
@@ -278,23 +330,31 @@ function RunSection({
         </p>
       )}
 
-      <button
-        onClick={startRun}
-        disabled={busy}
-        style={{
-          padding: "0.5rem 1rem",
-          background: busy ? "#94a3b8" : "#2563eb",
-          color: "#fff",
-          border: "none",
-          borderRadius: 4,
-          cursor: busy ? "default" : "pointer",
-          fontSize: "inherit",
-        }}
-      >
-        {busy ? "Running…" : "Start run"}
-      </button>
+      {noMandate ? (
+        <p style={{ color: "#64748b", fontSize: "0.9rem", margin: "0 0 0.5rem" }}>
+          No active mandate.{" "}
+          <a href="/renter">Create a mandate on the Renter page</a> and upload a packet, then
+          return here — the mandate will be auto-filled.
+        </p>
+      ) : (
+        <button
+          onClick={startRun}
+          disabled={busy}
+          style={{
+            padding: "0.5rem 1rem",
+            background: busy ? "#94a3b8" : "#2563eb",
+            color: "#fff",
+            border: "none",
+            borderRadius: 4,
+            cursor: busy ? "default" : "pointer",
+            fontSize: "inherit",
+          }}
+        >
+          {busy ? "Running…" : "Start run"}
+        </button>
+      )}
 
-      {error && (
+      {error && !evmMismatchError && (
         <p role="alert" style={{ color: "#dc2626", marginTop: 8 }}>
           {error}
           {packetMissing && (
@@ -306,6 +366,15 @@ function RunSection({
               , then come back.
             </>
           )}
+        </p>
+      )}
+
+      {evmMismatchError && (
+        <p role="alert" style={{ color: "#dc2626", marginTop: 8 }}>
+          <strong>Mandate EVM mismatch.</strong> This mandate was not created for the current
+          agent EVM signer. Create a fresh mandate on the{" "}
+          <a href="/renter">Renter page</a> after confirming the agent identity, upload a packet,
+          and return here.
         </p>
       )}
 
@@ -321,15 +390,52 @@ function RunSection({
   );
 }
 
+/** Mandate source → human-readable label shown next to the mandate input. */
+type MandateSource = "url" | "packet" | "mandate" | "none";
+
+const SOURCE_LABELS: Record<MandateSource, string> = {
+  url: "from packet upload link",
+  packet: "from recent packet upload",
+  mandate: "from recent mandate",
+  none: "",
+};
+
 export default function AgentPage() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [healthError, setHealthError] = useState<string | null>(null);
+  const [activeMandateId, setActiveMandateId] = useState<string>("");
+  const [mandateSource, setMandateSource] = useState<MandateSource>("none");
 
   useEffect(() => {
     fetch(`${AGENT_API}/health`)
       .then((r) => r.json())
       .then((data) => setHealth(data as HealthResponse))
       .catch((err) => setHealthError(err instanceof Error ? err.message : String(err)));
+  }, []);
+
+  // Resolve active mandate using the priority order specified in RD-167:
+  //   1. URL ?mandateId
+  //   2. localStorage rentdelegate:lastPacketMandateId
+  //   3. localStorage rentdelegate:lastMandateId
+  //   4. none (Start disabled)
+  useEffect(() => {
+    const fromUrl = new URLSearchParams(window.location.search).get("mandateId");
+    const fromPacket = demoSession.getLastPacketMandateId();
+    const fromMandate = demoSession.getLastMandateId();
+
+    if (fromUrl) {
+      setActiveMandateId(fromUrl);
+      setMandateSource("url");
+    } else if (fromPacket) {
+      setActiveMandateId(fromPacket);
+      setMandateSource("packet");
+    } else if (fromMandate) {
+      setActiveMandateId(fromMandate);
+      setMandateSource("mandate");
+    } else {
+      setActiveMandateId("");
+      setMandateSource("none");
+    }
   }, []);
 
   return (
@@ -364,21 +470,58 @@ export default function AgentPage() {
         )}
       </div>
 
-      {/* Eligible listing run */}
+      {/* Live eligible listing run — mandate from URL/localStorage, no smoke default */}
       <RunSection
         title="Run: Eligible listing (Lisbon)"
-        mandateId={SMOKE.mandateId}
-        description="Uses the smoke mandate and eligible Lisbon listing. Expect status: complete."
-        acceptQueryMandate
+        mandateId={activeMandateId}
+        mandateSource={mandateSource !== "none" ? SOURCE_LABELS[mandateSource] : undefined}
+        description="Evaluates listing eligibility, uploads packet, reserves and submits application on Sui."
       />
 
-      {/* Ineligible listing proof */}
-      <RunSection
-        title="Ineligible listing proof (Porto)"
-        mandateId={SMOKE.mandateId}
-        listingObjectId={INELIGIBLE_LISTING_OBJECT_ID}
-        description="Porto listing triggers EMUNICIPALITY_NOT_ALLOWED. Expect status: ineligible."
-      />
+      {/* ── Archived evidence ── */}
+      <details style={{ marginTop: "1rem" }}>
+        <summary
+          style={{ cursor: "pointer", color: "#64748b", fontSize: "0.9rem", fontWeight: 600 }}
+        >
+          Archived evidence (smoke runs)
+        </summary>
+        <div
+          style={{
+            marginTop: "0.75rem",
+            padding: "0.75rem",
+            border: "1px solid #e2e8f0",
+            borderRadius: 4,
+            background: "#f8fafc",
+          }}
+        >
+          <p style={{ margin: "0 0 1rem", fontSize: "0.85rem", color: "#64748b" }}>
+            The runs below use archived smoke mandate objects whose <code>agent_evm</code> is{" "}
+            <code>null</code>. They are retained as historical evidence of the eligible/ineligible
+            path logic. They will be rejected by the live provider with{" "}
+            <code>MANDATE_EVM_MISMATCH</code> — use them only to inspect on-chain state or to
+            exercise the ineligibility proof.
+          </p>
+
+          {/* Smoke eligible listing */}
+          <RunSection
+            title="Smoke run: Eligible listing (Lisbon)"
+            mandateId={SMOKE.mandateId}
+            mandateSource="archived smoke"
+            description="Archived smoke mandate + eligible Lisbon listing. Expected status: complete (if provider accepts stale mandate) or MANDATE_EVM_MISMATCH."
+            smokeWarning
+          />
+
+          {/* Ineligible listing proof */}
+          <RunSection
+            title="Smoke run: Ineligible listing proof (Porto)"
+            mandateId={SMOKE.mandateId}
+            listingObjectId={INELIGIBLE_LISTING_OBJECT_ID}
+            mandateSource="archived smoke"
+            description="Porto listing triggers EMUNICIPALITY_NOT_ALLOWED. Expected status: ineligible."
+            smokeWarning
+          />
+        </div>
+      </details>
     </main>
   );
 }
