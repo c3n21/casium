@@ -384,7 +384,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Field | Value |
 |---|---|
 | Priority | P0 |
-| Status | BLOCKED - middleware scaffold and mock verification implemented; live AgentKit request requires a registered AgentBook EVM agent. |
+| Status | DONE - live AgentKit request verified via `feature/rd-012-agentkit-live-helper`. |
 | Lane | L4 World AgentKit |
 | Objective | Verify human-backed EVM agent requests with AgentKit. |
 | Suggested implementation | Use `@worldcoin/agentkit` with x402/Hono hooks or low-level verifier. Hash human ID immediately. Persist nonce/usage storage in DB, not memory, for demo stability. |
@@ -393,7 +393,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Blocks | RD-011 real mode, RD-014, RD-105, RD-106. |
 | Acceptance criteria | Registered agent succeeds; unregistered/unverified agent returns 401; middleware exposes `humanIdHash` and `agentEvmAddress`. |
 | Tests | Unit test with verifier mock; manual real AgentKit request test documented. |
-| Verification | 2026-07-25: `pnpm --filter @rentdelegate/agentkit build` -> success; `pnpm --filter @rentdelegate/agentkit test` -> success, 1 file/3 tests covering human ID hashing, mock verified agent, and mock unverified rejection; `pnpm --filter @rentdelegate/provider-api build` -> success; `pnpm --filter @rentdelegate/provider-api test` -> success, 3 files/9 tests; `pnpm -r --if-present build` -> success; `pnpm -r --if-present test` -> success; `~/.local/bin/sui move build --path packages/move` -> success; `~/.local/bin/sui move test --path packages/move` -> success, 21 tests passed. Manual real AgentKit verification documented in `docs/world-agentkit.md` but not executed because no registered AgentBook EVM agent request/header is available. |
+| Verification | 2026-07-25: `pnpm --filter @rentdelegate/agentkit build` -> success; `pnpm --filter @rentdelegate/agentkit test` -> success, 1 file/3 tests covering human ID hashing, mock verified agent, and mock unverified rejection; `pnpm --filter @rentdelegate/provider-api build` -> success; `pnpm --filter @rentdelegate/provider-api test` -> success, 3 files/9 tests; `pnpm -r --if-present build` -> success; `pnpm -r --if-present test` -> success; `~/.local/bin/sui move build --path packages/move` -> success; `~/.local/bin/sui move test --path packages/move` -> success, 21 tests passed. 2026-07-25 live unblock: `pnpm dlx @worldcoin/agentkit-cli status 0x662DbABBeff9B237490bBE6A898776a4A1D87CCe --format json` -> `registered: true`, `network: eip155:480`; provider API run with `AGENTKIT_MODE=real AGENTKIT_EVM_RPC_URL=https://worldchain-mainnet.g.alchemy.com/public`; MetaMask/AgentKit helper generated real `agentkit` header on World Chain; `POST /listings/listing_lisbon_eligible/applications` returned `202` with `mode=real-agentkit`-derived `humanIdHash` and registered `agentEvmAddress`; missing-header request returned `401 AGENTKIT_UNVERIFIED`. Raw World human ID was not committed. |
 | Failure fallback | Keep mock only for local development, but real AgentKit must work for final sponsor demo. |
 | Sponsor | World. |
 | Demo impact | Required for World qualification. |
