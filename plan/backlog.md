@@ -213,6 +213,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Field | Value |
 |---|---|
 | Priority | P0 |
+| Status | DONE - merged via `feature/rd-003-move-package-skeleton`. |
 | Lane | L1 Sui Move |
 | Objective | Initialize Sui Move package. |
 | Suggested implementation | Create `Move.toml`, `sources/rental.move`, `tests/rental_tests.move`, package address aliases. |
@@ -221,6 +222,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Blocks | RD-004. |
 | Acceptance criteria | `sui move build --path packages/move` succeeds with empty/minimal module. |
 | Tests | `sui move test --path packages/move`. If `sui` is not on `PATH`, use `~/.local/bin/sui`. |
+| Verification | 2026-07-25: `~/.local/bin/sui move build --path packages/move` -> success; `~/.local/bin/sui move test --path packages/move` -> success, 1 test passed; `pnpm -r --if-present build` -> success; `pnpm -r --if-present test` -> success. |
 | Failure fallback | Use one module only; skip package splitting. |
 | Sponsor | Sui. |
 | Demo impact | Starts Sui integration. |
