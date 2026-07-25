@@ -27,17 +27,27 @@ export type ProviderClientOptions = {
   agentkitHeader?: string;
   /** Opt-in mock-AgentKit headers. Ignored whenever a real agentkitHeader is set. */
   demoAgentKitHeaders?: DemoAgentKitHeaders;
+  /**
+   * Mints an AgentKit header for a given absolute URL. Preferred over a static
+   * header: the provider validates the signature against the exact request URL,
+   * so one header cannot cover more than one endpoint.
+   */
+  createAgentkitHeader?: (url: string) => Promise<string>;
   fetchImpl?: typeof fetch;
 };
 
 export function createProviderClient(options: ProviderClientOptions) {
-  const { baseUrl, agentkitHeader, demoAgentKitHeaders, fetchImpl = fetch } = options;
+  const { baseUrl, agentkitHeader, demoAgentKitHeaders, createAgentkitHeader, fetchImpl = fetch } =
+    options;
 
   async function post<T>(path: string, body: unknown, requireAgentKit = false): Promise<T> {
     const headers: Record<string, string> = { "content-type": "application/json" };
+    const url = `${baseUrl}${path}`;
 
     if (requireAgentKit && agentkitHeader) {
       headers["agentkit"] = agentkitHeader;
+    } else if (requireAgentKit && createAgentkitHeader) {
+      headers["agentkit"] = await createAgentkitHeader(url);
     } else if (requireAgentKit && demoAgentKitHeaders) {
       // Mock-AgentKit path: only accepted by a provider started with AGENTKIT_MODE=mock.
       // Must stay opt-in so a real run can never silently degrade to unverified World context.
@@ -48,11 +58,13 @@ export function createProviderClient(options: ProviderClientOptions) {
       }
     } else if (requireAgentKit) {
       throw new Error(
-        "No agentkit header configured. Provide AGENTKIT_HEADER env or a real AgentKit signer.",
+        "No AgentKit credentials configured. Set AGENT_EVM_PRIVATE_KEY (live signing), " +
+          "AGENTKIT_HEADER (a pre-signed header), or the AGENTKIT_DEMO_* pair against a " +
+          "provider running AGENTKIT_MODE=mock.",
       );
     }
 
-    const response = await fetchImpl(`${baseUrl}${path}`, {
+    const response = await fetchImpl(url, {
       method: "POST",
       headers,
       body: JSON.stringify(body),

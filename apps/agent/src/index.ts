@@ -23,6 +23,7 @@ import { createRentDelegateClient } from "@rentdelegate/sui-client";
 import { evaluateEligibility } from "./rules.js";
 import { createProviderClient } from "./providerClient.js";
 import type { DemoAgentKitHeaders } from "./providerClient.js";
+import { createAgentkitSigner } from "./agentkitSigner.js";
 import { runAgent } from "./run.js";
 
 const PACKAGE_ID = process.env.SUI_PACKAGE_ID ?? DEFAULT_PACKAGE_ID;
@@ -62,8 +63,13 @@ async function main() {
   console.log(`Mandate:   ${SMOKE_MANDATE_ID}`);
 
   const demoHeaders = readDemoAgentKitHeaders();
+  const agentkitSigner = createAgentkitSigner();
 
-  if (!process.env.AGENTKIT_HEADER && demoHeaders) {
+  if (agentkitSigner) {
+    console.log(`AgentKit:  live signing as ${agentkitSigner.address} (${agentkitSigner.chainId})`);
+  } else if (process.env.AGENTKIT_HEADER) {
+    console.log("AgentKit:  static AGENTKIT_HEADER — valid for one URL until it expires");
+  } else if (demoHeaders) {
     console.log("AgentKit:  [MOCK] demo headers — requires provider AGENTKIT_MODE=mock, proves no World identity");
   }
 
@@ -126,7 +132,9 @@ async function main() {
       mandateId: SMOKE_MANDATE_ID,
       listingObjectId: SMOKE_LISTING_ID,
       agentSuiAddress: SMOKE_AGENT_SUI_ADDRESS,
-      agentEvmAddress: SMOKE_AGENT_EVM_ADDRESS,
+      // Must match the signature's recovered address when signing live, or the
+      // provider rejects the reservation with MANDATE_EVM_MISMATCH.
+      agentEvmAddress: agentkitSigner?.address ?? SMOKE_AGENT_EVM_ADDRESS,
       agentCapId,
       privateKey: process.env.AGENT_SUI_PRIVATE_KEY ?? process.env.AGENT_SUI_PRIVATE_KEY_BASE64,
       packageId: PACKAGE_ID,
@@ -134,6 +142,7 @@ async function main() {
       providerApiBase: PROVIDER_API_BASE,
       demoAgentKitHeaders: demoHeaders ?? undefined,
       agentkitHeader: process.env.AGENTKIT_HEADER,
+      ...(agentkitSigner ? { createAgentkitHeader: agentkitSigner.createHeader } : {}),
     }, (progress) => {
       const stageLabels: Record<string, string> = {
         "loading-mandate": "[1] Loading mandate from testnet...",

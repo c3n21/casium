@@ -227,7 +227,7 @@ describe("provider reservation AgentKit headers", () => {
     const provider = createProviderClient({ baseUrl: "http://provider.test", fetchImpl });
 
     await expect(provider.reserveApplication("listing_1", RESERVE_BODY)).rejects.toThrow(
-      /No agentkit header configured/,
+      /No AgentKit credentials configured/,
     );
     expect(fetchImpl).not.toHaveBeenCalled();
   });
@@ -267,6 +267,42 @@ describe("provider reservation AgentKit headers", () => {
     const headers = fetchImpl.mock.calls[0]?.[1]?.headers as Record<string, string>;
     expect(headers["agentkit"]).toBe("real-header");
     expect(headers["x-demo-human-id-hash"]).toBeUndefined();
+  });
+
+  it("mints a header bound to the request URL, and never falls back to mock", async () => {
+    // The provider validates the signature against the exact request URL, so the
+    // header must be minted per request. Falling back to the demo headers here is
+    // what produces an opaque 401 AGENTKIT_UNVERIFIED against a real provider.
+    const fetchImpl = vi.fn(async () => Response.json({ id: "app_1" }));
+    const provider = createProviderClient({
+      baseUrl: "http://provider.test",
+      fetchImpl,
+      createAgentkitHeader: async (url) => `signed-for:${url}`,
+      demoAgentKitHeaders: { humanIdHash: "sha256:demo", agentEvmAddress: "0xevm" },
+    });
+
+    await provider.reserveApplication("listing_1", RESERVE_BODY);
+
+    const headers = fetchImpl.mock.calls[0]?.[1]?.headers as Record<string, string>;
+    expect(headers["agentkit"]).toBe(
+      "signed-for:http://provider.test/listings/listing_1/applications",
+    );
+    expect(headers["x-demo-human-id-hash"]).toBeUndefined();
+  });
+
+  it("prefers an explicit static header over live signing", async () => {
+    const fetchImpl = vi.fn(async () => Response.json({ id: "app_1" }));
+    const provider = createProviderClient({
+      baseUrl: "http://provider.test",
+      fetchImpl,
+      agentkitHeader: "explicit-header",
+      createAgentkitHeader: async () => "minted",
+    });
+
+    await provider.reserveApplication("listing_1", RESERVE_BODY);
+
+    const headers = fetchImpl.mock.calls[0]?.[1]?.headers as Record<string, string>;
+    expect(headers["agentkit"]).toBe("explicit-header");
   });
 });
 

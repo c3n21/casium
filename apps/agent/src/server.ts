@@ -23,6 +23,7 @@ import {
 import { runAgent } from "./run.js";
 import type { RunResult, RunInput } from "./run.js";
 import type { DemoAgentKitHeaders } from "./providerClient.js";
+import { createAgentkitSigner } from "./agentkitSigner.js";
 
 const PACKAGE_ID = process.env.SUI_PACKAGE_ID ?? DEFAULT_PACKAGE_ID;
 const RPC_URL = process.env.SUI_RPC_URL ?? DEFAULT_RPC_URL;
@@ -47,6 +48,15 @@ function readDemoAgentKitHeaders(): DemoAgentKitHeaders | null {
 }
 
 const demoHeaders = readDemoAgentKitHeaders();
+const agentkitSigner = createAgentkitSigner();
+
+if (agentkitSigner) {
+  console.log(`AgentKit:  live signing as ${agentkitSigner.address} (${agentkitSigner.chainId})`);
+} else if (process.env.AGENTKIT_HEADER) {
+  console.log("AgentKit:  static AGENTKIT_HEADER — valid for one URL until it expires");
+} else if (demoHeaders) {
+  console.log("AgentKit:  [MOCK] demo headers — rejected by a provider in AGENTKIT_MODE=real");
+}
 
 // In-memory run store — sufficient for demo; survives only the process lifetime.
 type RunRecord =
@@ -65,11 +75,14 @@ app.get("/health", (c) =>
     ok: true,
     service: "rentdelegate-agent",
     agentSuiAddress: SMOKE_AGENT_SUI_ADDRESS,
-    agentkitMode: process.env.AGENTKIT_HEADER
-      ? "live"
-      : demoHeaders
-        ? "mock"
-        : "none",
+    agentkitMode: agentkitSigner
+      ? "live-signing"
+      : process.env.AGENTKIT_HEADER
+        ? "live-header"
+        : demoHeaders
+          ? "mock"
+          : "none",
+    agentEvmAddress: agentkitSigner?.address ?? SMOKE_AGENT_EVM_ADDRESS,
   }),
 );
 
@@ -88,7 +101,10 @@ app.post("/runs", async (c) => {
     mandateId,
     listingObjectId: body.listingObjectId,
     agentSuiAddress: SMOKE_AGENT_SUI_ADDRESS,
-    agentEvmAddress: SMOKE_AGENT_EVM_ADDRESS,
+    // When signing live this must be the signer's own address: the provider compares
+    // the reserved body against the address it recovered from the signature and
+    // rejects a mismatch with MANDATE_EVM_MISMATCH.
+    agentEvmAddress: agentkitSigner?.address ?? SMOKE_AGENT_EVM_ADDRESS,
     agentCapId: process.env.AGENT_CAP_ID,
     privateKey: process.env.AGENT_SUI_PRIVATE_KEY ?? process.env.AGENT_SUI_PRIVATE_KEY_BASE64,
     packageId: PACKAGE_ID,
@@ -96,6 +112,7 @@ app.post("/runs", async (c) => {
     providerApiBase: PROVIDER_API_BASE,
     demoAgentKitHeaders: demoHeaders ?? undefined,
     agentkitHeader: process.env.AGENTKIT_HEADER,
+    ...(agentkitSigner ? { createAgentkitHeader: agentkitSigner.createHeader } : {}),
   };
 
   // Fire-and-forget: start the run async, don't block the HTTP response.

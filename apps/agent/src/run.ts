@@ -22,6 +22,18 @@ import {
 // under its own internal keys; this one maps to DEMO_LISTING_OBJECT_ID.
 const DEMO_PROVIDER_LISTING_ID = "listing_lisbon_eligible";
 
+// Landlord document-access window, in days, written onto the ApplicationReceipt and
+// enforced by seal_approve_packet. It is bounded by how long the packet blob actually
+// lives on Walrus: the browser uploader has no access to WALRUS_EPOCHS and so stores
+// for the adapter default of 5 epochs (~5 days). Promising a longer window than the
+// blob survives would put an unbacked claim on chain, which the check below rejects.
+const DEFAULT_ACCESS_WINDOW_DAYS = 3;
+
+function accessWindowDays(): number {
+  const configured = Number(process.env["AGENT_ACCESS_WINDOW_DAYS"]);
+  return Number.isFinite(configured) && configured > 0 ? configured : DEFAULT_ACCESS_WINDOW_DAYS;
+}
+
 export type RunInput = {
   mandateId: string;
   /** Sui object ID of the listing to apply for. Defaults to the demo listing. */
@@ -36,6 +48,11 @@ export type RunInput = {
   providerApiBase: string;
   demoAgentKitHeaders: DemoAgentKitHeaders | undefined;
   agentkitHeader: string | undefined;
+  /**
+   * Mints an AgentKit header per request URL, from `createAgentkitSigner()`.
+   * Preferred over a static header, which the provider only accepts for one URL.
+   */
+  createAgentkitHeader?: (url: string) => Promise<string>;
 };
 
 export type RunStage =
@@ -95,9 +112,15 @@ export async function runAgent(
     packageId,
   });
   const executionClient = new SuiGrpcClient({ network: "testnet", baseUrl: rpcUrl });
+  // Precedence: an explicitly supplied header wins, then live signing, then the
+  // mock pair. Never silently degrade — a run must not reach a real provider with
+  // mock credentials, which is what produces an opaque 401 AGENTKIT_UNVERIFIED.
   const provider = createProviderClient({
     baseUrl: providerApiBase,
     ...(agentkitHeader ? { agentkitHeader } : {}),
+    ...(!agentkitHeader && input.createAgentkitHeader
+      ? { createAgentkitHeader: input.createAgentkitHeader }
+      : {}),
     ...(demoAgentKitHeaders ? { demoAgentKitHeaders } : {}),
   });
 
@@ -166,8 +189,8 @@ export async function runAgent(
   // 5. Reserve with provider API
   report("reserving");
 
-  // Desired access window: 30 days
-  const accessExpiresAtMs = Date.now() + 30 * 24 * 60 * 60 * 1000;
+  const windowDays = accessWindowDays();
+  const accessExpiresAtMs = Date.now() + windowDays * 24 * 60 * 60 * 1000;
 
   // Blob lifecycle alignment check (RD-124):
   // Skip for mock blobs (they don't expire). For real blobs, verify the configured
@@ -179,9 +202,9 @@ export async function runAgent(
       const requiredEpochs = epochsForAccessWindow(accessExpiresAtMs);
       const blobDays = configuredEpochs * (WALRUS_EPOCH_DURATION_MS / 86_400_000);
       throw new Error(
-        `Blob lifecycle mismatch: access window requires ~${requiredEpochs} epochs but blob was ` +
-          `stored for only ${configuredEpochs} epochs (~${blobDays} days). ` +
-          `Either reduce the access window or re-upload the packet with WALRUS_EPOCHS>=${requiredEpochs}.`,
+        `Blob lifecycle mismatch: a ${windowDays}-day access window requires ~${requiredEpochs} epochs ` +
+          `but the blob was stored for only ${configuredEpochs} epochs (~${blobDays} days). ` +
+          `Either lower AGENT_ACCESS_WINDOW_DAYS or re-upload the packet with WALRUS_EPOCHS>=${requiredEpochs}.`,
       );
     }
   }

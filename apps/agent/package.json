@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "check:env": "node dist/checkEnv.js",
+    "check:env": "node --env-file-if-exists=../../.env dist/checkEnv.js",
     "test": "vitest run",
-    "start": "node dist/index.js",
-    "start:server": "node dist/server.js",
+    "start": "node --env-file-if-exists=../../.env dist/index.js",
+    "start:server": "node --env-file-if-exists=../../.env dist/server.js",
     "dev:server": "tsx src/server.ts"
   },
   "dependencies": {
@@ -20,6 +20,7 @@
     "@rentdelegate/sui-client": "workspace:*",
     "@rentdelegate/walrus": "workspace:*",
     "@worldcoin/agentkit": "^0.2.0",
+    "ethers": "^6.17.0",
     "hono": "^4.12.31"
   },
   "devDependencies": {

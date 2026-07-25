@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { afterEach, describe, expect, it, vi, beforeEach } from "vitest";
 import type { RunInput } from "./run.js";
 
 // ─── minimal stubs for external dependencies ──────────────────────────────────
@@ -82,13 +82,13 @@ function makeSuiClient(overrides?: { findAgentCapForMandate?: () => Promise<stri
   } as never;
 }
 
-function makeProviderClient() {
+function makeProviderClient(walrusBlobId = "mock:blob123") {
   return {
     reserveApplication: vi.fn(async () => reservedApplication),
     verifyReceipt: vi.fn(async () => ({ ...reservedApplication, status: "accepted" as const })),
     getPacketForMandate: vi.fn(async () => ({
       mandateId: "0xmandate",
-      walrusBlobId: "mock:blob123",
+      walrusBlobId,
       packetHash: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab",
       sizeBytes: 256,
       encryptionMode: "mock" as const,
@@ -205,5 +205,58 @@ describe("runAgent", () => {
     } as never);
 
     await expect(runAgent(BASE_INPUT)).rejects.toThrow(/No packet registered for mandate/);
+  });
+});
+
+describe("landlord access window", () => {
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("completes on a real Walrus blob, which the default window fits inside", async () => {
+    const provider = makeProviderClient("realblob123");
+    mockCreateProvider.mockReturnValue(provider as never);
+
+    const result = await runAgent(BASE_INPUT);
+
+    expect(result.status).toBe("complete");
+
+    // 3 days by default: short enough that a 5-epoch blob outlives the window it
+    // writes on chain. A 30-day window here is what broke every real-blob run.
+    const [, reserved] = (provider.reserveApplication as ReturnType<typeof vi.fn>).mock.calls[0];
+    const windowMs = reserved.accessExpiresAtMs - Date.now();
+    expect(windowMs).toBeGreaterThan(2.9 * DAY_MS);
+    expect(windowMs).toBeLessThan(3.1 * DAY_MS);
+  });
+
+  it("honours AGENT_ACCESS_WINDOW_DAYS", async () => {
+    vi.stubEnv("AGENT_ACCESS_WINDOW_DAYS", "2");
+    const provider = makeProviderClient("realblob123");
+    mockCreateProvider.mockReturnValue(provider as never);
+
+    await runAgent(BASE_INPUT);
+
+    const [, reserved] = (provider.reserveApplication as ReturnType<typeof vi.fn>).mock.calls[0];
+    const windowMs = reserved.accessExpiresAtMs - Date.now();
+    expect(windowMs).toBeGreaterThan(1.9 * DAY_MS);
+    expect(windowMs).toBeLessThan(2.1 * DAY_MS);
+  });
+
+  it("still refuses a window the blob cannot outlive", async () => {
+    vi.stubEnv("AGENT_ACCESS_WINDOW_DAYS", "30");
+    mockCreateProvider.mockReturnValue(makeProviderClient("realblob123") as never);
+
+    await expect(runAgent(BASE_INPUT)).rejects.toThrow(/Blob lifecycle mismatch/);
+  });
+
+  it("skips the lifecycle check for mock blobs regardless of window", async () => {
+    vi.stubEnv("AGENT_ACCESS_WINDOW_DAYS", "30");
+    mockCreateProvider.mockReturnValue(makeProviderClient("mock:blob123") as never);
+
+    const result = await runAgent(BASE_INPUT);
+
+    expect(result.status).toBe("complete");
   });
 });
