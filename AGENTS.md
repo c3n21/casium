@@ -12,6 +12,9 @@
 - Sui and Walrus are installed in `~/.local/bin/`, but the user does not want that directory exported into `PATH`. Use `~/.local/bin/sui` and `~/.local/bin/walrus` directly if `sui` or `walrus` are not found.
 - Do not edit shell startup files or export PATH globally for this repo.
 - Prefer project-local tooling once `package.json`/workspace files exist; do not suggest global npm installs for repo dependencies.
+- Browser inspection is configured project-locally via `opencode.json` using Playwright MCP and `pnpm dlx @playwright/mcp`.
+- If Playwright MCP fails to launch after config changes, restart opencode; MCP config is loaded only at startup.
+- The current MCP command points at the Playwright-managed Chromium executable under `~/.cache/ms-playwright/`.
 
 ## Repo-Local Skills
 

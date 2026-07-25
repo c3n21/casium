@@ -16,7 +16,7 @@ export function MandateStatus({ mandateId, ownerCapId, agentCapId, createTxDiges
   const suiClient = useCurrentClient();
 
   const { data: mandate, isLoading, error } = useQuery({
-    queryKey: ["mandate", mandateId, suiClient],
+    queryKey: ["mandate", "testnet", mandateId],
     queryFn: async () => {
       const client = createRentDelegateClient(
         { network: "testnet", rpcUrl: "https://fullnode.testnet.sui.io:443", packageId: PACKAGE_ID },
