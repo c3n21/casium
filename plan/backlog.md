@@ -251,6 +251,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Field | Value |
 |---|---|
 | Priority | P0 |
+| Status | DONE - merged via `feature/rd-005-submit-application`. |
 | Lane | L1 Sui Move |
 | Objective | Enforce mandate constraints during application submission. |
 | Suggested implementation | Validate not expired, not revoked, active listing, max rent, municipality, bedrooms, valid `AgentCap`, sender equals authorized Sui agent, allowance > 0, `ACTION_SUBMIT_DOCS`, no same mandate/listing duplicate, decrement allowance, create receipt, emit event. |
@@ -259,6 +260,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Blocks | RD-006, RD-007, RD-013, RD-103, RD-105. |
 | Acceptance criteria | Valid submission creates receipt and decrements count once; invalid submissions abort with specific error codes. |
 | Tests | Valid submission, rent too high, disallowed municipality, too few bedrooms, expired, revoked, zero allowance, wrong cap, wrong sender, inactive listing, duplicate listing. |
+| Verification | 2026-07-25: `~/.local/bin/sui move build --path packages/move` -> success; `~/.local/bin/sui move test --path packages/move` -> success, 16 tests passed covering valid submission, rent too high, disallowed municipality, too few bedrooms, expired mandate, revoked mandate, zero allowance, wrong cap, wrong sender, inactive listing, expired listing, missing submit permission, and duplicate listing; `pnpm -r --if-present build` -> success; `pnpm -r --if-present test` -> success. |
 | Failure fallback | If dynamic `Table<ID, ID>` causes test friction, drop Sui duplicate prevention for same mandate/listing and rely on allowance plus provider uniqueness for demo, but document this as a shortcut. |
 | Sponsor | Sui. |
 | Demo impact | Main Sui prize proof. |
