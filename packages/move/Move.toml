@@ -1,0 +1,9 @@
+[package]
+name = "rentdelegate"
+edition = "2024"
+license = "MIT"
+
+[dependencies]
+
+[addresses]
+rentdelegate = "0x0"
