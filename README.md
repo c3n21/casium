@@ -47,6 +47,7 @@ scripts/
   agentkit-live-request.html    MetaMask AgentKit header helper
 docs/
   demo-script.md     ← This run guide
+  browser-testing.md ← Driving the app in a browser (wallet flows, Seal)
   sui-deployment.md
   provider-api.md
   world-agentkit.md

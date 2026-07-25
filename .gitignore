@@ -30,3 +30,4 @@ client.yaml
 .vscode/
 .playwright-mcp/
 .playwright-wallet-profile/
+*/**/tsconfig.tsbuildinfo

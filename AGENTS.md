@@ -7,9 +7,15 @@
   package published to **testnet** (package ID
   `0x7e0130cdc105d06707f1f3abd4c76aac8211a09a5502692ba454d1b4b758af3d`,
   see `packages/contracts-config/testnet.json` and `docs/sui-deployment.md`).
-- `plan/backlog.md` is the ticket-status source of truth (RD-001..RD-014 P0
-  are DONE; P1 RD-101..RD-108 are DONE or PARTIAL; P2 RD-201..RD-203 are not
-  started). `spec/development-spec.md` is the implementation contract for
+- The backlog is split by epic. `plan/backlog.md` is the **index** — lanes,
+  dependency graph, parallel execution plan, and file-ownership rules. Ticket
+  detail and `Status` fields live in the epic files:
+  `plan/backlog-archive.md` (RD-001..RD-108, complete and frozen),
+  `plan/backlog-completion.md` (Epic C, RD-109..RD-118, close the loop),
+  `plan/backlog-walrus.md` (Epic W, RD-121..RD-126, live Walrus),
+  `plan/backlog-seal.md` (Epic S, RD-131..RD-138, Seal access control),
+  `plan/backlog-stretch.md` (RD-202, RD-203; RD-201 superseded by Epic S).
+  `spec/development-spec.md` is the implementation contract for
   object shapes, endpoints, and schemas — if it conflicts with executable
   config, trust the code.
 - `README.md` is current and authoritative for setup, env vars, build/test
@@ -24,8 +30,10 @@
 - The user is working in Arch Linux inside distrobox; do not assume NixOS commands or Nix flakes for this repo unless a future repo file adds them.
 - Sui and Walrus are installed in `~/.local/bin/`, but the user does not want that directory exported into `PATH`. Use `~/.local/bin/sui` and `~/.local/bin/walrus` directly if `sui` or `walrus` are not found.
 - Do not edit shell startup files or export PATH globally for this repo.
-- Browser inspection is configured project-locally via `opencode.json` using Playwright MCP and `pnpm dlx @playwright/mcp`, pointed at a persistent profile in `.playwright-wallet-profile/`.
+- **You can drive the real app in a browser — read `docs/browser-testing.md` before any UI, wallet, or Seal work.** Browser access comes from your agent harness, not from this repo: opencode uses the Playwright MCP configured in `opencode.json`; Claude Code uses the `claude-in-chrome` skill. The two do **not** share wallet state.
 - If Playwright MCP fails to launch after config changes, restart opencode; MCP config is loaded only at startup.
+- `.playwright-wallet-profile/` persists a Slush **web**-wallet session (`my.slush.app` via Google sign-in). No browser extension is installed and none is needed — do not install one, and do not delete the profile to "clean up". Re-authenticating the session is the user's action, not an agent's.
+- `.playwright-mcp/` console logs contain OAuth URLs and the user's email. Both directories are gitignored; never commit or paste their contents.
 
 ## Repo-Local Skills
 
@@ -51,11 +59,12 @@ packages/
   agentkit/         World AgentKit mock + real verifier
   walrus/           Walrus mock + CLI adapter
   contracts-config/ Deployed testnet package/object IDs
-  seal/             Stub only — P2 stretch, not implemented
+  seal/             Empty package.json — required scope, see Epic S
 scripts/            demo-agentkit-duplicate.mjs, agentkit-live-request.html
 docs/               demo-script, sui-deployment, provider-api, world-agentkit,
                     walrus-adapter, duplicate-human-demo
-plan/backlog.md     Ticket-level status and dependency graph
+plan/backlog.md     Index: lanes, dep graph, parallel plan, file ownership
+plan/backlog-*.md   Epic ticket files (archive, completion, walrus, seal, stretch)
 spec/development-spec.md   Implementation contract (schemas, endpoints, Move spec)
 ```
 
@@ -70,8 +79,24 @@ spec/development-spec.md   Implementation contract (schemas, endpoints, Move spe
   One live-smoke gap remains: RD-101 Walrus real upload (mock + CLI adapter code is done and tested;
   only the live network upload was skipped). Do not run it without the user's explicit go-ahead,
   since it spends live wallet resources.
-- P2 (RD-201 Seal, RD-202 agent rotation, RD-203 zkLogin) is not started and is explicitly non-critical-path; do not risk core Sui/World demo stability for it.
-- Before starting new work, check `plan/backlog.md` for the ticket's current `Status` field rather than assuming from this file — statuses change.
+- **Scope changed 2026-07-25: Walrus live upload and Seal are now required, not stretch.** Three
+  active epics take the repo from "core demo works" to "the application is complete":
+  - **Epic C** (`plan/backlog-completion.md`, RD-109–RD-118) closes four wiring seams. The provider's
+    state is in-memory `Map`s and the drizzle/Postgres layer is dead code; the renter's encrypted
+    packet never reaches the agent; a mandate created in the UI needs a hand-edited `.env`; and the
+    dashboards read hardcoded fixtures with no `GET /applications` endpoint to read instead.
+  - **Epic W** (`plan/backlog-walrus.md`, RD-121–RD-126) does the live upload plus a browser-usable
+    adapter. Note `packages/walrus/src/http.ts` is misnamed — it holds the CLI adapter; there is no
+    HTTP client and no `@mysten/walrus` dependency.
+  - **Epic S** (`plan/backlog-seal.md`, RD-131–RD-138) implements Seal. Needs a Move `seal_approve`
+    entry function and a package upgrade. All three relevant objects are already shared, so no
+    object-model change is required.
+- Nothing is currently broken: the workspace builds and all tests pass (57 passed / 3 skipped, plus
+  21 Move tests). Do not treat this remaining work as bug-fixing.
+- RD-202 agent rotation and RD-203 zkLogin remain genuinely optional (`plan/backlog-stretch.md`).
+- Before starting new work, check the ticket's `Status` field in its epic file rather than assuming
+  from this file — statuses change. Respect the file-ownership matrix in `plan/backlog.md` before
+  running agents in parallel; useful concurrency is about three, not one per lane.
 
 ## Commands
 
@@ -112,6 +137,10 @@ If `sui`/`walrus` are not on `PATH`, use `~/.local/bin/sui ...` / `~/.local/bin/
 
 ## Sui Wallet Browser Testing
 
+> `docs/browser-testing.md` is the fuller version of this section — harness setup, ports, the wallet
+> session prerequisite, and what a browser verification must capture. The notes below are the
+> hard-won specifics; keep the two in sync if either changes.
+
 - For Slush browser flows, prefer wallet `signTransaction` plus app-side Sui `executeTransaction` when wallet `signAndExecuteTransaction` is unreliable or popup handoff fails.
 - Always set explicit gas before wallet signing. Select a live SUI gas coin, call `tx.setGasBudget(...)`, and call `tx.setGasPayment(...)`; do not rely on unresolved wallet gas data for Slush requests.
 - When parsing executed Sui gRPC results for created object types, request `include: { effects: true, objectTypes: true }`.
@@ -137,7 +166,7 @@ If `sui`/`walrus` are not on `PATH`, use `~/.local/bin/sui ...` / `~/.local/bin/
 - Do not fake Sui or World integrations. Mock only Walrus/Seal fallbacks, and label mocks clearly in UI and README.
 - Core message to preserve: "World limits who the agent represents. Sui limits what the agent can do."
 - Sui: real testnet Move package enforces mandate scope via `RentalMandate`, `OwnerCap`, `AgentCap`, `RentalListing`, and `ApplicationReceipt` — this is fully live (`docs/sui-deployment.md`).
-- World: real AgentKit verification is live for one registered EVM agent address on World Chain (`eip155:480`) — see `docs/world-agentkit.md`. Full duplicate-human rejection across *two* agents backed by the same human is still only fixture-proven (RD-014 PARTIAL); don't claim it's live-proven without checking `plan/backlog.md` first.
+- World: real AgentKit verification is live for one registered EVM agent address on World Chain (`eip155:480`) — see `docs/world-agentkit.md`. Full duplicate-human rejection across *two* agents backed by the same human is still only fixture-proven (RD-014 PARTIAL); don't claim it's live-proven without checking RD-014 in `plan/backlog-archive.md` first.
 - The agent must not use renter wallet custody; it must use its own Sui address plus `AgentCap`.
 - Listing eligibility must be checked against provider-created Sui `RentalListing` data, not attributes supplied by the agent.
 
@@ -151,7 +180,7 @@ If `sui`/`walrus` are not on `PATH`, use `~/.local/bin/sui ...` / `~/.local/bin/
 
 ## Cross-Agent Coordination
 
-- One agent should own one ticket at a time and respect `Blocks`/`Dependencies` in `plan/backlog.md`.
+- One agent should own one ticket at a time and respect the `Blocks`/`Dependencies` fields in that ticket's epic file.
 - Most of the backlog is already merged; before starting new work, check whether it's covered by an existing ticket's `Status` field rather than re-implementing something that's DONE.
 - If using mocks to unblock parallel work, keep the same interface as the planned real integration and mark the mode clearly.
 - Move engineers must hand off package ID, function names, struct fields, error codes, and example tx commands before Sui TS/client work finalizes.
