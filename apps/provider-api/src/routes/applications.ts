@@ -1,19 +1,15 @@
-import { ERROR_CODES, ERROR_HTTP_STATUS } from "@rentdelegate/shared";
+import { ERROR_HTTP_STATUS } from "@rentdelegate/shared";
 import { Hono } from "hono";
-import type { AgentContext, ApplicationService } from "../services/applications.js";
+import type { AgentKitVariables } from "../middleware/agentkit.js";
+import type { ApplicationService } from "../services/applications.js";
 
 type ErrorStatus = 401 | 403 | 404 | 409 | 422;
 
 export function createApplicationRoutes(applicationService: ApplicationService) {
-  const routes = new Hono();
+  const routes = new Hono<{ Variables: AgentKitVariables }>();
 
   routes.post("/listings/:id/applications", async (c) => {
-    const agentContext = readMockAgentContext(c.req.raw.headers);
-
-    if (!agentContext) {
-      return c.json({ error: ERROR_CODES.AGENTKIT_UNVERIFIED }, ERROR_HTTP_STATUS.AGENTKIT_UNVERIFIED as ErrorStatus);
-    }
-
+    const agentContext = c.get("agentContext");
     const body = await c.req.json().catch(() => null);
     const result = applicationService.reserve(c.req.param("id"), body, agentContext);
 
@@ -35,21 +31,4 @@ export function createApplicationRoutes(applicationService: ApplicationService) 
   });
 
   return routes;
-}
-
-function readMockAgentContext(headers: Headers): AgentContext | null {
-  const humanIdHash = headers.get("x-demo-human-id-hash");
-  const agentEvmAddress = headers.get("x-demo-agent-evm-address");
-  const mandateAgentSuiAddress = headers.get("x-demo-mandate-agent-sui-address");
-
-  if (!humanIdHash || !agentEvmAddress || !mandateAgentSuiAddress) {
-    return null;
-  }
-
-  return {
-    mode: "mock-agentkit",
-    humanIdHash,
-    agentEvmAddress,
-    mandateAgentSuiAddress,
-  };
 }
