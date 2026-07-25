@@ -6,10 +6,11 @@ export type ProviderClientOptions = {
   baseUrl: string;
   /** Pre-built agentkit header value to attach to reservation requests. */
   agentkitHeader?: string;
+  fetchImpl?: typeof fetch;
 };
 
 export function createProviderClient(options: ProviderClientOptions) {
-  const { baseUrl, agentkitHeader } = options;
+  const { baseUrl, agentkitHeader, fetchImpl = fetch } = options;
 
   async function post<T>(path: string, body: unknown, requireAgentKit = false): Promise<T> {
     const headers: Record<string, string> = { "content-type": "application/json" };
@@ -24,7 +25,7 @@ export function createProviderClient(options: ProviderClientOptions) {
       );
     }
 
-    const response = await fetch(`${baseUrl}${path}`, {
+    const response = await fetchImpl(`${baseUrl}${path}`, {
       method: "POST",
       headers,
       body: JSON.stringify(body),
@@ -41,7 +42,7 @@ export function createProviderClient(options: ProviderClientOptions) {
   }
 
   async function get<T>(path: string): Promise<T> {
-    const response = await fetch(`${baseUrl}${path}`);
+    const response = await fetchImpl(`${baseUrl}${path}`);
     const json = (await response.json()) as T;
     if (!response.ok) throw new Error(`Provider API GET ${path} returned ${response.status}`);
     return json;

@@ -567,16 +567,16 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Field | Value |
 |---|---|
 | Priority | P1 |
-| Status | TODO |
+| Status | DONE - code/test implementation complete; live smoke not run because no uncommitted agent Sui private key was provided. |
 | Lane | L8 Agent |
 | Objective | Turn the current PTB-reporting agent into a real testnet Sui-submitting agent. |
-| Suggested implementation | Load the agent Sui private key from an uncommitted environment variable, derive the agent address, verify it matches `AGENT_SUI_ADDRESS`, sign and execute the `submit_application` PTB with the agent-owned `AgentCap`, parse the created `ApplicationReceipt`, and call provider receipt verification automatically. Keep renter wallet custody impossible. |
+| Suggested implementation | Use a single stable `AGENT_SUI_ADDRESS` for the deployed agent. Load its Sui private key from an uncommitted environment variable, derive the agent address, verify it matches `AGENT_SUI_ADDRESS`, sign and execute the `submit_application` PTB with the mandate-specific `AgentCap`, parse the created `ApplicationReceipt`, and call provider receipt verification automatically. Keep renter wallet custody impossible. |
 | Files/modules | `apps/agent/src/index.ts`, `apps/agent/src/suiSubmit.ts`, `apps/agent/src/providerClient.ts`, `docs/demo-script.md`, `README.md`. |
 | Dependencies | RD-008, RD-011, RD-012, RD-013, RD-105. |
 | Blocks | Fully autonomous testnet agent deployment. |
-| Acceptance criteria | Agent submits `submit_application` on Sui testnet with its own address, returns a tx digest and receipt ID, provider verifies the receipt, invalid/out-of-scope listings still do not submit, and no renter key or raw World human ID is handled by the agent. |
+| Acceptance criteria | Agent submits `submit_application` on Sui testnet with the single stable agent address, returns a tx digest and receipt ID, provider verifies the receipt, invalid/out-of-scope listings still do not submit, `AGENT_CAP_ID` is treated as mandate-specific, and no renter key or raw World human ID is handled by the agent. |
 | Tests | Unit tests for key parsing/address mismatch, mocked signer execution, receipt ID parsing, and provider verification handoff; optional live testnet smoke guarded by an explicit env flag. |
-| Verification | Pending. |
+| Verification | 2026-07-25: `pnpm --filter @rentdelegate/agent build` -> success; `pnpm --filter @rentdelegate/agent test` -> success, 2 files/18 tests covering key parsing, agent Sui address mismatch rejection, mocked signer execution, receipt ID parsing from events/effects, and provider verification handoff. Live testnet execution remains guarded by `AGENT_SUI_PRIVATE_KEY` or `AGENT_SUI_PRIVATE_KEY_BASE64` and was not run without an uncommitted agent key. |
 | Security | Never commit `.env`, private keys, wallet seeds, mnemonics, or raw AgentKit human identifiers. Prefer `AGENT_SUI_PRIVATE_KEY_BASE64` or Sui `suiprivkey...` from process env only, and document testnet-only usage. |
 | Demo impact | Converts the current “PTB ready” proof into a complete real Sui application submission flow. |
 

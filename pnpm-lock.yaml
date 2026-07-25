@@ -10,6 +10,9 @@ importers:
 
   apps/agent:
     dependencies:
+      '@mysten/sui':
+        specifier: ^2.22.1
+        version: 2.22.1(typescript@7.0.2)
       '@rentdelegate/agentkit':
         specifier: workspace:*
         version: link:../../packages/agentkit

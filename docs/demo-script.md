@@ -139,6 +139,20 @@ Requires a registered MetaMask address on World Chain (see `docs/world-agentkit.
 node apps/agent/dist/index.js
 ```
 
+To execute on Sui instead of stopping at the PTB fallback, set one uncommitted env var for the
+agent-owned Sui key:
+
+```bash
+AGENT_SUI_PRIVATE_KEY=suiprivkey... node apps/agent/dist/index.js
+# or
+AGENT_SUI_PRIVATE_KEY_BASE64=<32-byte-ed25519-secret-key-base64> node apps/agent/dist/index.js
+```
+
+The demo uses a single-agent deployment model. `AGENT_SUI_ADDRESS` is the stable Sui identity of the
+agent service. `AGENT_CAP_ID` is not stable globally; it is the capability object for the specific
+`MANDATE_ID` being processed. A different mandate for the same agent address will have a different
+`AgentCap`.
+
 Expected output:
 
 ```
@@ -153,10 +167,12 @@ Expected output:
     Blob ID: mock:...
 [4] Reserving application with provider API...
     (requires AGENTKIT_HEADER or provider in mock mode)
-[5] Building Sui submit_application PTB...
-    PTB ready.
+[5] Executing Sui submit_application PTB...
+    PTB ready. Set AGENT_SUI_PRIVATE_KEY=suiprivkey... or AGENT_SUI_PRIVATE_KEY_BASE64 to execute.
 ```
 
+With a matching key, Step 5 signs with the agent-owned Sui address, submits `submit_application`,
+extracts the `ApplicationReceipt` from events/effects, then Step 6 calls provider receipt verification.
 If the provider API is not running or no AgentKit header is set, the agent prints a clear message and exits without claiming success.
 
 ---
@@ -201,6 +217,10 @@ If the provider API is not running or no AgentKit header is set, the agent print
 | Publish tx | `GvxTETJej5RH4U3rFD2PNCENW65tG8vynRF1xskTrxP7` |
 | submit_application tx | `6vKuZNC3p5uoaSni2N5NifW1eQjqdLDesBAj9gN799Lh` |
 
+The smoke `AgentCap` above is valid only for the listed smoke `RentalMandate` and stable smoke agent
+address. If you create a new mandate, keep the agent address the same and use the newly created
+`AgentCap` for that mandate.
+
 ---
 
 ## Sponsor Proof Checklist
@@ -208,7 +228,7 @@ If the provider API is not running or no AgentKit header is set, the agent print
 | Claim | Evidence |
 |---|---|
 | Sui: Move objects enforce mandate scope | `RentalMandate`, `AgentCap`, `RentalListing`, `ApplicationReceipt` on testnet |
-| Sui: Agent uses own address + AgentCap (no renter custody) | `submit_application` requires `AgentCap` object, not renter signature |
+| Sui: Agent uses own address + AgentCap (no renter custody) | `submit_application` requires `AgentCap`; `apps/agent` signs only with env-only agent Sui key |
 | Sui: 21 unit tests cover all enforcement rules | `~/.local/bin/sui move test --path packages/move` |
 | World: Live AgentKit verification | `POST /listings/.../applications` returned `202` with real header from `eip155:480` |
 | World: Duplicate-human rejection | `pnpm demo:duplicate-human` — `409 DUPLICATE_HUMAN_LISTING` |
@@ -223,6 +243,6 @@ If the provider API is not running or no AgentKit header is set, the agent print
 
 - **Lease signing**: impossible in the Move module by design.
 - **Fund transfer**: not represented as a permission flag.
-- **Agent private key execution**: agent builds and logs the PTB; submitting requires a key not committed to this repo.
+- **Agent private key handling**: live execution requires an uncommitted testnet-only agent key in env; no renter key is used or stored.
 - **RD-014 two-live-agent proof**: requires a second EVM address registered to the same World human. Logic is implemented; controlled fixture proves the rule.
 - **Seal (RD-201)**: P2 scope — not implemented to avoid risking the core demo.

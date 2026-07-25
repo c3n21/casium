@@ -92,10 +92,26 @@ MANDATE_ID=0x835478969ce38a0a1d0f981aa1a278a8862f9283de735ebba81c6169d388dbee
 AGENT_SUI_ADDRESS=0x371321932fb4c4b79b9b0762ac0878ebfb670cc6f6327ecf9d1d06cd9489243e
 AGENT_EVM_ADDRESS=0x662DbABBeff9B237490bBE6A898776a4A1D87CCe
 AGENT_CAP_ID=0xabeb55d1266102eed4235531c542fb01fd85bb3095c3d579960923f2e1e25c2a
+AGENT_SUI_PRIVATE_KEY=suiprivkey...
+# or AGENT_SUI_PRIVATE_KEY_BASE64=<32-byte-ed25519-secret-key-base64>
 ```
 
-All of the above are pre-filled with testnet smoke values where applicable. Only `AGENTKIT_HEADER`
-requires a real signed header from MetaMask (see `docs/world-agentkit.md`).
+All object/address values are pre-filled with testnet smoke values where applicable. `AGENTKIT_HEADER`
+requires a real signed header from MetaMask (see `docs/world-agentkit.md`). `AGENT_SUI_PRIVATE_KEY`
+or `AGENT_SUI_PRIVATE_KEY_BASE64` is optional; without it the agent prints a PTB-only fallback. Never commit it.
+
+## Single-Agent Model
+
+For the demo and current implementation, RentDelegate assumes one stable agent identity:
+
+- `AGENT_SUI_ADDRESS` is the deployed agent service's stable Sui address.
+- `AGENT_SUI_PRIVATE_KEY` or `AGENT_SUI_PRIVATE_KEY_BASE64` must derive exactly that address.
+- Every renter mandate should authorize that same stable `AGENT_SUI_ADDRESS`.
+- Each mandate still creates its own `AgentCap`, transferred to the stable agent address.
+- `AGENT_CAP_ID` is per mandate, not a global agent identity.
+
+The agent signs all Sui submissions with the same stable agent key, but each transaction must use the
+`AgentCap` matching the target `MANDATE_ID`. Multi-agent wallet management is intentionally out of scope.
 
 ## Build + Test
 
@@ -129,7 +145,7 @@ pnpm --filter @rentdelegate/web start
 # 3. Run duplicate-human demo script
 pnpm demo:duplicate-human
 
-# 4. Run agent (reads from testnet, reports PTB)
+# 4. Run agent (executes only if an env-only agent Sui private key is configured)
 node apps/agent/dist/index.js
 ```
 

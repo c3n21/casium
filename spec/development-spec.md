@@ -593,6 +593,20 @@ AGENT_CAP_ID=0x...
 
 Agent private keys are testnet-only secrets and must come from the process environment or a local uncommitted `.env` file. They must never be committed, logged, or derived from the renter wallet. The derived signer address must match `AGENT_SUI_ADDRESS` before submitting any Sui transaction.
 
+### Single-Agent Deployment Decision
+
+The current demo assumes exactly one deployed agent identity. `AGENT_SUI_ADDRESS` is stable across
+renters and mandates, and the corresponding private key is held only by the agent runtime. Renter
+mandate creation should use this stable address as the authorized Sui agent.
+
+`AgentCap` remains per mandate. A single stable agent address can own many `AgentCap` objects, one for
+each `RentalMandate`. For a submission, the agent must use the `AgentCap` whose `mandate_id` matches
+the target `MANDATE_ID`; `AGENT_CAP_ID` is therefore per-run/per-mandate input. Automatic cap discovery
+from owned Sui objects is a future hardening step, not required for the current single-agent demo.
+
+Multi-agent wallet routing, per-renter agent addresses, and agent redeployment/rotation UX are out of
+scope for the current P1 implementation.
+
 ## 15. Commands
 
 Commands are only authoritative after the corresponding manifests/scripts exist.

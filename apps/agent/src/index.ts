@@ -5,17 +5,19 @@
  *   1. Load mandate from Sui to know scope constraints.
  *   2. Fetch provider listings and evaluate each against mandate rules (no LLM).
  *   3. For eligible listing: upload encrypted packet to Walrus (mock), reserve with provider API.
- *   4. Build and report the Sui submit_application PTB.
- *   5. Verify receipt on-chain.
+ *   4. Sign and execute the Sui submit_application PTB with the agent key.
+ *   5. Ask provider API to verify the on-chain receipt.
  *
  * The agent uses its own Sui address + AgentCap — never the renter's wallet.
  */
 
 import { createRentDelegateClient } from "@rentdelegate/sui-client";
+import { SuiGrpcClient } from "@mysten/sui/grpc";
 import { createMockWalrusAdapter } from "@rentdelegate/walrus";
 import { makeSyntheticPacket } from "@rentdelegate/shared";
 import { evaluateEligibility } from "./rules.js";
 import { createProviderClient } from "./providerClient.js";
+import { executeSubmitApplication } from "./suiSubmit.js";
 
 const PACKAGE_ID =
   process.env.SUI_PACKAGE_ID ?? "0x7e0130cdc105d06707f1f3abd4c76aac8211a09a5502692ba454d1b4b758af3d";
@@ -40,6 +42,7 @@ async function main() {
   console.log(`Mandate:   ${SMOKE_MANDATE_ID}`);
 
   const suiClient = createRentDelegateClient({ network: "testnet", rpcUrl: RPC_URL, packageId: PACKAGE_ID });
+  const executionClient = new SuiGrpcClient({ network: "testnet", baseUrl: RPC_URL });
   const walrus = createMockWalrusAdapter();
   const provider = createProviderClient({
     baseUrl: PROVIDER_API_BASE,
@@ -126,29 +129,59 @@ async function main() {
     console.log(`      package:   ${reserved.submitHint.packageId ?? "(set SUI_PACKAGE_ID)"}`);
     console.log(`      function:  ${reserved.submitHint.module}::${reserved.submitHint.function}`);
 
-    // 5. Report Sui PTB (agent would sign + execute this with its key)
-    console.log("\n[5] Building Sui submit_application PTB...");
+    // 5. Execute Sui PTB with the agent-owned key and AgentCap.
+    console.log("\n[5] Executing Sui submit_application PTB...");
     const blobIdBytes = Array.from(new TextEncoder().encode(blobId));
     const packetHashBytes = Array.from(new Uint8Array(hashBuffer));
+    const accessExpiresAtMs = Date.now() + 30 * 24 * 60 * 60 * 1000;
 
-    const tx = suiClient.buildSubmitApplicationTx({
+    const submitInput = {
       mandateId: SMOKE_MANDATE_ID,
       listingObjectId: SMOKE_LISTING_ID,
       agentCapId: process.env.AGENT_CAP_ID ?? "0xabeb55d1266102eed4235531c542fb01fd85bb3095c3d579960923f2e1e25c2a",
       walrusBlobIdBytes: blobIdBytes,
       packetHashBytes,
-      accessExpiresAtMs: Date.now() + 30 * 24 * 60 * 60 * 1000,
+      accessExpiresAtMs,
       worldRefHashBytes: [],
+    };
+
+    const privateKey = process.env.AGENT_SUI_PRIVATE_KEY ?? process.env.AGENT_SUI_PRIVATE_KEY_BASE64;
+    if (!privateKey) {
+      const tx = suiClient.buildSubmitApplicationTx(submitInput);
+      const serialized = await tx.toJSON();
+      console.log(`    PTB ready. Bytes (base64 prefix): ${serialized.slice(0, 48)}…`);
+      console.log(`    Set AGENT_SUI_PRIVATE_KEY=suiprivkey... or AGENT_SUI_PRIVATE_KEY_BASE64 to execute.`);
+      return;
+    }
+
+    const executed = await executeSubmitApplication({
+      suiClient,
+      executionClient,
+      packageId: PACKAGE_ID,
+      expectedAgentSuiAddress: SMOKE_AGENT_SUI_ADDRESS,
+      privateKey,
+      input: submitInput,
     });
 
-    const serialized = await tx.toJSON();
-    console.log(`    PTB ready. Bytes (base64 prefix): ${serialized.slice(0, 48)}…`);
-    console.log(`    To execute: sign with agent key and submit to testnet.`);
-    console.log(`    (Execution requires AGENT_PRIVATE_KEY — not committed. Out of demo scope.)`);
+    if (!executed.receiptId) {
+      throw new Error("Sui transaction succeeded but ApplicationReceipt ID was not found in events/effects");
+    }
+
+    console.log(`    Tx digest:  ${executed.txDigest}`);
+    console.log(`    Receipt ID: ${executed.receiptId}`);
+
+    console.log("\n[6] Verifying receipt with provider API...");
+    const verified = await provider.verifyReceipt(reserved.id, {
+      applicationId: reserved.id,
+      txDigest: executed.txDigest,
+      receiptId: executed.receiptId,
+    });
+    console.log(`    Status: ${verified.status}`);
 
     console.log("\n=== Agent run complete ===");
     console.log(`Eligible listing: ${SMOKE_LISTING_ID}`);
     console.log(`Application ID:   ${reserved.id}`);
+    console.log(`Receipt ID:       ${executed.receiptId}`);
     console.log(`Blob ID:          ${blobId}`);
     console.log(`Packet hash:      ${packetHashHex}`);
   } catch (error) {
