@@ -270,6 +270,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Field | Value |
 |---|---|
 | Priority | P0 |
+| Status | DONE - merged via `feature/rd-006-owner-actions`. |
 | Lane | L1 Sui Move |
 | Objective | Implement revocation, withdrawal, optional rotation, and full Move test matrix. |
 | Suggested implementation | Add `revoke_mandate`, `withdraw_application`, and `rotate_agent` if safe. Require `OwnerCap` and sender equals owner. Add event emissions. |
@@ -278,6 +279,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Blocks | RD-007, RD-103, RD-106. |
 | Acceptance criteria | Owner can revoke; non-owner cannot; post-revoke apply fails; withdrawal changes receipt status. |
 | Tests | Owner-only revoke, wrong cap, wrong owner, withdrawal, post-revoke submission failure, optional rotation old/new cap behavior. |
+| Verification | 2026-07-25: `~/.local/bin/sui move test --path packages/move` -> success, 21 tests passed including owner revoke, wrong cap, wrong owner, withdrawal, and post-revoke submission failure; `~/.local/bin/sui move build --path packages/move` -> success; `pnpm -r --if-present build` -> success; `pnpm -r --if-present test` -> success. Rotation intentionally deferred to RD-202. |
 | Failure fallback | Cut rotation UI and keep only revoke/withdraw. |
 | Sponsor | Sui. |
 | Demo impact | Revocability and safety proof. |

@@ -24,6 +24,10 @@ const ENO_APPLICATIONS_LEFT: u64 = 11;
 const EACTION_NOT_ALLOWED: u64 = 12;
 const EDUPLICATE_LISTING: u64 = 13;
 const ACTION_SUBMIT_DOCS: u64 = 1;
+const STATUS_WITHDRAWN: u8 = 2;
+const EWRONG_OWNER_CAP: u64 = 14;
+const EWRONG_OWNER: u64 = 15;
+const EWRONG_RECEIPT: u64 = 16;
 
 public struct RentalMandate has key {
     id: UID,
@@ -102,6 +106,17 @@ public struct ApplicationSubmitted has copy, drop {
     listing_id: ID,
     agent: address,
     remaining_applications: u64,
+}
+
+public struct MandateRevoked has copy, drop {
+    mandate_id: ID,
+    owner: address,
+}
+
+public struct ApplicationWithdrawn has copy, drop {
+    receipt_id: ID,
+    mandate_id: ID,
+    listing_id: ID,
 }
 
 public fun metadata_version(): u64 {
@@ -244,6 +259,42 @@ public fun submit_application(
     transfer::share_object(receipt);
 }
 
+public fun revoke_mandate(
+    mandate: &mut RentalMandate,
+    owner_cap: &OwnerCap,
+    ctx: &TxContext,
+) {
+    let mandate_id = object::id(mandate);
+    let sender = tx_context::sender(ctx);
+
+    assert!(owner_cap.mandate_id == mandate_id, EWRONG_OWNER_CAP);
+    assert!(sender == mandate.owner, EWRONG_OWNER);
+
+    mandate.revoked = true;
+    event::emit(MandateRevoked { mandate_id, owner: sender });
+}
+
+public fun withdraw_application(
+    mandate: &RentalMandate,
+    receipt: &mut ApplicationReceipt,
+    owner_cap: &OwnerCap,
+    ctx: &TxContext,
+) {
+    let mandate_id = object::id(mandate);
+    let sender = tx_context::sender(ctx);
+
+    assert!(owner_cap.mandate_id == mandate_id, EWRONG_OWNER_CAP);
+    assert!(sender == mandate.owner, EWRONG_OWNER);
+    assert!(receipt.mandate_id == mandate_id, EWRONG_RECEIPT);
+
+    receipt.status = STATUS_WITHDRAWN;
+    event::emit(ApplicationWithdrawn {
+        receipt_id: object::id(receipt),
+        mandate_id,
+        listing_id: receipt.listing_id,
+    });
+}
+
 public fun mandate_id(mandate: &RentalMandate): ID { object::id(mandate) }
 public fun mandate_owner(mandate: &RentalMandate): address { mandate.owner }
 public fun mandate_agent_sui(mandate: &RentalMandate): address { mandate.agent_sui }
@@ -264,6 +315,7 @@ public fun listing_bedrooms(listing: &RentalListing): u64 { listing.bedrooms }
 public fun listing_active(listing: &RentalListing): bool { listing.active }
 
 public fun submitted_status(): u8 { STATUS_SUBMITTED }
+public fun withdrawn_status(): u8 { STATUS_WITHDRAWN }
 public fun receipt_mandate_id(receipt: &ApplicationReceipt): ID { receipt.mandate_id }
 public fun receipt_listing_id(receipt: &ApplicationReceipt): ID { receipt.listing_id }
 public fun receipt_agent(receipt: &ApplicationReceipt): address { receipt.agent }
@@ -278,5 +330,10 @@ public fun revoke_for_testing(mandate: &mut RentalMandate) {
 
 #[test_only]
 public fun set_agent_cap_mandate_for_testing(cap: &mut AgentCap, mandate_id: ID) {
+    cap.mandate_id = mandate_id;
+}
+
+#[test_only]
+public fun set_owner_cap_mandate_for_testing(cap: &mut OwnerCap, mandate_id: ID) {
     cap.mandate_id = mandate_id;
 }

@@ -205,6 +205,56 @@ fun submit_rejects_duplicate_listing() {
     test_scenario::end(scenario);
 }
 
+#[test]
+fun owner_can_revoke_mandate() {
+    let mut scenario = ready_application_scenario(1_800, vector[1], 1, 2_000, 1, 1, 1, 1_700, 2, true, 2_000);
+    revoke_current_mandate(&mut scenario, OWNER, OWNER, false);
+    test_scenario::end(scenario);
+}
+
+#[test, expected_failure(abort_code = 3)]
+fun post_revoke_submission_fails() {
+    let mut scenario = ready_application_scenario(1_800, vector[1], 1, 2_000, 1, 1, 1, 1_700, 2, true, 2_000);
+    revoke_current_mandate(&mut scenario, OWNER, OWNER, false);
+
+    test_scenario::next_tx(&mut scenario, AGENT);
+    submit_current_application(&mut scenario, 1_100, AGENT);
+    test_scenario::end(scenario);
+}
+
+#[test, expected_failure(abort_code = 14)]
+fun revoke_rejects_wrong_cap() {
+    let mut scenario = ready_application_scenario(1_800, vector[1], 1, 2_000, 1, 1, 1, 1_700, 2, true, 2_000);
+    revoke_current_mandate(&mut scenario, OWNER, OWNER, true);
+    test_scenario::end(scenario);
+}
+
+#[test, expected_failure(abort_code = 15)]
+fun revoke_rejects_wrong_owner() {
+    let mut scenario = ready_application_scenario(1_800, vector[1], 1, 2_000, 1, 1, 1, 1_700, 2, true, 2_000);
+    revoke_current_mandate(&mut scenario, OTHER, OWNER, false);
+    test_scenario::end(scenario);
+}
+
+#[test]
+fun owner_can_withdraw_application_receipt() {
+    let mut scenario = ready_application_scenario(1_800, vector[1], 1, 2_000, 2, 1, 1, 1_700, 2, true, 2_000);
+    submit_current_application(&mut scenario, 1_100, AGENT);
+
+    test_scenario::next_tx(&mut scenario, OWNER);
+    let mandate = test_scenario::take_shared<rental::RentalMandate>(&scenario);
+    let mut receipt = test_scenario::take_shared<rental::ApplicationReceipt>(&scenario);
+    let owner_cap = test_scenario::take_from_sender<rental::OwnerCap>(&scenario);
+
+    rental::withdraw_application(&mandate, &mut receipt, &owner_cap, test_scenario::ctx(&mut scenario));
+    assert!(rental::receipt_status(&receipt) == rental::withdrawn_status(), 23);
+
+    test_scenario::return_to_sender(&scenario, owner_cap);
+    test_scenario::return_shared(receipt);
+    test_scenario::return_shared(mandate);
+    test_scenario::end(scenario);
+}
+
 fun ready_application_scenario(
     max_rent: u64,
     municipalities: vector<u64>,
@@ -263,5 +313,28 @@ fun submit_current_application_with_test_mutations(
     clock::destroy_for_testing(test_clock);
     test_scenario::return_to_sender(scenario, agent_cap);
     test_scenario::return_shared(listing);
+    test_scenario::return_shared(mandate);
+}
+
+fun revoke_current_mandate(
+    scenario: &mut test_scenario::Scenario,
+    sender: address,
+    cap_owner: address,
+    corrupt_cap: bool,
+) {
+    test_scenario::next_tx(scenario, sender);
+    let mut mandate = test_scenario::take_shared<rental::RentalMandate>(scenario);
+    let mut owner_cap = test_scenario::take_from_address<rental::OwnerCap>(scenario, cap_owner);
+
+    if (corrupt_cap) {
+        let listing = test_scenario::take_shared<rental::RentalListing>(scenario);
+        rental::set_owner_cap_mandate_for_testing(&mut owner_cap, rental::listing_id(&listing));
+        test_scenario::return_shared(listing);
+    };
+
+    rental::revoke_mandate(&mut mandate, &owner_cap, test_scenario::ctx(scenario));
+    assert!(rental::mandate_revoked(&mandate), 24);
+
+    test_scenario::return_to_address(cap_owner, owner_cap);
     test_scenario::return_shared(mandate);
 }
