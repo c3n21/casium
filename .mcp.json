@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "pnpm",
+      "args": [
+        "dlx",
+        "@playwright/mcp",
+        "--executable-path",
+        "${HOME}/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome",
+        "--user-data-dir",
+        "${HOME}/Downloads/github/eth-lisbona-2026/.playwright-wallet-profile"
+      ],
+      "env": {}
+    }
+  }
+}
