@@ -1,4 +1,8 @@
 import { createRentDelegateClient } from "@rentdelegate/sui-client";
+import {
+  PACKAGE_ID as DEFAULT_PACKAGE_ID,
+  RPC_URL as DEFAULT_RPC_URL,
+} from "@rentdelegate/contracts-config";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { createAgentKitMiddleware } from "./middleware/agentkit.js";
@@ -7,9 +11,6 @@ import { createListingRoutes } from "./routes/listings.js";
 import { createApplicationService } from "./services/applications.js";
 import { createListingService } from "./services/listings.js";
 import { createSuiReceiptVerifier, type ReceiptVerificationService } from "./services/suiVerifier.js";
-
-const TESTNET_RPC_URL = "https://fullnode.testnet.sui.io:443";
-const RD_007_PACKAGE_ID = "0x7e0130cdc105d06707f1f3abd4c76aac8211a09a5502692ba454d1b4b758af3d";
 
 export function createApp(receiptVerifier?: ReceiptVerificationService) {
   const app = new Hono();
@@ -39,8 +40,8 @@ function createDefaultReceiptVerifier() {
   return createSuiReceiptVerifier(
     createRentDelegateClient({
       network: "testnet",
-      rpcUrl: process.env.SUI_RPC_URL ?? TESTNET_RPC_URL,
-      packageId: process.env.SUI_PACKAGE_ID ?? RD_007_PACKAGE_ID,
+      rpcUrl: process.env.SUI_RPC_URL ?? DEFAULT_RPC_URL,
+      packageId: process.env.SUI_PACKAGE_ID ?? DEFAULT_PACKAGE_ID,
     }),
   );
 }

@@ -3,9 +3,7 @@
 import { useCurrentClient } from "@mysten/dapp-kit-react";
 import { createRentDelegateClient } from "@rentdelegate/sui-client";
 import { useQuery } from "@tanstack/react-query";
-import { EXPLORER_OBJECT, EXPLORER_TX, PACKAGE_ID } from "@/lib/constants";
-
-const SMOKE_RECEIPT_ID = "0xc46d42744b7381447851f9f2adb6cf32322ab4bd6aba243e925597418899ad20";
+import { EXPLORER_OBJECT, EXPLORER_TX, PACKAGE_ID, RPC_URL_TESTNET, SMOKE_RECEIPT_ID } from "@/lib/constants";
 
 export default function LandlordPage() {
   const suiClient = useCurrentClient();
@@ -14,7 +12,7 @@ export default function LandlordPage() {
     queryKey: ["receipt", SMOKE_RECEIPT_ID],
     queryFn: async () => {
       const client = createRentDelegateClient(
-        { network: "testnet", rpcUrl: "https://fullnode.testnet.sui.io:443", packageId: PACKAGE_ID },
+        { network: "testnet", rpcUrl: RPC_URL_TESTNET, packageId: PACKAGE_ID },
         suiClient,
       );
       return client.getReceipt(SMOKE_RECEIPT_ID);

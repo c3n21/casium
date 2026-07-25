@@ -160,7 +160,7 @@ None of this required new architecture. It is mechanical wiring against interfac
 | Field | Value |
 |---|---|
 | Priority | P1-completion |
-| Status | NOT STARTED |
+| Status | DONE — 2026-07-25 |
 | Lane | L0 Project setup |
 | Objective | Stop three packages from disagreeing about which objects the demo uses. |
 | Suggested implementation | `apps/agent/src/index.ts:33` and `apps/provider-api/src/services/listings.ts:28` default the ineligible Porto listing to `0x1000…0006`, which is not a real object. The real one is `0xd0f9b4ae975b27d56af6c23844cbfa76dfda81f2913585788c51289ad1f0b3d1` (`packages/contracts-config/testnet.json` → `liveAgentRun.ineligibleListingObjectId`). Today the agent's ineligibility check silently falls into its `.catch(() => null)` "not readable" branch instead of proving mandate enforcement. Export a typed config from `@rentdelegate/contracts-config` and have web, agent, and provider import it instead of restating literals. Add a CI check that fails when a `0x`-prefixed 64-hex literal appears outside that package. |

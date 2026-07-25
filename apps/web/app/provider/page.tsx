@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ListingForm } from "@/components/ListingForm";
 import { ApplicationInbox } from "@/components/ApplicationInbox";
+import { DEMO_LISTING_OBJECT_ID, INELIGIBLE_LISTING_OBJECT_ID, EXPLORER_OBJECT } from "@rentdelegate/contracts-config";
 
 const DEMO_APPLICATION_IDS = ["app_1"];
 
@@ -50,7 +51,7 @@ export default function ProviderPage() {
             <tbody>
               <tr>
                 <td style={td}>listing_lisbon_eligible</td>
-                <td style={td}><a href="https://suivision.xyz/object/0xe7f676b93b9df816c7c44806ca2bbda0c6bf29334802206fb025c12e320ad72a?network=testnet" target="_blank" rel="noreferrer"><code>0xe7f6…</code></a></td>
+                <td style={td}><a href={EXPLORER_OBJECT(DEMO_LISTING_OBJECT_ID)} target="_blank" rel="noreferrer"><code>{DEMO_LISTING_OBJECT_ID.slice(0, 6)}…</code></a></td>
                 <td style={td}>Lisbon</td>
                 <td style={td}>€1700</td>
                 <td style={td}>2</td>
@@ -58,7 +59,7 @@ export default function ProviderPage() {
               </tr>
               <tr>
                 <td style={td}>listing_porto_ineligible</td>
-                <td style={td}><code style={{ color: "#94a3b8" }}>0x1000…</code></td>
+                <td style={td}><a href={EXPLORER_OBJECT(INELIGIBLE_LISTING_OBJECT_ID)} target="_blank" rel="noreferrer"><code style={{ color: "#94a3b8" }}>{INELIGIBLE_LISTING_OBJECT_ID.slice(0, 6)}…</code></a></td>
                 <td style={td}>Porto (demo)</td>
                 <td style={td}>€1200</td>
                 <td style={td}>2</td>

@@ -12,6 +12,7 @@
   "dependencies": {
     "@mysten/sui": "^2.22.1",
     "@rentdelegate/agentkit": "workspace:*",
+    "@rentdelegate/contracts-config": "workspace:*",
     "@rentdelegate/shared": "workspace:*",
     "@rentdelegate/sui-client": "workspace:*",
     "@rentdelegate/walrus": "workspace:*",

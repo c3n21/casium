@@ -16,6 +16,9 @@ importers:
       '@rentdelegate/agentkit':
         specifier: workspace:*
         version: link:../../packages/agentkit
+      '@rentdelegate/contracts-config':
+        specifier: workspace:*
+        version: link:../../packages/contracts-config
       '@rentdelegate/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -47,6 +50,9 @@ importers:
       '@rentdelegate/agentkit':
         specifier: workspace:*
         version: link:../../packages/agentkit
+      '@rentdelegate/contracts-config':
+        specifier: workspace:*
+        version: link:../../packages/contracts-config
       '@rentdelegate/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -87,6 +93,9 @@ importers:
       '@mysten/sui':
         specifier: ^2.22.1
         version: 2.22.1(typescript@7.0.2)
+      '@rentdelegate/contracts-config':
+        specifier: workspace:*
+        version: link:../../packages/contracts-config
       '@rentdelegate/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -147,7 +156,14 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@26.1.1)(happy-dom@18.0.1)(vite@8.1.5(@types/node@26.1.1))
 
-  packages/contracts-config: {}
+  packages/contracts-config:
+    devDependencies:
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@types/node@26.1.1)(happy-dom@18.0.1)(vite@8.1.5(@types/node@26.1.1))
 
   packages/seal: {}
 

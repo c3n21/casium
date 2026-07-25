@@ -15,24 +15,27 @@ import { createRentDelegateClient } from "@rentdelegate/sui-client";
 import { SuiGrpcClient } from "@mysten/sui/grpc";
 import { createMockWalrusAdapter } from "@rentdelegate/walrus";
 import { makeSyntheticPacket } from "@rentdelegate/shared";
+import {
+  DEMO_LISTING_OBJECT_ID,
+  INELIGIBLE_LISTING_OBJECT_ID,
+  PACKAGE_ID as DEFAULT_PACKAGE_ID,
+  PUBLISHER_ADDRESS,
+  RPC_URL as DEFAULT_RPC_URL,
+  SMOKE as SMOKE_OBJECTS,
+} from "@rentdelegate/contracts-config";
 import { evaluateEligibility } from "./rules.js";
 import { createProviderClient } from "./providerClient.js";
 import type { DemoAgentKitHeaders } from "./providerClient.js";
 import { executeSubmitApplication } from "./suiSubmit.js";
 
-const PACKAGE_ID =
-  process.env.SUI_PACKAGE_ID ?? "0x7e0130cdc105d06707f1f3abd4c76aac8211a09a5502692ba454d1b4b758af3d";
-const RPC_URL = process.env.SUI_RPC_URL ?? "https://fullnode.testnet.sui.io:443";
+const PACKAGE_ID = process.env.SUI_PACKAGE_ID ?? DEFAULT_PACKAGE_ID;
+const RPC_URL = process.env.SUI_RPC_URL ?? DEFAULT_RPC_URL;
 const PROVIDER_API_BASE = process.env.PROVIDER_API_URL ?? "http://localhost:4021";
 
-const SMOKE_MANDATE_ID =
-  process.env.MANDATE_ID ?? "0x835478969ce38a0a1d0f981aa1a278a8862f9283de735ebba81c6169d388dbee";
-const SMOKE_LISTING_ID =
-  process.env.LISTING_ID ?? "0xe7f676b93b9df816c7c44806ca2bbda0c6bf29334802206fb025c12e320ad72a";
-const SMOKE_INELIGIBLE_LISTING_ID =
-  process.env.INELIGIBLE_LISTING_ID ?? "0x1000000000000000000000000000000000000000000000000000000000000006";
-const SMOKE_AGENT_SUI_ADDRESS =
-  process.env.AGENT_SUI_ADDRESS ?? "0x371321932fb4c4b79b9b0762ac0878ebfb670cc6f6327ecf9d1d06cd9489243e";
+const SMOKE_MANDATE_ID = process.env.MANDATE_ID ?? SMOKE_OBJECTS.mandateId;
+const SMOKE_LISTING_ID = process.env.LISTING_ID ?? DEMO_LISTING_OBJECT_ID;
+const SMOKE_INELIGIBLE_LISTING_ID = process.env.INELIGIBLE_LISTING_ID ?? INELIGIBLE_LISTING_OBJECT_ID;
+const SMOKE_AGENT_SUI_ADDRESS = process.env.AGENT_SUI_ADDRESS ?? PUBLISHER_ADDRESS;
 const SMOKE_AGENT_EVM_ADDRESS =
   process.env.AGENT_EVM_ADDRESS ?? "0x662DbABBeff9B237490bBE6A898776a4A1D87CCe";
 
@@ -164,7 +167,7 @@ async function main() {
     const submitInput = {
       mandateId: SMOKE_MANDATE_ID,
       listingObjectId: SMOKE_LISTING_ID,
-      agentCapId: process.env.AGENT_CAP_ID ?? "0xabeb55d1266102eed4235531c542fb01fd85bb3095c3d579960923f2e1e25c2a",
+      agentCapId: process.env.AGENT_CAP_ID ?? SMOKE_OBJECTS.agentCapId,
       walrusBlobIdBytes: blobIdBytes,
       packetHashBytes,
       accessExpiresAtMs,

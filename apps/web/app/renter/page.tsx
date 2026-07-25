@@ -5,6 +5,7 @@ import { MandateForm } from "@/components/MandateForm";
 import { MandateStatus } from "@/components/MandateStatus";
 import { RevokeButton } from "@/components/RevokeButton";
 import { PacketBuilder } from "@/components/PacketBuilder";
+import { SMOKE } from "@rentdelegate/contracts-config";
 
 type MandateRecord = {
   mandateId: string;
@@ -18,10 +19,10 @@ export default function RenterPage() {
   const [revoked, setRevoked] = useState(false);
 
   const smokeMandate: MandateRecord = {
-    mandateId: "0x835478969ce38a0a1d0f981aa1a278a8862f9283de735ebba81c6169d388dbee",
-    ownerCapId: "0xcdb3924e29345c3be077f3c54de78435144ad141d0458a93f6fb6ae0381a571d",
-    agentCapId: "0xabeb55d1266102eed4235531c542fb01fd85bb3095c3d579960923f2e1e25c2a",
-    txDigest: "ANNzWCc4StQWGnbdDKmxkwozYhk2V8CDVDUk4UA1sfDA",
+    mandateId: SMOKE.mandateId,
+    ownerCapId: SMOKE.ownerCapId,
+    agentCapId: SMOKE.agentCapId,
+    txDigest: SMOKE.createMandateTxDigest,
   };
 
   const active = mandate ?? smokeMandate;
