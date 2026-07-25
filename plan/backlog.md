@@ -363,6 +363,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Field | Value |
 |---|---|
 | Priority | P0 |
+| Status | DONE - merged via `feature/rd-011-application-reservation`. |
 | Lane | L3 Provider API |
 | Objective | Implement `POST /listings/:id/applications` reservation flow. |
 | Suggested implementation | Validate request schema, require AgentKit context, verify listing exists, read mandate, check EVM/Sui binding, insert uniqueness reservation, create application row, return Sui submit hint. |
@@ -371,6 +372,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Blocks | RD-014, RD-105, RD-106. |
 | Acceptance criteria | First human/listing reservation succeeds; same human/listing returns 409; mismatched mandate addresses return 403. |
 | Tests | Route tests for success, duplicate, EVM mismatch, Sui mismatch, idempotency replay. |
+| Verification | 2026-07-25: `pnpm --filter @rentdelegate/provider-api build` -> success; `pnpm --filter @rentdelegate/provider-api test` -> success, 3 files/9 tests covering reservation success, duplicate human/listing 409, EVM mismatch 403, Sui mismatch 403, idempotency replay 200, idempotency conflict 409, missing mock AgentKit headers 401, listings, and DB uniqueness; `pnpm -r --if-present build` -> success; `pnpm -r --if-present test` -> success; `~/.local/bin/sui move build --path packages/move` -> success; `~/.local/bin/sui move test --path packages/move` -> success, 21 tests passed. RD-011 uses explicit `x-demo-*` mock AgentKit headers only; RD-012 must replace this before real World demo claims. |
 | Failure fallback | Implement with mock human context, then plug RD-012 before demo. |
 | Sponsor | World and Sui. |
 | Demo impact | Main trust-boundary join. |
