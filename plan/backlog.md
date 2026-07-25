@@ -562,6 +562,24 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Tests | Fresh-machine setup review; link check. |
 | Verification | 2026-07-25: `README.md` rewritten with architecture overview, sponsor table, package map, prerequisites, install, env vars, build/test commands, and demo quick-start. `docs/demo-script.md` covers 9 steps, testnet object reference table, and sponsor proof checklist. |
 
+### RD-108 Real Agent Sui Execution
+
+| Field | Value |
+|---|---|
+| Priority | P1 |
+| Status | TODO |
+| Lane | L8 Agent |
+| Objective | Turn the current PTB-reporting agent into a real testnet Sui-submitting agent. |
+| Suggested implementation | Load the agent Sui private key from an uncommitted environment variable, derive the agent address, verify it matches `AGENT_SUI_ADDRESS`, sign and execute the `submit_application` PTB with the agent-owned `AgentCap`, parse the created `ApplicationReceipt`, and call provider receipt verification automatically. Keep renter wallet custody impossible. |
+| Files/modules | `apps/agent/src/index.ts`, `apps/agent/src/suiSubmit.ts`, `apps/agent/src/providerClient.ts`, `docs/demo-script.md`, `README.md`. |
+| Dependencies | RD-008, RD-011, RD-012, RD-013, RD-105. |
+| Blocks | Fully autonomous testnet agent deployment. |
+| Acceptance criteria | Agent submits `submit_application` on Sui testnet with its own address, returns a tx digest and receipt ID, provider verifies the receipt, invalid/out-of-scope listings still do not submit, and no renter key or raw World human ID is handled by the agent. |
+| Tests | Unit tests for key parsing/address mismatch, mocked signer execution, receipt ID parsing, and provider verification handoff; optional live testnet smoke guarded by an explicit env flag. |
+| Verification | Pending. |
+| Security | Never commit `.env`, private keys, wallet seeds, mnemonics, or raw AgentKit human identifiers. Prefer `AGENT_SUI_PRIVATE_KEY_BASE64` or Sui `suiprivkey...` from process env only, and document testnet-only usage. |
+| Demo impact | Converts the current “PTB ready” proof into a complete real Sui application submission flow. |
+
 ## 7. P2 Backlog: Stretch Features
 
 ### RD-201 Seal Policy-Controlled Access

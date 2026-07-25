@@ -62,7 +62,7 @@ spec/
 |---|---|---|
 | `apps/web` | Renter, agent, provider, landlord demo UI | RD-103, RD-104 |
 | `apps/provider-api` | Listing provider API, DB, AgentKit verification, receipt verification | RD-009 |
-| `apps/agent` | Deterministic agent process | RD-105 |
+| `apps/agent` | Deterministic agent process; real Sui execution follow-up | RD-105, RD-108 |
 | `packages/move` | Sui Move package | RD-003 |
 | `packages/shared` | Zod schemas, constants, shared error codes | RD-002 |
 | `packages/sui-client` | Sui object readers and PTB builders | RD-008 |
@@ -436,7 +436,7 @@ export type RentDelegateClient = {
 };
 ```
 
-The client must not hide signer custody. Frontend signs renter/provider actions through wallet adapter. Agent signs agent actions with its own testnet key.
+The client must not hide signer custody. Frontend signs renter/provider actions through wallet adapter. Agent signs agent actions with its own testnet key. RD-008 only requires PTB construction; RD-108 completes private-key-backed agent submission and receipt verification.
 
 ## 10. Walrus And Packet Privacy Spec
 
@@ -519,6 +519,8 @@ Transaction UX must show expected signer address, connected signer address, tx d
 
 The agent is deterministic for authorization. LLM use is allowed only for summaries or explanations.
 
+Current RD-105 implementation may stop after building and serializing the `submit_application` PTB. RD-108 is the required follow-up for autonomous testnet execution: load the agent key from process env, verify the derived Sui address matches `AGENT_SUI_ADDRESS`, sign and execute the PTB with the agent-owned `AgentCap`, parse the created `ApplicationReceipt`, and call provider receipt verification.
+
 Allowed actions:
 
 | Action | Constraint |
@@ -581,12 +583,15 @@ PROVIDER_API_URL=http://localhost:4021
 SUI_RPC_URL=https://fullnode.testnet.sui.io:443
 SUI_PACKAGE_ID=0x...
 AGENT_SUI_PRIVATE_KEY_BASE64=REPLACE_WITH_TESTNET_ONLY_SECRET
+# Optional alternative accepted by RD-108 implementation: AGENT_SUI_PRIVATE_KEY=suiprivkey...
 AGENT_SUI_ADDRESS=0x...
 AGENT_EVM_PRIVATE_KEY=REPLACE_WITH_TESTNET_ONLY_SECRET
 AGENT_EVM_ADDRESS=0x...
 MANDATE_ID=0x...
 AGENT_CAP_ID=0x...
 ```
+
+Agent private keys are testnet-only secrets and must come from the process environment or a local uncommitted `.env` file. They must never be committed, logged, or derived from the renter wallet. The derived signer address must match `AGENT_SUI_ADDRESS` before submitting any Sui transaction.
 
 ## 15. Commands
 
@@ -599,6 +604,7 @@ Commands are only authoritative after the corresponding manifests/scripts exist.
 | Workspace tests after RD-001 | `pnpm -r --if-present test` |
 | Move build after RD-003 | `sui move build --path packages/move` |
 | Move tests after RD-003 | `sui move test --path packages/move` |
+| Agent run after RD-105 | `pnpm --filter @rentdelegate/agent start` builds/reports the PTB path unless RD-108 execution env is configured |
 
 If `sui` is not on `PATH`, use `~/.local/bin/sui move build --path packages/move` and `~/.local/bin/sui move test --path packages/move`. If `walrus` is not on `PATH`, use `~/.local/bin/walrus` for Walrus verification commands.
 
@@ -636,7 +642,7 @@ Log fields:
 | World verification | At least one real AgentKit-verified flow succeeds. |
 | Duplicate human | Same human/listing is rejected by DB uniqueness. |
 | Sui enforcement | Valid listing succeeds; invalid listing fails in Move. |
-| Receipt | `ApplicationReceipt` exists and provider verifies it. |
+| Receipt | `ApplicationReceipt` exists and provider verifies it; pre-seeded receipts satisfy current demo evidence, while autonomous agent-created receipts require RD-108. |
 | Walrus | Real encrypted blob upload works or mock is clearly labeled. |
 | Revocation | Renter revokes mandate; later submission fails. |
 | Documentation | README includes setup, sponsor mapping, limitations, tx links, and synthetic-data disclaimer. |
