@@ -1,7 +1,7 @@
 # Seal Access Control — Design Decisions And Architecture
 
-**Epic S ticket:** RD-131  
-**Status:** Decisions recorded; implementation in RD-132 … RD-137.
+**Epic S tickets:** RD-131 … RD-138
+**Status:** DONE — `seal_approve_packet` deployed at upgrade tx `BLqv4XRxg5MEGAt4jDr1v2eeNzuauQ7MhixH5971HgyS`.
 
 ---
 
@@ -53,29 +53,117 @@ The `latestPackageId` must be read from `packages/contracts-config` at runtime �
 
 ---
 
-## Access Policy (RD-132 preview)
+## Policy Function
 
-The `seal_approve_packet` Move function will enforce all six conditions:
+`seal_approve_packet` is a non-`public` `entry fun` in `rentdelegate::rental` (deployed in the
+upgraded package `0xbab0d70134d065a2f48ad8d18f2d8681de0464b7417485cbda8446eff31e8937`). It is the
+only function Seal key servers dry-run when a landlord requests decryption.
 
-| # | Condition | Error code |
-|---|---|---|
-| 1 | `ctx.sender() == receipt.landlord` | `ENOT_LANDLORD` |
-| 2 | `id == bcs(receipt.mandate_id) \|\| bcs(receipt.listing_id)` | `EIDENTITY_MISMATCH` |
-| 3 | `receipt.status == STATUS_SUBMITTED` | `ERECEIPT_NOT_ACTIVE` |
-| 4 | `clock.timestamp_ms() <= receipt.access_expires_at_ms` | `EACCESS_EXPIRED` |
-| 5 | `object::id(mandate) == receipt.mandate_id` | `EMANDATE_MISMATCH` |
-| 6 | `!mandate.revoked` | `EMANDATE_REVOKED` |
+### Signature
 
-Denial proof for each condition is captured in RD-137.
+```move
+entry fun seal_approve_packet(
+    id: vector<u8>,
+    receipt: &ApplicationReceipt,
+    mandate: &RentalMandate,
+    clock: &Clock,
+    ctx: &TxContext,
+)
+```
+
+All three objects (`ApplicationReceipt`, `RentalMandate`, and the system `Clock`) are shared, so
+the landlord's dry-run PTB can reference them without owning them.
+
+### Six enforced conditions
+
+| # | Condition | Abort code | Abort name |
+|---|---|---|---|
+| 1 | `ctx.sender() == receipt.landlord` | 17 | `ESEAL_WRONG_SENDER` |
+| 2 | `id == bcs(receipt.mandate_id) \|\| bcs(receipt.listing_id)` | 18 | `ESEAL_WRONG_IDENTITY` |
+| 3 | `receipt.status == STATUS_SUBMITTED` | 19 | `ESEAL_WRONG_STATUS` |
+| 4 | `clock.timestamp_ms() <= receipt.access_expires_at_ms` | 20 | `ESEAL_EXPIRED_ACCESS` |
+| 5 | `object::id(mandate) == receipt.mandate_id` | 21 | `ESEAL_WRONG_MANDATE` |
+| 6 | `!mandate.revoked` | 22 | `ESEAL_MANDATE_REVOKED` |
+
+All six must hold simultaneously. A failure on any one aborts the dry-run and the key servers
+withhold the decryption key.
+
+---
+
+## Denial Matrix
+
+| Case | Trigger | Abort code | Abort name | Proof type |
+|---|---|---|---|---|
+| 1 | Wallet is not `receipt.landlord` | 17 | `ESEAL_WRONG_SENDER` | Move test |
+| 2 | `id` bytes do not match `mandate_id ‖ listing_id` | 18 | `ESEAL_WRONG_IDENTITY` | Move test |
+| 3 | `receipt.status == STATUS_WITHDRAWN` | 19 | `ESEAL_WRONG_STATUS` | Move test |
+| 4 | `clock.timestamp_ms() > receipt.access_expires_at_ms` | 20 | `ESEAL_EXPIRED_ACCESS` | Move test |
+| 5 | `object::id(mandate) != receipt.mandate_id` | 21 | `ESEAL_WRONG_MANDATE` | Move test |
+| 6 | `mandate.revoked == true` | 22 | `ESEAL_MANDATE_REVOKED` | Move test |
+| 7 | `SessionKey` TTL elapsed | N/A (client-side) | — | Browser required |
+
+Cases 1–6 are proven by Move unit tests in `packages/move/tests/seal_tests.move`. Run with:
+
+```bash
+~/.local/bin/sui move test --path packages/move
+```
+
+28 tests pass (including 7 `seal_tests`). Case 7 requires a live browser session with a Slush
+wallet — see `docs/browser-testing.md`. `scripts/seal-denial-demo.mjs` documents all seven cases
+and can be run with `node scripts/seal-denial-demo.mjs`.
 
 ---
 
 ## Key Servers And Threshold
 
-- **Demo threshold:** `>= 2` out of the Mysten Labs testnet key server set.
-- A single key server (`threshold: 1`) is a single point of trust and undermines the policy claim. It is acceptable for local development only.
-- Key server object IDs are stored in `packages/contracts-config` and resolved at runtime so they are not hardcoded in application code.
-- The key server object holds the authoritative URL as an on-chain field — do not hardcode server URLs; read them from the object.
+Two Mysten Labs open-mode testnet key servers are configured in `packages/seal/src/config.ts`:
+
+| Object ID | Weight |
+|---|---|
+| `0x73d05d62c18d9374e3ea529e8e0ed6161da1a141a94d3f76ae3fe4e99356db75` | 1 |
+| `0xf5d14a81a982144ae441cd7d64b09027f116a468bd36e7eca494f750591623c8` | 1 |
+
+**Threshold:** `>= 2` (both servers must agree). A threshold of 1 is acceptable for local
+development only — a single key server is a single point of trust and undercuts the policy claim.
+
+Key server object IDs are read from `packages/seal/src/config.ts` at runtime (overridable via
+`SEAL_KEY_SERVER_IDS` env var). The key server object holds its authoritative URL as an on-chain
+field, so the object IDs are stable even when server URLs rotate.
+
+---
+
+## Package Upgrade
+
+`seal_approve_packet` does not exist in the original package and was added by the RD-132/RD-133
+upgrade:
+
+| Field | Value |
+|---|---|
+| Original package ID | `0x7e0130cdc105d06707f1f3abd4c76aac8211a09a5502692ba454d1b4b758af3d` |
+| Latest package ID | `0xbab0d70134d065a2f48ad8d18f2d8681de0464b7417485cbda8446eff31e8937` |
+| Upgrade tx digest | `BLqv4XRxg5MEGAt4jDr1v2eeNzuauQ7MhixH5971HgyS` |
+| Explorer | https://suivision.xyz/package/0xbab0d70134d065a2f48ad8d18f2d8681de0464b7417485cbda8446eff31e8937?network=testnet |
+
+All transaction targets use `latestPackageId`. The Seal identity namespace also uses
+`latestPackageId` (see Namespace section above). If a packet were encrypted under the original
+package ID, key servers would attempt to dry-run `seal_approve_packet` in the original package,
+find no such function, and refuse the decryption permanently.
+
+Pre-upgrade shared objects (`RentalMandate`, `RentalListing`, `ApplicationReceipt`) remain usable
+by both the original and the upgraded package — no object-model change was required.
+
+---
+
+## Limitations
+
+- **SessionKey TTL:** A `SessionKey` signed with `ttlMin` minutes expires after that duration. The
+  landlord must create a new session key after expiry — there is no automatic refresh. Case 7 of the
+  denial matrix is purely client-side and cannot be tested without a live browser.
+- **Walrus blob expiry:** Blobs are stored for a fixed epoch count (5 epochs in the live smoke). A
+  blob can expire while the on-chain `access_expires_at_ms` still permits access. The landlord view
+  should show both lifetimes separately. Blob renewal uses `walrus extend`.
+- **Testnet only:** All key servers, the package, and the shared objects referenced above are on
+  Sui testnet. Mainnet deployment would require separate key server registration and a new publish.
 
 ---
 
@@ -88,17 +176,19 @@ Denial proof for each condition is captured in RD-137.
 
 ---
 
-## Denial Proof Matrix (populated in RD-137)
+## Denial Proof Matrix (populated — RD-137 DONE)
 
-| Case | Trigger | Expected Move abort | Live-proven? |
+| Case | Trigger | Expected Move abort | Proof type |
 |---|---|---|---|
-| Wrong landlord wallet | Wallet != `receipt.landlord` | `ENOT_LANDLORD` | — |
-| Identity mismatch | Wrong `mandate_id` or `listing_id` in `id` | `EIDENTITY_MISMATCH` | — |
-| Withdrawn receipt | `receipt.status == STATUS_WITHDRAWN` | `ERECEIPT_NOT_ACTIVE` | — |
-| Revoked mandate | `mandate.revoked == true` | `EMANDATE_REVOKED` | — |
-| Access expired | `clock.timestamp_ms() > receipt.access_expires_at_ms` | `EACCESS_EXPIRED` | — |
-| Expired `SessionKey` | Session TTL elapsed | Client-side error | — |
-| Mandate/receipt mismatch | `object::id(mandate) != receipt.mandate_id` | `EMANDATE_MISMATCH` | — |
+| Wrong landlord wallet | Wallet != `receipt.landlord` | `ESEAL_WRONG_SENDER` (17) | Move test |
+| Identity mismatch | Wrong `mandate_id` or `listing_id` in `id` | `ESEAL_WRONG_IDENTITY` (18) | Move test |
+| Withdrawn receipt | `receipt.status == STATUS_WITHDRAWN` | `ESEAL_WRONG_STATUS` (19) | Move test |
+| Expired access | `clock.timestamp_ms() > receipt.access_expires_at_ms` | `ESEAL_EXPIRED_ACCESS` (20) | Move test |
+| Mandate/receipt mismatch | `object::id(mandate) != receipt.mandate_id` | `ESEAL_WRONG_MANDATE` (21) | Move test |
+| Revoked mandate | `mandate.revoked == true` | `ESEAL_MANDATE_REVOKED` (22) | Move test |
+| Expired `SessionKey` | Session TTL elapsed | Client-side error | Browser required |
+
+Run `node scripts/seal-denial-demo.mjs` for the full annotated matrix.
 
 ---
 

@@ -57,9 +57,9 @@ packages/
   shared/           Zod schemas, constants, errors, PacketDocument
   sui-client/       Sui gRPC client + PTB builders
   agentkit/         World AgentKit mock + real verifier
-  walrus/           Walrus mock + CLI adapter
+  walrus/           Walrus mock + browser HTTP + CLI adapters
   contracts-config/ Deployed testnet package/object IDs
-  seal/             Empty package.json — required scope, see Epic S
+  seal/             Seal client wrapper and browser decrypt flow
 scripts/            demo-agentkit-duplicate.mjs, agentkit-live-request.html
 docs/               demo-script, sui-deployment, provider-api, world-agentkit,
                     walrus-adapter, duplicate-human-demo
@@ -76,23 +76,17 @@ spec/development-spec.md   Implementation contract (schemas, endpoints, Move spe
   `0xc6f490b959f23db9936090be9bdd52ede80cb685561cc528593f958978235865`, provider verification
   `accepted`), with World AgentKit in mock mode for that run and Walrus on the labeled mock adapter —
   see `packages/contracts-config/testnet.json` -> `liveAgentRun` and `docs/demo-script.md`.
-  One live-smoke gap remains: RD-101 Walrus real upload (mock + CLI adapter code is done and tested;
-  only the live network upload was skipped). Do not run it without the user's explicit go-ahead,
-  since it spends live wallet resources.
-- **Scope changed 2026-07-25: Walrus live upload and Seal are now required, not stretch.** Three
-  active epics take the repo from "core demo works" to "the application is complete":
-  - **Epic C** (`plan/backlog-completion.md`, RD-109–RD-118) closes four wiring seams. The provider's
-    state is in-memory `Map`s and the drizzle/Postgres layer is dead code; the renter's encrypted
-    packet never reaches the agent; a mandate created in the UI needs a hand-edited `.env`; and the
-    dashboards read hardcoded fixtures with no `GET /applications` endpoint to read instead.
-  - **Epic W** (`plan/backlog-walrus.md`, RD-121–RD-126) does the live upload plus a browser-usable
-    adapter. Note `packages/walrus/src/http.ts` is misnamed — it holds the CLI adapter; there is no
-    HTTP client and no `@mysten/walrus` dependency.
-  - **Epic S** (`plan/backlog-seal.md`, RD-131–RD-138) implements Seal. Needs a Move `seal_approve`
-    entry function and a package upgrade. All three relevant objects are already shared, so no
-    object-model change is required.
-- Nothing is currently broken: the workspace builds and all tests pass (57 passed / 3 skipped, plus
-  21 Move tests). Do not treat this remaining work as bug-fixing.
+  The completion epics are now DONE: provider persistence/live endpoints, packet handoff, AgentCap
+  discovery, agent service mode, browser live-data views, Walrus HTTP live smoke, provider blob
+  verification, Seal client/encryption/decrypt UI, and `seal_approve_packet` are implemented.
+- Walrus live evidence: HTTP adapter upload/download verified byte-identical on testnet, blob
+  `84g0OLjpe_P0nZYUqz2Vwy82C4EtTec0dNCXliXZCDc`. CLI adapter is implemented and tested but not
+  live-run because no Walrus CLI config file was present.
+- Seal live evidence: package upgraded to
+  `0xbab0d70134d065a2f48ad8d18f2d8681de0464b7417485cbda8446eff31e8937` in tx
+  `BLqv4XRxg5MEGAt4jDr1v2eeNzuauQ7MhixH5971HgyS`; Move denial matrix is unit-test proven.
+- Nothing is currently broken: the workspace builds and all tests pass (143 JS/TS tests with 3 skips,
+  plus 28 Move tests). Do not treat optional stretch work as bug-fixing.
 - RD-202 agent rotation and RD-203 zkLogin remain genuinely optional (`plan/backlog-stretch.md`).
 - Before starting new work, check the ticket's `Status` field in its epic file rather than assuming
   from this file — statuses change. Respect the file-ownership matrix in `plan/backlog.md` before

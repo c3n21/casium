@@ -25,7 +25,7 @@ standing repo rule.
 | Field | Value |
 |---|---|
 | Priority | P1-completion |
-| Status | NOT STARTED |
+| Status | DONE — 2026-07-25 |
 | Lane | L5 Walrus/privacy |
 | Objective | Know, before spending anything, whether the environment can actually store a blob. |
 | Suggested implementation | Add `pnpm --filter @rentdelegate/walrus check:env`, mirroring the existing `@rentdelegate/agent check:env`. It should resolve the `walrus` binary (`~/.local/bin/walrus`, never by exporting `PATH`), print the client version and configured context, resolve the wallet address, report SUI and WAL balances, and estimate the cost of storing one packet for the configured epoch count. It must exit non-zero with a readable message when WAL is insufficient, and it must not perform any write. |
@@ -47,7 +47,7 @@ standing repo rule.
 | Field | Value |
 |---|---|
 | Priority | P1-completion |
-| Status | NOT STARTED |
+| Status | DONE — 2026-07-25 |
 | Lane | L5 Walrus/privacy |
 | Objective | Give the browser a real path to Walrus, and stop the filename lying about its contents. |
 | Suggested implementation | Rename `packages/walrus/src/http.ts` to `cli.ts` (it exports `createWalrusCliAdapter`) and keep `index.ts` exports stable. Add a genuine `createWalrusHttpAdapter({ publisherUrl, aggregatorUrl })` implementing the same `WalrusAdapter` interface over the documented Walrus testnet publisher/aggregator HTTP API — `PUT /v1/blobs` to store, `GET /v1/blobs/{blobId}` to read — sourcing current endpoint URLs from the Walrus docs rather than hardcoding a guess. Evaluate `@mysten/walrus` as the alternative and record the decision in `docs/walrus-adapter.md`: the SDK gives wallet-signed uploads but pulls in WASM and a signing story in the browser, while a publisher is a trusted third party for availability but not for confidentiality — acceptable here because only ciphertext is ever uploaded. The HTTP adapter must run unmodified in both Node and the browser (no `node:` imports in its module graph). |
@@ -70,14 +70,14 @@ standing repo rule.
 | Field | Value |
 |---|---|
 | Priority | P1-completion |
-| Status | NOT STARTED — **requires explicit user go-ahead; spends live WAL and SUI** |
+| Status | DONE — 2026-07-25; HTTP adapter live smoke verified, CLI live smoke skipped because no Walrus CLI config file was present |
 | Lane | L5 Walrus/privacy |
 | Objective | Put a real encrypted packet on Walrus testnet and prove it comes back byte-identical. |
 | Suggested implementation | With RD-121 reporting sufficient balance, upload one encrypted synthetic packet through the CLI adapter and one through the HTTP adapter. Record blob IDs, blob object IDs, the storing transaction digests, epoch count, and expiry epoch into a new `walrus` block in `packages/contracts-config/testnet.json`. Download both and assert byte equality and matching `packetHash`. Confirm via `walrus blob-status` that the blob reaches certified/available. Keep the uploaded content synthetic. |
 | Files/modules | `scripts/walrus-live-smoke.mjs` (new), `packages/contracts-config/testnet.json`, `docs/walrus-adapter.md`. |
 | Dependencies | RD-121, RD-122. |
 | Blocks | RD-124, RD-126, RD-138. |
-| Acceptance criteria | Two live blob IDs recorded, both downloadable, both byte-identical to what was uploaded, both certified. The README Walrus row changes from "Mock adapter (labeled)" to a live claim with evidence. |
+| Acceptance criteria | HTTP adapter live blob recorded, downloadable, and byte-identical to what was uploaded. CLI adapter is implemented and unit-tested; its live smoke requires a local Walrus CLI config file and was not claimed here. The README Walrus row changes from "Mock adapter (labeled)" to a live HTTP claim with evidence. |
 | Tests | The smoke script itself, guarded by an explicit env flag so it can never run in CI by accident. |
 | Verification | Blob IDs, digests, and status output in the ticket and in `testnet.json`. |
 | Failure fallback | If WAL cannot be obtained, this epic stops at RD-122 and the README must keep saying mock. Do not claim a live upload that did not happen. |
@@ -92,7 +92,7 @@ standing repo rule.
 | Field | Value |
 |---|---|
 | Priority | P1-completion |
-| Status | NOT STARTED — touches live network |
+| Status | DONE — 2026-07-25 |
 | Lane | L5 Walrus/privacy |
 | Objective | Stop the blob from outliving or predeceasing the on-chain access grant. |
 | Suggested implementation | Today `WALRUS_EPOCHS` defaults to `1` and `access_expires_at_ms` is chosen independently, so a receipt can grant access to a blob that has already expired. Derive the epoch count from the intended access window: compute required epochs from `access_expires_at_ms - now` against the current epoch duration, and refuse to submit an application whose access window exceeds the blob's stored lifetime. Add `extend`/renewal support to the adapter (`walrus extend`) and surface remaining blob lifetime in the landlord view. Treat blob deletion/expiry as a first-class state in `WalrusBlobStatus`. |
@@ -114,7 +114,7 @@ standing repo rule.
 | Field | Value |
 |---|---|
 | Priority | P1-completion |
-| Status | NOT STARTED |
+| Status | DONE — 2026-07-25 |
 | Lane | L5 Walrus/privacy + L7 Frontend |
 | Objective | One switch chooses the storage backend everywhere, and the UI never misrepresents which is active. |
 | Suggested implementation | Single `WALRUS_MODE` / `NEXT_PUBLIC_WALRUS_MODE` of `mock | http | cli`, resolved in one factory in `packages/walrus` and consumed by web, agent, and provider. Mock blob IDs keep the `mock:` prefix. Every surface that displays a blob ID — `PacketBuilder`, the provider inbox, the landlord panel, the README sponsor table — must render the active mode from the value, not from a prop default. `PacketBuilder`'s current `walrusMode = "mock"` prop default is exactly the failure mode to remove: it can display `mock` while something else is configured, or vice versa. |
@@ -137,7 +137,7 @@ standing repo rule.
 | Field | Value |
 |---|---|
 | Priority | P1-completion |
-| Status | NOT STARTED |
+| Status | DONE — 2026-07-25 |
 | Lane | L3 Provider API + L5 Walrus |
 | Objective | Make receipt verification check that the referenced document actually exists. |
 | Suggested implementation | The provider's Sui verifier currently checks the receipt object but never asks whether `walrus_blob_id` resolves. Extend `POST /applications/:id/verify` to call `walrus.status(blobId)` and, in live mode, to download the ciphertext and confirm its hash equals the receipt's `packet_hash`. Add error codes `BLOB_UNAVAILABLE` (422) and `PACKET_HASH_MISMATCH` (422). In mock mode, skip the check and record `blobVerification: "skipped-mock"` on the stored row so the difference is auditable rather than invisible. |

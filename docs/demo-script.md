@@ -258,10 +258,28 @@ before building a transaction, and Move rejects it even when a submission is for
 | ApplicationReceipt | `0xc46d42744b7381447851f9f2adb6cf32322ab4bd6aba243e925597418899ad20` |
 | Publish tx | `GvxTETJej5RH4U3rFD2PNCENW65tG8vynRF1xskTrxP7` |
 | submit_application tx | `6vKuZNC3p5uoaSni2N5NifW1eQjqdLDesBAj9gN799Lh` |
+| Latest package (Seal) | `0xbab0d70134d065a2f48ad8d18f2d8681de0464b7417485cbda8446eff31e8937` |
+| Upgrade tx | `BLqv4XRxg5MEGAt4jDr1v2eeNzuauQ7MhixH5971HgyS` |
+| Live Walrus blob | `84g0OLjpe_P0nZYUqz2Vwy82C4EtTec0dNCXliXZCDc` |
 
 The smoke `AgentCap` above is valid only for the listed smoke `RentalMandate` and stable smoke agent
 address. If you create a new mandate, keep the agent address the same and use the newly created
 `AgentCap` for that mandate.
+
+---
+
+## Privacy Flow: Renter Encrypts To Landlord Decrypts
+
+This path uses the completion epics added after the original core demo.
+
+1. Open `/renter`, create a mandate, and build the synthetic packet.
+2. The packet is encrypted in the browser and uploaded through the active Walrus adapter.
+3. The browser registers only `{ mandateId, walrusBlobId, packetHash, sizeBytes, encryptionMode }` with the provider API.
+4. Open `/agent`, start a run, and watch the staged pipeline: load mandate, evaluate listing, read packet, reserve, submit, verify.
+5. Open `/landlord`, request Seal access, sign the `SessionKey` message, and decrypt the packet in-browser.
+6. For denial evidence, run `node scripts/seal-denial-demo.mjs`; Move tests prove wrong sender, wrong identity, withdrawn receipt, expired access, wrong mandate, and revoked mandate aborts.
+
+**Modes:** `NEXT_PUBLIC_ENCRYPTION_MODE=mock` keeps the AES-GCM fallback clearly labeled. `NEXT_PUBLIC_ENCRYPTION_MODE=seal` uses the upgraded package's `seal_approve_packet` policy. `NEXT_PUBLIC_WALRUS_MODE=mock|http` controls storage in the browser; the live HTTP smoke is recorded in `packages/contracts-config/testnet.json`.
 
 ---
 
@@ -271,13 +289,15 @@ address. If you create a new mandate, keep the agent address the same and use th
 |---|---|
 | Sui: Move objects enforce mandate scope | `RentalMandate`, `AgentCap`, `RentalListing`, `ApplicationReceipt` on testnet |
 | Sui: Agent uses own address + AgentCap (no renter custody) | `submit_application` requires `AgentCap`; `apps/agent` signs only with env-only agent Sui key |
-| Sui: 21 unit tests cover all enforcement rules | `~/.local/bin/sui move test --path packages/move` |
+| Sui: 28 unit tests cover mandate and Seal policy enforcement | `~/.local/bin/sui move test --path packages/move` |
 | World: Live AgentKit verification | `POST /listings/.../applications` returned `202` with real header from `eip155:480` |
 | World: Duplicate-human rejection | `pnpm demo:duplicate-human` — `409 DUPLICATE_HUMAN_LISTING` |
 | World: Unverified rejection | Same script — `401 AGENTKIT_UNVERIFIED` |
-| Walrus: Mock-labeled adapter | `createMockWalrusAdapter()` — blob IDs prefixed `mock:` |
-| Walrus: CLI adapter implemented | `createWalrusCliAdapter()` in `packages/walrus` |
-| Plaintext never sent to provider | `PacketBuilder` encrypts AES-GCM before upload |
+| Walrus: live HTTP upload verified | Blob `84g0OLjpe_P0nZYUqz2Vwy82C4EtTec0dNCXliXZCDc`, byte-identical download, `docs/walrus-adapter.md` |
+| Walrus: mock and CLI adapters implemented | Mock blob IDs prefixed `mock:`; CLI adapter requires local Walrus config and was not live-run here |
+| Seal: policy-controlled access | `seal_approve_packet` deployed in package `0xbab0d70134d065a2f48ad8d18f2d8681de0464b7417485cbda8446eff31e8937` |
+| Seal: denial matrix | `node scripts/seal-denial-demo.mjs`; Move tests cover 6 policy aborts |
+| Plaintext never sent to provider | `PacketBuilder` uploads encrypted bytes and provider stores only blob ID + packet hash |
 
 ---
 
@@ -287,4 +307,4 @@ address. If you create a new mandate, keep the agent address the same and use th
 - **Fund transfer**: not represented as a permission flag.
 - **Agent private key handling**: live execution requires an uncommitted testnet-only agent key in env; no renter key is used or stored.
 - **RD-014 two-live-agent proof**: requires a second EVM address registered to the same World human. Logic is implemented; controlled fixture proves the rule.
-- **Seal (RD-201)**: P2 scope — not implemented to avoid risking the core demo.
+- **Seal expired-SessionKey browser proof**: the Move denial matrix is unit-test proven; the expired browser session case requires a live Slush wallet session.

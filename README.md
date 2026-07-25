@@ -16,8 +16,8 @@ Agent (apps/agent)      → World AgentKit: proves human identity
                         → Provider API: reserves application slot (duplicate-human guard)
                         → Sui: submits ApplicationReceipt on-chain
 Provider (apps/provider-api) → Verifies Sui receipt, stores accepted application
-Frontend (apps/web)     → Renter, provider, and landlord dashboards
-Walrus                  → Encrypted document packet (mock in demo, CLI adapter included)
+Frontend (apps/web)     → Renter, provider, landlord, and agent operator dashboards
+Walrus                  → Encrypted document packet (mock/http/cli modes; live HTTP smoke verified)
 ```
 
 ## Sponsor Integration Status
@@ -26,7 +26,8 @@ Walrus                  → Encrypted document packet (mock in demo, CLI adapter
 |---|---|---|
 | Sui | Live testnet Move package, on-chain mandate/listing/receipt objects | `packages/contracts-config/testnet.json`, `docs/sui-deployment.md` |
 | World | Live AgentKit verification on World Chain (`eip155:480`) | `docs/world-agentkit.md` |
-| Walrus | Mock adapter (labeled), CLI adapter implemented | `docs/walrus-adapter.md` |
+| Walrus | Live testnet HTTP upload verified; mock and CLI modes remain labeled | `docs/walrus-adapter.md`, blob `84g0OLjpe_P0nZYUqz2Vwy82C4EtTec0dNCXliXZCDc` |
+| Seal | Policy-controlled access path implemented; `seal_approve_packet` deployed in upgraded testnet package | `docs/seal.md`, upgrade tx `BLqv4XRxg5MEGAt4jDr1v2eeNzuauQ7MhixH5971HgyS` |
 
 ## Packages
 
@@ -40,7 +41,8 @@ packages/
   shared/         Zod schemas, constants, errors, PacketDocument
   sui-client/     TypeScript Sui gRPC client + PTB builders
   agentkit/       World AgentKit mock + real verifier
-  walrus/         Walrus mock + CLI adapter
+  walrus/         Walrus mock + browser HTTP + CLI adapters
+  seal/           Seal client wrapper and browser decrypt flow
   contracts-config/ Deployed testnet package ID and object IDs
 scripts/
   demo-agentkit-duplicate.mjs   Duplicate-human demo
@@ -77,7 +79,7 @@ Create a local `.env` file (not committed) for live modes:
 
 ```env
 # Sui
-SUI_PACKAGE_ID=0x7e0130cdc105d06707f1f3abd4c76aac8211a09a5502692ba454d1b4b758af3d
+SUI_PACKAGE_ID=0xbab0d70134d065a2f48ad8d18f2d8681de0464b7417485cbda8446eff31e8937
 SUI_RPC_URL=https://fullnode.testnet.sui.io:443
 
 # AgentKit (real mode)
@@ -87,11 +89,19 @@ AGENTKIT_HEADER=<base64-encoded-agentkit-header>
 
 # Provider API
 PROVIDER_API_URL=http://localhost:4021
+PROVIDER_STORE=memory
+
+# Storage / encryption
+WALRUS_MODE=mock
+NEXT_PUBLIC_WALRUS_MODE=mock
+NEXT_PUBLIC_ENCRYPTION_MODE=mock
 
 # Agent
+AGENT_SERVER_PORT=4022
 MANDATE_ID=0x835478969ce38a0a1d0f981aa1a278a8862f9283de735ebba81c6169d388dbee
 AGENT_SUI_ADDRESS=0x371321932fb4c4b79b9b0762ac0878ebfb670cc6f6327ecf9d1d06cd9489243e
 AGENT_EVM_ADDRESS=0x662DbABBeff9B237490bBE6A898776a4A1D87CCe
+# Optional override; by default the agent discovers the AgentCap for MANDATE_ID.
 AGENT_CAP_ID=0xabeb55d1266102eed4235531c542fb01fd85bb3095c3d579960923f2e1e25c2a
 AGENT_SUI_PRIVATE_KEY=suiprivkey...
 # or AGENT_SUI_PRIVATE_KEY_BASE64=<32-byte-ed25519-secret-key-base64>

@@ -25,7 +25,7 @@ None of this required new architecture. It is mechanical wiring against interfac
 | Field | Value |
 |---|---|
 | Priority | P1-completion |
-| Status | NOT STARTED |
+| Status | DONE — 2026-07-25 |
 | Lane | L3 Provider API |
 | Objective | Make provider state durable so the World duplicate-human guarantee survives a process restart. |
 | Suggested implementation | Wire `createDb()` into `createApp()`. Convert `createListingService` and `createApplicationService` from `Map` to drizzle queries against the existing tables. Enforce duplicate-human by relying on the `human_listing_usage` primary key and the `applications_agent_idempotency_unique` constraint rather than in-process checks — catch the unique-violation error and map it to `DUPLICATE_HUMAN_LISTING` / `IDEMPOTENCY_CONFLICT`. Add a migration runner (`pnpm --filter @rentdelegate/provider-api db:migrate`) and a `docker-compose.yml` (or documented local `postgres` service) for the dev database. Keep an explicit `PROVIDER_STORE=memory` fallback for tests so the existing suite does not require a live database. |
@@ -47,7 +47,7 @@ None of this required new architecture. It is mechanical wiring against interfac
 | Field | Value |
 |---|---|
 | Priority | P1-completion |
-| Status | NOT STARTED |
+| Status | DONE — 2026-07-25 |
 | Lane | L3 Provider API |
 | Objective | Expose the endpoints the UI and the spec already assume but that do not exist. |
 | Suggested implementation | Add `GET /applications` with `listingId`, `mandateId`, and `status` filters and stable ordering. Add `POST /applications/:id/withdraw` (spec §7.2 lists it; it is unimplemented) which verifies the Sui `withdraw_application` transaction before marking the row withdrawn. Add `POST /applications/:id/access-grants` and `GET /applications/:id/access-grants` backed by the already-defined `document_access_grants` table. Keep all responses aligned with `packages/shared` Zod schemas. |
@@ -69,7 +69,7 @@ None of this required new architecture. It is mechanical wiring against interfac
 | Field | Value |
 |---|---|
 | Priority | P1-completion |
-| Status | NOT STARTED |
+| Status | DONE — 2026-07-25 |
 | Lane | L5 Walrus/privacy + L8 Agent |
 | Objective | Make the packet the agent submits be the packet the renter actually built. |
 | Suggested implementation | Delete `createBrowserMockWalrus()` from `PacketBuilder.tsx` and use the shared adapter selected by RD-125. On successful upload, POST `{mandateId, walrusBlobId, packetHash, sizeBytes, encryptionMode}` to a new provider endpoint (`POST /packets`) so the record is durable. The agent then reads the packet record for its mandate instead of calling `makeSyntheticPacket()` + `createMockWalrusAdapter()`, and refuses to submit if no packet is registered for the mandate. The provider must store blob ID and hash only — never ciphertext bytes, never a key. |
@@ -92,7 +92,7 @@ None of this required new architecture. It is mechanical wiring against interfac
 | Field | Value |
 |---|---|
 | Priority | P1-completion |
-| Status | NOT STARTED |
+| Status | DONE — 2026-07-25 |
 | Lane | L8 Agent + L3 Provider API |
 | Objective | Let a mandate created in the browser become actionable without editing `.env`. |
 | Suggested implementation | Two halves. (1) After `create_mandate` succeeds, the renter UI registers `{mandateId, ownerCapId, agentCapId, agentSuiAddress, txDigest}` with the provider API, which persists it. (2) The agent stops reading `AGENT_CAP_ID` from env: given a `mandateId`, it queries objects owned by `AGENT_SUI_ADDRESS` of type `<package>::rental::AgentCap` and selects the one whose `agent_cap_mandate_id` matches, aborting if zero or more than one match. Spec §14 already names this "a future hardening step" — this ticket makes it current. |
@@ -114,7 +114,7 @@ None of this required new architecture. It is mechanical wiring against interfac
 | Field | Value |
 |---|---|
 | Priority | P1-completion |
-| Status | NOT STARTED |
+| Status | DONE — 2026-07-25 |
 | Lane | L8 Agent |
 | Objective | Turn the one-shot script into a service the UI can trigger. |
 | Suggested implementation | Wrap the existing deterministic pipeline in a small Hono server. `POST /runs {mandateId, listingObjectId?}` starts a run and returns a `runId`; `GET /runs/:id` returns staged progress (`loaded-mandate`, `evaluated`, `reserved`, `submitted`, `verified`, or a typed failure) with tx digest and receipt ID; `GET /health` reports signer address and AgentKit mode. Keep `node dist/index.js` working as a CLI entrypoint over the same pipeline — do not fork the logic. The signing key stays process-env only and must never appear in a response. |
@@ -137,7 +137,7 @@ None of this required new architecture. It is mechanical wiring against interfac
 | Field | Value |
 |---|---|
 | Priority | P1-completion |
-| Status | NOT STARTED |
+| Status | DONE — 2026-07-25 |
 | Lane | L7 Frontend |
 | Objective | Delete every hardcoded demo fixture and read the real system. |
 | Suggested implementation | Renter page: drop the `smokeMandate` fallback and resolve the connected wallet's mandates from chain plus the registry from RD-112; show an empty state when there are none. Provider page: drop `DEMO_APPLICATION_IDS` and drive `ApplicationInbox` from `GET /applications`. Landlord page: drop `SMOKE_RECEIPT_ID` and list receipts for the connected landlord address, keeping per-receipt detail. Keep the known-good testnet IDs available as an explicitly labeled "demo evidence" panel rather than as silent defaults. |
@@ -182,7 +182,7 @@ None of this required new architecture. It is mechanical wiring against interfac
 | Field | Value |
 |---|---|
 | Priority | P1-completion |
-| Status | NOT STARTED |
+| Status | DONE — 2026-07-25 |
 | Lane | L7 Frontend |
 | Objective | Build the operator view the spec requires (§12) and the app does not have. |
 | Suggested implementation | New `apps/web/app/agent/page.tsx`: mandate summary and remaining allowance, the eligible/ineligible listing evaluation with per-rule reasons, AgentKit mode and verification status, a "Run agent" button hitting RD-113's `POST /runs`, staged progress, and the resulting tx digest, receipt ID, and provider verification result with explorer links. Ineligible listings must show *why* in mandate terms. |
@@ -205,7 +205,7 @@ None of this required new architecture. It is mechanical wiring against interfac
 | Field | Value |
 |---|---|
 | Priority | P1-completion |
-| Status | NOT STARTED |
+| Status | DONE — 2026-07-25 |
 | Lane | L1 Move + L3 Provider + L7 Frontend |
 | Objective | Expose the revocability story that already exists in Move but has no path above it. |
 | Suggested implementation | `withdraw_application` is implemented and tested in `packages/move/sources/rental.move:277` but has no PTB builder consumer, no API route, and no UI. Add a renter-side withdraw button (requires `OwnerCap`) using the existing `buildWithdrawApplicationTx`, call RD-110's withdraw endpoint with the digest, and show the receipt flipping to withdrawn on the landlord and provider views. |
@@ -228,7 +228,7 @@ None of this required new architecture. It is mechanical wiring against interfac
 | Field | Value |
 |---|---|
 | Priority | P1-completion |
-| Status | NOT STARTED |
+| Status | DONE — 2026-07-25 |
 | Lane | L3 Provider API + L8 Agent |
 | Objective | Implement spec §16, which is currently specified and entirely absent from the code. |
 | Suggested implementation | `grep -rn "correlationId" apps packages` returns nothing today. Add middleware that accepts or mints an `x-correlation-id`, propagate it from the agent through every provider request, and emit structured JSON logs carrying the field set in spec §16 (`applicationId`, `mandateId`, `receiptId`, `txDigest`, `agentEvmAddress`, `agentSuiAddress`, `humanIdHash`, `walrusBlobId`). `humanIdHash` may be logged; the raw World human ID must never be. Never log key material or ciphertext. |

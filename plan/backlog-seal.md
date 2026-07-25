@@ -59,7 +59,7 @@ Sources for the Seal contract used below: [Encryption with Seal — Sui docs](ht
 | Field | Value |
 |---|---|
 | Priority | P1-completion |
-| Status | NOT STARTED |
+| Status | DONE — 2026-07-25 |
 | Lane | L1 Move + L6 Seal |
 | Objective | Encode the landlord access policy in Move, where it can be enforced rather than asserted. |
 | Suggested implementation | Add to `rentdelegate::rental`, following the required shape — non-`public`, `entry`, first parameter `id: vector<u8>`, aborting with a specific error code on any failure: `entry fun seal_approve_packet(id: vector<u8>, receipt: &ApplicationReceipt, mandate: &RentalMandate, clock: &Clock, ctx: &TxContext)`. Checks, each with its own abort code: the caller is the receipt's landlord (`ctx.sender() == receipt.landlord`); `id` equals the identity derived from `receipt.mandate_id ‖ receipt.listing_id`, binding the ciphertext to this receipt; `receipt.status == STATUS_SUBMITTED` (so withdrawal revokes access); `clock.timestamp_ms() <= receipt.access_expires_at_ms`; `object::id(mandate) == receipt.mandate_id`; and `!mandate.revoked` (so mandate revocation revokes access). Add error constants in the existing `ESCREAMING_CASE` style. All three objects are already shared, so the landlord can supply them as dry-run inputs. Do not call `seal_approve` from any other Move function. |
@@ -81,7 +81,7 @@ Sources for the Seal contract used below: [Encryption with Seal — Sui docs](ht
 | Field | Value |
 |---|---|
 | Priority | P1-completion |
-| Status | NOT STARTED — **spends live testnet gas** |
+| Status | DONE — 2026-07-25; upgrade tx `BLqv4XRxg5MEGAt4jDr1v2eeNzuauQ7MhixH5971HgyS` |
 | Lane | L1 Move + L0 Project setup |
 | Objective | Get `seal_approve_packet` on chain without orphaning the objects already in use. |
 | Suggested implementation | Upgrade with `UpgradeCap` `0x2250bb6b4e9804285aa42d9dd7f2737ecdd93ed4b03edbf515459fb7223d62af`. Dry-run first. Existing shared objects — the live mandate, listings, and receipts referenced in `testnet.json` — must remain readable and usable by the existing functions; verify this rather than assuming it. Record in `packages/contracts-config/testnet.json` **both** IDs under an explicit `upgrade` block: `originalPackageId` (`0x7e0130cd…`) and `latestPackageId`, plus the upgrade digest and version. Consumers must then be explicit about which they use: transaction targets use latest, and the Seal identity namespace uses whichever RD-131 pinned. Follow `agent/skills/sui-publish/SKILL.md`. |
@@ -103,7 +103,7 @@ Sources for the Seal contract used below: [Encryption with Seal — Sui docs](ht
 | Field | Value |
 |---|---|
 | Priority | P1-completion |
-| Status | NOT STARTED |
+| Status | DONE — 2026-07-25 |
 | Lane | L6 Seal |
 | Objective | Fill the empty package with a typed wrapper the web app and tests can share. |
 | Suggested implementation | Add `@mysten/seal` as a dependency (the workspace has none today) and build `packages/seal/src/client.ts` exposing `encryptPacket(bytes, {mandateId, listingObjectId})` and `decryptPacket(encryptedObject, sessionKey, txBytes)` over `SealClient`. Configure `serverConfigs` from allowlisted testnet key server object IDs with explicit `weight`s and `verifyKeyServers: true`, and read the object IDs from config rather than hardcoding, since a key server object holds the authoritative URL. Start at `threshold: 1` for local development but **ship the demo at `threshold >= 2`** — a single key server is a single point of trust and undercuts the claim being made. Encryption calls `encrypt({threshold, packageId, id, data})` with `id` from RD-131's shared derivation. Handle and type the backup symmetric key returned by `encrypt` explicitly: it is a full bypass of the policy, so it must be discarded, never persisted, never logged, never sent anywhere. |
@@ -125,7 +125,7 @@ Sources for the Seal contract used below: [Encryption with Seal — Sui docs](ht
 | Field | Value |
 |---|---|
 | Priority | P1-completion |
-| Status | NOT STARTED |
+| Status | DONE — 2026-07-25 |
 | Lane | L5 Privacy + L7 Frontend |
 | Objective | Replace the unshareable AES-GCM key with Seal-encrypted ciphertext. |
 | Suggested implementation | `apps/web/src/lib/packet.ts` currently encrypts with a Web Crypto AES-GCM key that exists only in React state — correct as a demonstration, useless as a delivery mechanism. Switch `PacketBuilder` to Seal for the shipped path: the renter selects the target listing (needed for the RD-131 identity), the packet is Seal-encrypted, and the resulting `encryptedObject` bytes are uploaded to Walrus through the RD-122 adapter. `packetHash` is computed over the ciphertext actually uploaded so RD-126's provider-side check matches. Keep the AES-GCM path behind an explicit `mock` encryption mode for offline development, labeled in the UI exactly as the Walrus mock is. The renter must be able to see which mode produced their packet. |
@@ -148,7 +148,7 @@ Sources for the Seal contract used below: [Encryption with Seal — Sui docs](ht
 | Field | Value |
 |---|---|
 | Priority | P1-completion |
-| Status | NOT STARTED |
+| Status | DONE — 2026-07-25 |
 | Lane | L7 Frontend + L6 Seal |
 | Objective | Let an authorized landlord actually read a document, and no one else. |
 | Suggested implementation | On `/landlord`: create a `SessionKey` via `SessionKey.create({address, packageId, ttlMin, suiClient})`, have the landlord approve it once by signing a personal message through dApp Kit, then per receipt build a PTB whose only command is `seal_approve_packet(id, receipt, mandate, clock)` — all three objects are shared, so the landlord can reference them — serialize it with `onlyTransactionKind: true`, call `fetchKeys`/`decrypt`, download the ciphertext from Walrus, and render the decrypted synthetic packet. Show session TTL remaining, blob lifetime remaining (RD-124), and on-chain access expiry as three distinct facts, because they expire independently. Record each successful decrypt as a `document_access_grants` row via RD-110. Plaintext must stay in memory: never persisted, never logged, never sent to the provider. |
@@ -171,7 +171,7 @@ Sources for the Seal contract used below: [Encryption with Seal — Sui docs](ht
 | Field | Value |
 |---|---|
 | Priority | P1-completion |
-| Status | NOT STARTED |
+| Status | DONE — 2026-07-25; Move tests cover 6 policy denials, expired SessionKey remains browser-required |
 | Lane | L6 Seal |
 | Objective | Prove the policy denies, live, not only that it permits. |
 | Suggested implementation | Run every denial path against the deployed package with real key servers and capture the output. Cases: a wallet that is not the landlord; a receipt whose `id` does not match the ciphertext identity; a withdrawn receipt (via RD-117); a mandate revoked after submission; access past `access_expires_at_ms`; an expired `SessionKey`; and a mandate/receipt mismatch. Each must fail with its distinct Move abort code surfaced to the user. Record them in `docs/seal.md` alongside the duplicate-human evidence, and follow the same honesty rule as RD-014 — a fixture-based proof must be labeled as one. |
@@ -194,7 +194,7 @@ Sources for the Seal contract used below: [Encryption with Seal — Sui docs](ht
 | Field | Value |
 |---|---|
 | Priority | P1-completion |
-| Status | NOT STARTED |
+| Status | DONE — 2026-07-25 |
 | Lane | L9 Demo/docs |
 | Objective | Make the completed privacy story checkable by someone who did not build it. |
 | Suggested implementation | Write `docs/seal.md` (architecture, identity scheme, policy table, key servers and threshold, denial matrix, limitations). Update `docs/walrus-adapter.md` for the three modes and live evidence. Update the README sponsor table so Walrus and Seal carry live claims with links only if RD-123 and RD-136 actually succeeded — if either did not, the table must keep saying mock. Extend `docs/demo-script.md` with the renter-encrypts → landlord-decrypts → landlord-denied sequence. Update `AGENTS.md` status. |
