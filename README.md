@@ -94,11 +94,20 @@ AGENT_EVM_ADDRESS=0x662DbABBeff9B237490bBE6A898776a4A1D87CCe
 AGENT_CAP_ID=0xabeb55d1266102eed4235531c542fb01fd85bb3095c3d579960923f2e1e25c2a
 AGENT_SUI_PRIVATE_KEY=suiprivkey...
 # or AGENT_SUI_PRIVATE_KEY_BASE64=<32-byte-ed25519-secret-key-base64>
+
+# Agent -> provider running AGENTKIT_MODE=mock (local Sui-focused runs only)
+AGENTKIT_DEMO_HUMAN_ID_HASH=sha256:local-demo
+AGENTKIT_DEMO_AGENT_EVM_ADDRESS=0x662DbABBeff9B237490bBE6A898776a4A1D87CCe
 ```
 
 All object/address values are pre-filled with testnet smoke values where applicable. `AGENTKIT_HEADER`
 requires a real signed header from MetaMask (see `docs/world-agentkit.md`). `AGENT_SUI_PRIVATE_KEY`
 or `AGENT_SUI_PRIVATE_KEY_BASE64` is optional; without it the agent prints a PTB-only fallback. Never commit it.
+
+The `AGENTKIT_DEMO_*` pair is the opt-in mock path for exercising the Sui flow without a signed header.
+It only works against a provider started with `AGENTKIT_MODE=mock`, both variables must be set, a real
+`AGENTKIT_HEADER` always takes precedence, and the agent labels the run `[MOCK]`. It proves nothing
+about World identity.
 
 ## Single-Agent Model
 

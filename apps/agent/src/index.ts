@@ -17,6 +17,7 @@ import { createMockWalrusAdapter } from "@rentdelegate/walrus";
 import { makeSyntheticPacket } from "@rentdelegate/shared";
 import { evaluateEligibility } from "./rules.js";
 import { createProviderClient } from "./providerClient.js";
+import type { DemoAgentKitHeaders } from "./providerClient.js";
 import { executeSubmitApplication } from "./suiSubmit.js";
 
 const PACKAGE_ID =
@@ -35,6 +36,25 @@ const SMOKE_AGENT_SUI_ADDRESS =
 const SMOKE_AGENT_EVM_ADDRESS =
   process.env.AGENT_EVM_ADDRESS ?? "0x662DbABBeff9B237490bBE6A898776a4A1D87CCe";
 
+/**
+ * Mock-AgentKit headers for local Sui-focused smokes. Opt-in only: both env vars
+ * must be set, and the provider API must be running with AGENTKIT_MODE=mock.
+ */
+function readDemoAgentKitHeaders(): DemoAgentKitHeaders | null {
+  const humanIdHash = process.env.AGENTKIT_DEMO_HUMAN_ID_HASH;
+  const agentEvmAddress = process.env.AGENTKIT_DEMO_AGENT_EVM_ADDRESS;
+
+  if (!humanIdHash || !agentEvmAddress) return null;
+
+  return {
+    humanIdHash,
+    agentEvmAddress,
+    ...(process.env.AGENTKIT_DEMO_MANDATE_AGENT_SUI_ADDRESS
+      ? { mandateAgentSuiAddress: process.env.AGENTKIT_DEMO_MANDATE_AGENT_SUI_ADDRESS }
+      : {}),
+  };
+}
+
 async function main() {
   console.log("=== RentDelegate Agent ===");
   console.log(`Package:   ${PACKAGE_ID}`);
@@ -44,10 +64,16 @@ async function main() {
   const suiClient = createRentDelegateClient({ network: "testnet", rpcUrl: RPC_URL, packageId: PACKAGE_ID });
   const executionClient = new SuiGrpcClient({ network: "testnet", baseUrl: RPC_URL });
   const walrus = createMockWalrusAdapter();
+  const demoHeaders = readDemoAgentKitHeaders();
   const provider = createProviderClient({
     baseUrl: PROVIDER_API_BASE,
     ...(process.env.AGENTKIT_HEADER ? { agentkitHeader: process.env.AGENTKIT_HEADER } : {}),
+    ...(demoHeaders ? { demoAgentKitHeaders: demoHeaders } : {}),
   });
+
+  if (!process.env.AGENTKIT_HEADER && demoHeaders) {
+    console.log("AgentKit:  [MOCK] demo headers — requires provider AGENTKIT_MODE=mock, proves no World identity");
+  }
 
   // 1. Load mandate
   console.log("\n[1] Loading mandate from testnet...");

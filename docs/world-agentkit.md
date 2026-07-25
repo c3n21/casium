@@ -4,11 +4,17 @@ RD-012 adds the server-side AgentKit verification boundary.
 
 ## Modes
 
-`AGENTKIT_MODE=mock` is the default local mode. It accepts explicit test headers and is only for deterministic route tests:
+`AGENTKIT_MODE=mock` is the default local mode. It accepts explicit test headers and is only for deterministic route tests and local Sui-focused agent runs:
 
 - `x-demo-human-id-hash`
 - `x-demo-agent-evm-address`
 - `x-demo-mandate-agent-sui-address`
+
+`apps/agent` can send these headers, but only when `AGENTKIT_DEMO_HUMAN_ID_HASH` and
+`AGENTKIT_DEMO_AGENT_EVM_ADDRESS` are both set. Without them, and without a real `AGENTKIT_HEADER`,
+the agent refuses to reserve rather than falling back silently. A real header always wins over the
+demo pair, and the agent prints an explicit `[MOCK]` line on the demo path. Runs on this path prove
+the Sui and provider layers only — never cite them as World verification.
 
 `AGENTKIT_MODE=real` uses low-level helpers from `@worldcoin/agentkit`:
 

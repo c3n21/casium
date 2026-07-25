@@ -2,24 +2,42 @@ import { ReserveApplicationSchema } from "@rentdelegate/shared";
 import type { VerifyReceiptInput } from "@rentdelegate/shared";
 import type { ReservedApplication } from "./types.js";
 
+/**
+ * Mock-mode headers understood by a provider API running AGENTKIT_MODE=mock.
+ * These prove nothing about World: they are only for local Sui-focused smokes.
+ */
+export type DemoAgentKitHeaders = {
+  humanIdHash: string;
+  agentEvmAddress: string;
+  mandateAgentSuiAddress?: string;
+};
+
 export type ProviderClientOptions = {
   baseUrl: string;
   /** Pre-built agentkit header value to attach to reservation requests. */
   agentkitHeader?: string;
+  /** Opt-in mock-AgentKit headers. Ignored whenever a real agentkitHeader is set. */
+  demoAgentKitHeaders?: DemoAgentKitHeaders;
   fetchImpl?: typeof fetch;
 };
 
 export function createProviderClient(options: ProviderClientOptions) {
-  const { baseUrl, agentkitHeader, fetchImpl = fetch } = options;
+  const { baseUrl, agentkitHeader, demoAgentKitHeaders, fetchImpl = fetch } = options;
 
   async function post<T>(path: string, body: unknown, requireAgentKit = false): Promise<T> {
     const headers: Record<string, string> = { "content-type": "application/json" };
 
     if (requireAgentKit && agentkitHeader) {
       headers["agentkit"] = agentkitHeader;
+    } else if (requireAgentKit && demoAgentKitHeaders) {
+      // Mock-AgentKit path: only accepted by a provider started with AGENTKIT_MODE=mock.
+      // Must stay opt-in so a real run can never silently degrade to unverified World context.
+      headers["x-demo-human-id-hash"] = demoAgentKitHeaders.humanIdHash;
+      headers["x-demo-agent-evm-address"] = demoAgentKitHeaders.agentEvmAddress;
+      if (demoAgentKitHeaders.mandateAgentSuiAddress) {
+        headers["x-demo-mandate-agent-sui-address"] = demoAgentKitHeaders.mandateAgentSuiAddress;
+      }
     } else if (requireAgentKit) {
-      // Fall back to demo mock headers when no real AgentKit header is configured.
-      // In production, this path must not be reached without a real header.
       throw new Error(
         "No agentkit header configured. Provide AGENTKIT_HEADER env or a real AgentKit signer.",
       );

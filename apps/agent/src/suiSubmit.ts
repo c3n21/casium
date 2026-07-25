@@ -71,7 +71,9 @@ export async function executeSubmitApplication(
   const result = await options.executionClient.core.signAndExecuteTransaction({
     transaction: tx,
     signer: keypair,
-    include: { effects: true, events: true },
+    // objectTypes is required: effects.changedObjects carries no type, only the
+    // separate objectTypes map can identify the created ApplicationReceipt.
+    include: { effects: true, events: true, objectTypes: true },
   });
 
   if (result.$kind === "FailedTransaction" || !result.Transaction.status.success) {
@@ -117,12 +119,15 @@ export function keypairFromPrivateKey(privateKey: string): Ed25519Keypair {
 }
 
 export function parseReceiptIdFromTransaction(
-  transaction: Pick<SuiClientTypes.Transaction<{ events: true; effects: true }>, "events" | "effects">,
+  transaction: Pick<
+    SuiClientTypes.Transaction<{ events: true; effects: true; objectTypes: true }>,
+    "events" | "effects" | "objectTypes"
+  >,
   packageId: string,
 ): string | null {
   const fromEvents = parseReceiptIdFromEvents(transaction.events, packageId);
   if (fromEvents) return fromEvents;
-  return parseReceiptIdFromEffects(transaction.effects, packageId);
+  return parseReceiptIdFromEffects(transaction.effects, packageId, transaction.objectTypes);
 }
 
 export function parseReceiptIdFromEvents(events: unknown, packageId: string): string | null {
@@ -131,10 +136,16 @@ export function parseReceiptIdFromEvents(events: unknown, packageId: string): st
   const submittedType = `${packageId}::rental::ApplicationSubmitted`;
   for (const event of events) {
     if (!event || typeof event !== "object") continue;
-    const typedEvent = event as { eventType?: string; contents?: { json?: unknown }; parsedJson?: unknown };
+    const typedEvent = event as {
+      eventType?: string;
+      json?: unknown;
+      contents?: { json?: unknown };
+      parsedJson?: unknown;
+    };
     if (typedEvent.eventType !== submittedType) continue;
 
-    const json = typedEvent.contents?.json ?? typedEvent.parsedJson;
+    // gRPC exposes the parsed payload as `json`; the other keys cover JSON-RPC-shaped clients.
+    const json = typedEvent.json ?? typedEvent.contents?.json ?? typedEvent.parsedJson;
     const receiptId = receiptIdFromJson(json);
     if (receiptId) return receiptId;
   }
@@ -144,11 +155,16 @@ export function parseReceiptIdFromEvents(events: unknown, packageId: string): st
 
 /**
  * Parse the submit_application tx effects to find the ApplicationReceipt object ID.
- * Looks for a created object matching the expected type.
+ *
+ * gRPC `effects.changedObjects` entries have no `objectType`, so the created object's
+ * type is resolved through the transaction-level `objectTypes` map (requires
+ * `include: { objectTypes: true }`). The inline-`objectType` branches keep older
+ * JSON-RPC-shaped effects working.
  */
 export function parseReceiptIdFromEffects(
   effects: unknown,
   packageId: string,
+  objectTypes?: Record<string, string> | null,
 ): string | null {
   if (!effects || typeof effects !== "object") return null;
   const typedEffects = effects as {
@@ -156,16 +172,17 @@ export function parseReceiptIdFromEffects(
     changedObjects?: Array<{ objectId?: string; objectType?: string; idOperation?: string }>;
   };
   const receiptType = `${packageId}::rental::ApplicationReceipt`;
+  const isReceiptType = (type: unknown) => typeof type === "string" && type.startsWith(receiptType);
+  const typeOf = (objectId: string | undefined, objectType: string | undefined) =>
+    objectType ?? (objectId ? objectTypes?.[objectId] : undefined);
 
   const created = typedEffects.created ?? [];
-  const receipt = created.find(
-    (obj) => typeof obj.objectType === "string" && obj.objectType.startsWith(receiptType),
-  );
+  const receipt = created.find((obj) => isReceiptType(typeOf(obj.objectId, obj.objectType)));
 
   if (receipt?.objectId) return receipt.objectId;
 
   const changedReceipt = (typedEffects.changedObjects ?? []).find(
-    (obj) => obj.idOperation === "Created" && typeof obj.objectType === "string" && obj.objectType.startsWith(receiptType),
+    (obj) => obj.idOperation === "Created" && isReceiptType(typeOf(obj.objectId, obj.objectType)),
   );
 
   return changedReceipt?.objectId ?? null;

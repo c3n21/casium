@@ -35,7 +35,21 @@ describe("keypairFromPrivateKey", () => {
 });
 
 describe("receipt ID parsing", () => {
-  it("extracts receipt ID from Sui event JSON", () => {
+  it("extracts receipt ID from the gRPC event json payload", () => {
+    expect(
+      parseReceiptIdFromEvents(
+        [
+          {
+            eventType: `${PACKAGE_ID}::rental::ApplicationSubmitted`,
+            json: { receipt_id: "0xreceipt", remaining_applications: "1" },
+          },
+        ],
+        PACKAGE_ID,
+      ),
+    ).toBe("0xreceipt");
+  });
+
+  it("still reads JSON-RPC-shaped event payloads", () => {
     expect(
       parseReceiptIdFromEvents(
         [
@@ -49,7 +63,34 @@ describe("receipt ID parsing", () => {
     ).toBe("0xreceipt");
   });
 
-  it("falls back to created object effects with type metadata", () => {
+  it("falls back to gRPC changedObjects resolved through the objectTypes map", () => {
+    expect(
+      parseReceiptIdFromEffects(
+        {
+          changedObjects: [
+            { objectId: "0xmandate", idOperation: "None", outputState: "ObjectWrite" },
+            { objectId: "0xreceipt", idOperation: "Created", outputState: "ObjectWrite" },
+          ],
+        },
+        PACKAGE_ID,
+        {
+          "0xmandate": `${PACKAGE_ID}::rental::RentalMandate`,
+          "0xreceipt": `${PACKAGE_ID}::rental::ApplicationReceipt`,
+        },
+      ),
+    ).toBe("0xreceipt");
+  });
+
+  it("returns null when created objects carry no resolvable type", () => {
+    expect(
+      parseReceiptIdFromEffects(
+        { changedObjects: [{ objectId: "0xreceipt", idOperation: "Created" }] },
+        PACKAGE_ID,
+      ),
+    ).toBeNull();
+  });
+
+  it("falls back to created object effects with inline type metadata", () => {
     expect(
       parseReceiptIdFromEffects(
         { created: [{ objectId: "0xreceipt", objectType: `${PACKAGE_ID}::rental::ApplicationReceipt` }] },
@@ -65,10 +106,11 @@ describe("receipt ID parsing", () => {
           events: [
             {
               eventType: `${PACKAGE_ID}::rental::ApplicationSubmitted`,
-              contents: { json: { receipt_id: "0xeventreceipt" } },
+              json: { receipt_id: "0xeventreceipt" },
             },
           ],
-          effects: { created: [{ objectId: "0xeffectreceipt", objectType: `${PACKAGE_ID}::rental::ApplicationReceipt` }] },
+          effects: { changedObjects: [{ objectId: "0xeffectreceipt", idOperation: "Created" }] },
+          objectTypes: { "0xeffectreceipt": `${PACKAGE_ID}::rental::ApplicationReceipt` },
         },
         PACKAGE_ID,
       ),
@@ -105,7 +147,7 @@ describe("executeSubmitApplication", () => {
         events: [
           {
             eventType: `${PACKAGE_ID}::rental::ApplicationSubmitted`,
-            contents: { json: { receipt_id: "0xreceipt" } },
+            json: { receipt_id: "0xreceipt" },
           },
         ],
         effects: {},
@@ -126,7 +168,10 @@ describe("executeSubmitApplication", () => {
     expect(tx.setGasBudget).toHaveBeenCalledWith(100_000_000n);
     expect(tx.setGasPayment).toHaveBeenCalledWith([{ objectId: "0xgas", version: "1", digest: "digest" }]);
     expect(signAndExecuteTransaction).toHaveBeenCalledWith(
-      expect.objectContaining({ signer: expect.objectContaining({}), include: { effects: true, events: true } }),
+      expect.objectContaining({
+        signer: expect.objectContaining({}),
+        include: { effects: true, events: true, objectTypes: true },
+      }),
     );
   });
 
@@ -171,6 +216,57 @@ describe("provider receipt verification handoff", () => {
         body: JSON.stringify({ applicationId: "app_1", txDigest: "txdigest", receiptId: "0xreceipt" }),
       }),
     );
+  });
+});
+
+describe("provider reservation AgentKit headers", () => {
+  const RESERVE_BODY = { mandateId: "0xmandate" };
+
+  it("throws when neither a real nor a demo AgentKit header is configured", async () => {
+    const fetchImpl = vi.fn();
+    const provider = createProviderClient({ baseUrl: "http://provider.test", fetchImpl });
+
+    await expect(provider.reserveApplication("listing_1", RESERVE_BODY)).rejects.toThrow(
+      /No agentkit header configured/,
+    );
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("sends opt-in mock headers when demo AgentKit headers are configured", async () => {
+    const fetchImpl = vi.fn(async () => Response.json({ id: "app_1" }));
+    const provider = createProviderClient({
+      baseUrl: "http://provider.test",
+      fetchImpl,
+      demoAgentKitHeaders: {
+        humanIdHash: "sha256:demo",
+        agentEvmAddress: "0xevm",
+        mandateAgentSuiAddress: "0xsui",
+      },
+    });
+
+    await provider.reserveApplication("listing_1", RESERVE_BODY);
+
+    const headers = fetchImpl.mock.calls[0]?.[1]?.headers as Record<string, string>;
+    expect(headers["x-demo-human-id-hash"]).toBe("sha256:demo");
+    expect(headers["x-demo-agent-evm-address"]).toBe("0xevm");
+    expect(headers["x-demo-mandate-agent-sui-address"]).toBe("0xsui");
+    expect(headers["agentkit"]).toBeUndefined();
+  });
+
+  it("prefers a real AgentKit header over demo headers", async () => {
+    const fetchImpl = vi.fn(async () => Response.json({ id: "app_1" }));
+    const provider = createProviderClient({
+      baseUrl: "http://provider.test",
+      fetchImpl,
+      agentkitHeader: "real-header",
+      demoAgentKitHeaders: { humanIdHash: "sha256:demo", agentEvmAddress: "0xevm" },
+    });
+
+    await provider.reserveApplication("listing_1", RESERVE_BODY);
+
+    const headers = fetchImpl.mock.calls[0]?.[1]?.headers as Record<string, string>;
+    expect(headers["agentkit"]).toBe("real-header");
+    expect(headers["x-demo-human-id-hash"]).toBeUndefined();
   });
 });
 

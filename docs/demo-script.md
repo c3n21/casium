@@ -185,6 +185,38 @@ With a matching key, Step 5 signs with the agent-owned Sui address, submits `sub
 extracts the `ApplicationReceipt` from events/effects, then Step 6 calls provider receipt verification.
 If the provider API is not running or no AgentKit header is set, the agent prints a clear message and exits without claiming success.
 
+### Local runs against a mock-mode provider
+
+For Sui-focused runs without a MetaMask-signed header, start the provider with `AGENTKIT_MODE=mock`
+and give the agent the matching opt-in demo headers:
+
+```bash
+AGENTKIT_DEMO_HUMAN_ID_HASH=sha256:local-demo \
+AGENTKIT_DEMO_AGENT_EVM_ADDRESS=0x662DbABBeff9B237490bBE6A898776a4A1D87CCe \
+AGENT_SUI_PRIVATE_KEY=suiprivkey... node apps/agent/dist/index.js
+```
+
+Both variables must be set or the agent refuses to reserve, and a real `AGENTKIT_HEADER` always wins.
+The agent prints `AgentKit: [MOCK] demo headers` on this path — it proves **no** World identity and must
+never be used as evidence of World verification. Use it only to exercise the Sui path.
+
+### Live evidence (2026-07-25)
+
+A full agent-signed run on testnet, with the World layer in mock mode and Walrus on the labeled mock adapter:
+
+| What | Value |
+|---|---|
+| Mandate | `0x16de4b28830417bea4becaa591671ca69024fea9d99d355c9c8784e468dcc454` |
+| AgentCap | `0xcdc9d7aa5345a4b5c4e8b6fc093a3b5c2b4caf469a3b9f99144449ac462bebd9` |
+| `submit_application` tx | `BatrGYNdmzXA8wdEJT4XC4LXa55fZ6ezMAFcsbvAd1dm` |
+| `ApplicationReceipt` | `0xc6f490b959f23db9936090be9bdd52ede80cb685561cc528593f958978235865` |
+| Provider verification | `accepted` (real Sui verifier against testnet) |
+| Ineligible listing (Porto, municipality 6) | `0xd0f9b4ae975b27d56af6c23844cbfa76dfda81f2913585788c51289ad1f0b3d1` |
+| Forced ineligible submit | tx `6YRsTLLYKCEcWjnXBrfKwxwFc1tiTomLryxmvG7r71sA`, aborted with code 7 `EMUNICIPALITY_NOT_ALLOWED` |
+
+The last row is the "Sui limits what the agent can do" proof: the agent refuses the out-of-scope listing
+before building a transaction, and Move rejects it even when a submission is forced by hand.
+
 ---
 
 ## Step 8 — Provider: Review Application (Tab D)

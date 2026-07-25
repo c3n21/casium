@@ -62,10 +62,14 @@ spec/development-spec.md   Implementation contract (schemas, endpoints, Move spe
 ## Status / Remaining Work
 
 - All P0 tickets (RD-001–RD-014) are DONE except RD-014, which is PARTIAL: the duplicate-human rejection is proven via a controlled fixture, but full live proof needs a second EVM agent registered to the *same* World human — do not claim that live proof exists until it's actually run.
-- P1 is DONE except two live-smoke gaps, both intentionally not run because they spend real resources / need secrets not committed to the repo:
-  - RD-101 Walrus real upload smoke (mock + CLI adapter code is done and tested; only the live network upload was skipped).
-  - RD-108 real agent Sui execution (code/tests are done; live execution needs an uncommitted `AGENT_SUI_PRIVATE_KEY`/`AGENT_SUI_PRIVATE_KEY_BASE64`).
-  Do not run either without the user's explicit go-ahead, since both touch live wallets/resources.
+- P1 is DONE. RD-108 real agent Sui execution was proven live on 2026-07-25 (tx
+  `BatrGYNdmzXA8wdEJT4XC4LXa55fZ6ezMAFcsbvAd1dm`, receipt
+  `0xc6f490b959f23db9936090be9bdd52ede80cb685561cc528593f958978235865`, provider verification
+  `accepted`), with World AgentKit in mock mode for that run and Walrus on the labeled mock adapter —
+  see `packages/contracts-config/testnet.json` -> `liveAgentRun` and `docs/demo-script.md`.
+  One live-smoke gap remains: RD-101 Walrus real upload (mock + CLI adapter code is done and tested;
+  only the live network upload was skipped). Do not run it without the user's explicit go-ahead,
+  since it spends live wallet resources.
 - P2 (RD-201 Seal, RD-202 agent rotation, RD-203 zkLogin) is not started and is explicitly non-critical-path; do not risk core Sui/World demo stability for it.
 - Before starting new work, check `plan/backlog.md` for the ticket's current `Status` field rather than assuming from this file — statuses change.
 
