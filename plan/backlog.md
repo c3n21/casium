@@ -443,6 +443,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Field | Value |
 |---|---|
 | Priority | P1 |
+| Status | PARTIAL - mock adapter verified and Walrus CLI adapter implemented via `feature/rd-101-walrus-adapter`; live upload smoke requires explicit approval because it can spend wallet resources. |
 | Lane | L5 Walrus/privacy |
 | Objective | Implement storage adapter for encrypted packets with real Walrus and mock fallback. |
 | Suggested implementation | Define `WalrusAdapter` with `upload(bytes)`, `download(blobId)`, `status(blobId)`. Use Walrus HTTP/SDK/CLI-daemon for real mode; local memory or filesystem for mock mode. |
@@ -451,6 +452,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Blocks | RD-102, RD-105, RD-106. |
 | Acceptance criteria | Real mode uploads ciphertext and returns blob ID; mock mode clearly prefixes `mock:`; download returns same bytes. |
 | Tests | Round-trip upload/download in mock; optional real Walrus smoke with env flag. |
+| Verification | 2026-07-25: `pnpm --filter @rentdelegate/walrus build` -> success; `pnpm --filter @rentdelegate/walrus test` -> success, 2 files/3 tests covering mock upload/download/status and Walrus CLI JSON blob ID parsing. Live Walrus upload was not executed to avoid spending configured wallet resources without explicit approval. |
 | Failure fallback | Use mock adapter and label in UI/README. |
 | Sponsor | Sui/Walrus. |
 | Demo impact | Privacy and Sui Stack credibility. |
