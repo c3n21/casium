@@ -1,0 +1,25 @@
+export const MUNICIPALITIES = {
+  LISBON: 1,
+  OEIRAS: 2,
+  CASCAIS: 3,
+  AMADORA: 4,
+  ALMADA: 5,
+  PORTO_INELIGIBLE_DEMO: 6,
+} as const;
+
+export const MUNICIPALITY_LABELS = {
+  [MUNICIPALITIES.LISBON]: "Lisbon",
+  [MUNICIPALITIES.OEIRAS]: "Oeiras",
+  [MUNICIPALITIES.CASCAIS]: "Cascais",
+  [MUNICIPALITIES.AMADORA]: "Amadora",
+  [MUNICIPALITIES.ALMADA]: "Almada",
+  [MUNICIPALITIES.PORTO_INELIGIBLE_DEMO]: "Porto",
+} as const;
+
+export const ACTION_SUBMIT_DOCS = 1n;
+export const ACTION_WITHDRAW = 2n;
+
+export const PERMISSION_FLAGS = {
+  ACTION_SUBMIT_DOCS,
+  ACTION_WITHDRAW,
+} as const;
