@@ -13,6 +13,16 @@
 - Do not edit shell startup files or export PATH globally for this repo.
 - Prefer project-local tooling once `package.json`/workspace files exist; do not suggest global npm installs for repo dependencies.
 
+## Repo-Local Skills
+
+- Sui and Walrus reference skills are stored in `agent/skills/`. They may not be registered with the runtime `skill` tool, so discover them with file search and read their `SKILL.md` files directly when relevant.
+- Use `agent/skills/sui-client/SKILL.md` before Sui client setup, address management, faucet, balance, or gas work.
+- Use `agent/skills/sui-publish/SKILL.md` before RD-007 publish/deploy work, test-publish, dry-runs, upgrade caps, or package ID handoff.
+- Use `agent/skills/sui-move-project/SKILL.md`, `agent/skills/sui-build/SKILL.md`, `agent/skills/sui-move/SKILL.md`, `agent/skills/modern-move-syntax/SKILL.md`, `agent/skills/sui-object-model/SKILL.md`, `agent/skills/composable-move-functions/SKILL.md`, and `agent/skills/move-unit-testing/SKILL.md` for Move package, syntax, object-model, and test work.
+- Use `agent/skills/ptbs/SKILL.md` for Sui CLI PTB construction and transaction command patterns.
+- Use `agent/skills/walrus-sites/`, `agent/skills/accessing-data/`, and related Walrus skills only for Walrus/storage work; keep Walrus mocks clearly labeled if used.
+- Repo-specific constraints still override skill docs: do not export `~/.local/bin` to `PATH`, do not edit shell startup files, do not commit secrets, and do not claim Sui or World integrations are real unless they are live-verified.
+
 ## Planned Structure
 
 - Planned monorepo package manager: `pnpm` workspaces.
