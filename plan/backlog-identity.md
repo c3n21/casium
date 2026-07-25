@@ -89,7 +89,7 @@ two agents in parallel.**
 | Field | Value |
 |---|---|
 | Priority | P1-identity |
-| Status | TODO |
+| Status | DONE |
 | Lane | L8 Agent |
 | Objective | Make the agent service the source of truth for its own identity pair, so no human has to transcribe either address. |
 | Suggested implementation | In `apps/agent/src/server.ts`, add `agentEvmAddress` to the existing `GET /health` payload — the value is already read as `process.env.AGENTKIT_DEMO_AGENT_EVM_ADDRESS` in `readDemoAgentKitHeaders()` (line 38), and in live mode it comes from `AGENTKIT_HEADER`'s signer. Return `null` when unknown rather than an empty string, so a consumer can distinguish "not configured" from "configured as blank". Then add `GET /identity` returning `{ agentSuiAddress, agentEvmAddress, agentkitMode, packageId }` — a dedicated endpoint so the mandate form is not coupled to the shape of a liveness probe, and so a future agent registry can serve the same shape. `packageId` comes from `@rentdelegate/contracts-config`; it lets the form warn when the agent targets a different package than the browser. CORS is already open (`app.use("*", cors(...))`, line 61). Do not add authentication — this endpoint publishes only public addresses. Keep `/health`'s existing keys untouched: `apps/web/app/agent/page.tsx:323-326` reads `agentSuiAddress` and `agentkitMode`, and RD-144's stubs mirror the shape. |
@@ -111,7 +111,7 @@ two agents in parallel.**
 | Field | Value |
 |---|---|
 | Priority | P1-identity |
-| Status | TODO |
+| Status | DONE |
 | Lane | L2 Sui TS |
 | Objective | Make the mandate's on-chain EVM address readable off-chain — the prerequisite for enforcing it. |
 | Suggested implementation | `packages/sui-client/src/objects.ts:5-19` — `parseMandate` currently skips `agent_evm`. Add `agentEvm` to the returned object and to the `RentalMandate` type in `types.ts`. The on-chain field is `vector<u8>` (`rental.move:42`), so the JSON arrives as a number array; normalize to a **lowercase `0x`-prefixed hex string** so every consumer compares like with like — that normalization belongs here and nowhere else. Handle the degenerate cases explicitly: empty vector → `null` (test mandates use `vector[]`, see `create_test_mandate` at `rental.move:439`), and a byte length other than 20 → keep the hex but do not pad or truncate, so RD-164 can reject it as malformed rather than silently comparing a wrong-length value. Reuse the existing `numberArrayOf` helper. |
@@ -133,7 +133,7 @@ two agents in parallel.**
 | Field | Value |
 |---|---|
 | Priority | P1-identity |
-| Status | TODO |
+| Status | DONE |
 | Lane | L7 Frontend |
 | Objective | Stop asking the renter to author the agent's identity, without hiding who they are authorizing. |
 | Suggested implementation | In `apps/web/src/components/MandateForm.tsx`, delete the two `<input>`s at lines 112-131 and the hardcoded demo EVM constant at line 38. Fetch `GET ${NEXT_PUBLIC_AGENT_API_URL}/identity` on mount — the env var already exists and `apps/web/app/agent/page.tsx:11` shows the read pattern; extract that constant rather than duplicating the `??` default. Render an **agent card**: both addresses truncated (`0x4541d0…a91c`) with the full value available on hover/expand, plus the `agentkitMode` badge reusing the `/agent` page's `mock`/`live` wording. Treat the pair as atomic — one fetch, one displayed unit, never independently editable. Three states to handle explicitly: (a) **loaded** — card renders, submit enabled; (b) **agent unreachable** — reuse the existing "Agent offline:" phrasing and disable submit, since creating a mandate for an agent you cannot reach is the mistake this ticket exists to prevent; (c) **`agentEvmAddress: null`** — show "not registered with World" and disable submit, because a mandate with an empty `agent_evm` is exactly the silent-failure case from this epic's premise. Keep an **advanced override** behind a collapsed disclosure for dev and future multi-agent use: opening it restores both inputs, and it must be visibly labeled as unverified. Warn (do not block) if the identity's `packageId` differs from `PACKAGE_ID`. Two cleanups while in this file: validate through `parsed.data` rather than re-reading `fields` after `safeParse` (line 64 vs 70-76), and keep the `Buffer.from(addr.slice(2),"hex")` conversion **after** schema validation so a malformed address cannot be silently truncated into a short byte vector. |
@@ -155,7 +155,7 @@ two agents in parallel.**
 | Field | Value |
 |---|---|
 | Priority | P1-identity |
-| Status | TODO |
+| Status | DONE |
 | Lane | L3 Provider API |
 | Objective | Make a wrong `agent_evm` fail loudly at reservation time, so the mandate's recorded identity is a constraint rather than a decoration. |
 | Suggested implementation | In `apps/provider-api/src/services/applications.ts`, `reserve()` currently compares the request body against the AgentKit header (line 158) and never reads the chain. Add a mandate fetch and compare the **AgentKit-verified signer** against the **on-chain** `agentEvm` from RD-162, plus `agentSui` against the request's `agentSuiAddress`. Widen the injected client from `Pick<RentDelegateClient, "getReceipt">` to include `"getMandate"` — `apps/provider-api/src/app.ts:84-85` already constructs a full `createRentDelegateClient`, so this is a type widening, not new wiring. Reuse the existing codes: `MANDATE_EVM_MISMATCH` (403) and `MANDATE_SUI_MISMATCH` (403) — both already exist in `packages/shared/src/errors.ts:4-5` with accurate messages that this ticket finally makes true. Compare lowercase hex on both sides. Decide and document the three edge cases in the ticket: mandate **not found** on chain → `SUI_MANDATE_REJECTED`; `agentEvm` **null/empty** (legacy mandates created before RD-163) → reject with `MANDATE_EVM_MISMATCH` and a message naming the empty field, since accepting it reopens the silent hole; mandate **revoked or expired** → reject here rather than letting the agent discover it at `submit_application`. Cache the mandate read per request only — never across requests, or revocation would not take effect. In-memory (non-DB) mode must enforce identically; if no Sui client is injected in a test/mock configuration, **skip the check and log a warning naming it as unenforced** rather than silently passing. |
@@ -177,7 +177,7 @@ two agents in parallel.**
 | Field | Value |
 |---|---|
 | Priority | P2-identity |
-| Status | TODO |
+| Status | DONE |
 | Lane | L9 Demo/docs |
 | Objective | State exactly what the identity binding is, where each half is enforced, and what remains unenforced — so the claim survives a judge's follow-up question. |
 | Suggested implementation | Add an *Agent Identity Binding* section to `docs/world-agentkit.md`: the two-address table from this epic's *Source Of Truth* section, which layer enforces which half (Move enforces `agent_sui` via `sender`; the provider enforces `agent_evm` via AgentBook + RD-164; **nothing enforces `agent_evm` on-chain, by design** — link the *What This Epic Does Not Do* table). Update the error-code table in `docs/provider-api.md` with the two 403s and their new meaning. Update `README.md`'s sponsor rows only where RD-164 changed what is true. Add one line to `docs/demo-script.md` Step 4 noting the renter no longer types the agent's addresses — that is a visible on-stage difference. If Epic E is live, coordinate the `AGENTS.md` edit with RD-152 rather than both writing it. |

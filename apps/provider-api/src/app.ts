@@ -1,4 +1,5 @@
 import { createRentDelegateClient } from "@rentdelegate/sui-client";
+import type { RentDelegateClient } from "@rentdelegate/sui-client";
 import {
   PACKAGE_ID as DEFAULT_PACKAGE_ID,
   RPC_URL as DEFAULT_RPC_URL,
@@ -16,7 +17,10 @@ import { createListingService } from "./services/listings.js";
 import { createMandateService } from "./services/mandates.js";
 import { createSuiReceiptVerifier, type ReceiptVerificationService } from "./services/suiVerifier.js";
 
-export function createApp(receiptVerifier?: ReceiptVerificationService) {
+export function createApp(
+  receiptVerifier?: ReceiptVerificationService,
+  mandateReader?: Pick<RentDelegateClient, "getMandate">,
+) {
   const app = new Hono();
 
   // Determine store mode
@@ -34,8 +38,12 @@ export function createApp(receiptVerifier?: ReceiptVerificationService) {
   const listingService = createListingService(undefined, db);
   const applicationService = createApplicationService(
     listingService,
-    receiptVerifier ?? createDefaultReceiptVerifier(),
+    receiptVerifier ?? createSuiReceiptVerifier(createDefaultSuiClient()),
     db,
+    // When no mandateReader is provided (e.g. unit tests), the reserve() handler
+    // logs a warning and skips the on-chain identity check rather than making real
+    // RPC calls. Pass an explicit stub in tests that need to exercise the check.
+    mandateReader,
   );
   const mandateService = createMandateService();
 
@@ -80,12 +88,11 @@ export function createApp(receiptVerifier?: ReceiptVerificationService) {
 
 export type ProviderApiApp = ReturnType<typeof createApp>;
 
-function createDefaultReceiptVerifier() {
-  return createSuiReceiptVerifier(
-    createRentDelegateClient({
-      network: "testnet",
-      rpcUrl: process.env.SUI_RPC_URL ?? DEFAULT_RPC_URL,
-      packageId: process.env.SUI_PACKAGE_ID ?? DEFAULT_PACKAGE_ID,
-    }),
-  );
+/** Build the shared Sui client used for both receipt verification and mandate reading. */
+export function createDefaultSuiClient(): RentDelegateClient {
+  return createRentDelegateClient({
+    network: "testnet",
+    rpcUrl: process.env.SUI_RPC_URL ?? DEFAULT_RPC_URL,
+    packageId: process.env.SUI_PACKAGE_ID ?? DEFAULT_PACKAGE_ID,
+  });
 }

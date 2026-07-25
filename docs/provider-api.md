@@ -71,6 +71,20 @@ These headers are a local scaffold only. Set `AGENTKIT_MODE=real` to use the low
 
 The endpoint validates `ReserveApplicationSchema`, rejects request `listingObjectId` values that do not match the provider listing record, enforces duplicate-human rejection per listing, and returns a Sui `submit_application` hint.
 
+**Identity enforcement (RD-164):** when the provider has a Sui client configured, `reserve()` fetches the mandate from chain and cross-checks the AgentKit-verified EVM signer against the on-chain `agent_evm` field, and the request body's `agentSuiAddress` against the on-chain `agent_sui`. A mismatch returns 403; a mandate not found returns 422.
+
+**Error codes from this endpoint:**
+
+| Code | HTTP | When |
+|---|---|---|
+| `AGENTKIT_UNVERIFIED` | 401 | Missing or invalid AgentKit header |
+| `LISTING_NOT_FOUND` | 404 | Listing ID not seeded in the provider |
+| `MANDATE_EVM_MISMATCH` | 403 | Verified EVM signer ≠ on-chain `agent_evm`, or `agent_evm` is empty |
+| `MANDATE_SUI_MISMATCH` | 403 | Request `agentSuiAddress` ≠ on-chain `agent_sui` |
+| `SUI_MANDATE_REJECTED` | 422 | Mandate not found on chain or revoked |
+| `DUPLICATE_HUMAN_LISTING` | 409 | Same World human already applied to this listing |
+| `IDEMPOTENCY_CONFLICT` | 409 | Same idempotency key, different payload |
+
 `GET /applications`
 
 Lists applications with optional query filters:

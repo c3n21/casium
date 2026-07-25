@@ -1,6 +1,7 @@
 import { ERROR_CODES, ReserveApplicationSchema, VerifyReceiptSchema } from "@rentdelegate/shared";
 import type { ErrorCode } from "@rentdelegate/shared";
 import type { AgentKitContext } from "@rentdelegate/agentkit";
+import type { RentDelegateClient } from "@rentdelegate/sui-client";
 import { and, eq } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import {
@@ -86,6 +87,7 @@ export function createApplicationService(
   listingService: ListingService,
   receiptVerifier?: ReceiptVerificationService,
   db?: Db,
+  mandateReader?: Pick<RentDelegateClient, "getMandate">,
 ) {
   // In-memory state (used when db is absent)
   const applicationsMap = new Map<string, ReservedApplication>();
@@ -167,12 +169,14 @@ export function createApplicationService(
         return { ok: false, error: ERROR_CODES.MANDATE_SUI_MISMATCH };
       }
 
+      // ── Idempotency early-return (before the mandate chain fetch) ─────────────
+      // Check idempotency BEFORE the on-chain mandate fetch so replayed identical
+      // requests short-circuit without hitting the chain a second time.
       const fingerprint = JSON.stringify(parsed.data);
       const idempotencyKey = `${agentContext.agentEvmAddress.toLowerCase()}:${parsed.data.idempotencyKey}`;
 
       if (db) {
-        // DB mode: check idempotency first
-        const [existing] = await db
+        const [existingIdem] = await db
           .select()
           .from(applicationsTable)
           .where(
@@ -181,20 +185,88 @@ export function createApplicationService(
               eq(applicationsTable.idempotencyKey, parsed.data.idempotencyKey),
             ),
           );
-
-        if (existing) {
-          // Compare key fields to detect replay vs conflict
+        if (existingIdem) {
           const sameRequest =
-            existing.mandateId === parsed.data.mandateId &&
-            existing.walrusBlobId === parsed.data.walrusBlobId &&
-            existing.packetHash === parsed.data.packetHash;
+            existingIdem.mandateId === parsed.data.mandateId &&
+            existingIdem.walrusBlobId === parsed.data.walrusBlobId &&
+            existingIdem.packetHash === parsed.data.packetHash;
           if (!sameRequest) {
             return { ok: false, error: ERROR_CODES.IDEMPOTENCY_CONFLICT };
           }
-          const application = await dbGetApplication(existing.id);
+          const application = await dbGetApplication(existingIdem.id);
           if (!application) return { ok: false, error: ERROR_CODES.SUI_MANDATE_REJECTED };
           return { ok: true, value: application, replayed: true };
         }
+      } else {
+        const existingIdempotency = idempotency.get(idempotencyKey);
+        if (existingIdempotency) {
+          if (existingIdempotency.fingerprint !== fingerprint) {
+            return { ok: false, error: ERROR_CODES.IDEMPOTENCY_CONFLICT };
+          }
+          const existing = applicationsMap.get(existingIdempotency.applicationId);
+          if (!existing) {
+            return { ok: false, error: ERROR_CODES.SUI_MANDATE_REJECTED };
+          }
+          return { ok: true, value: existing, replayed: true };
+        }
+      }
+      // ── End idempotency early-return ──────────────────────────────────────────
+
+      // ── On-chain mandate identity cross-check (RD-164) ────────────────────────
+      // Compare the AgentKit-verified EVM signer and the request's Sui address
+      // against the *actual on-chain* values stored in the mandate object.
+      // This makes `agent_evm` a real constraint rather than a decoration.
+      //
+      // When no Sui client is available (e.g. tests without a node) we log a
+      // warning and skip the check rather than silently passing or hard-failing.
+      if (mandateReader) {
+        let onChainMandate: Awaited<ReturnType<typeof mandateReader.getMandate>> | null = null;
+        try {
+          onChainMandate = await mandateReader.getMandate(parsed.data.mandateId);
+        } catch {
+          return { ok: false, error: ERROR_CODES.SUI_MANDATE_REJECTED };
+        }
+
+        if (!onChainMandate) {
+          return { ok: false, error: ERROR_CODES.SUI_MANDATE_REJECTED };
+        }
+
+        // Check on-chain EVM address against the AgentKit-verified signer.
+        if (onChainMandate.agentEvm === null || onChainMandate.agentEvm === "") {
+          // Legacy mandate with empty agent_evm — reject to prevent silent hole.
+          console.warn(
+            `[reserve] mandate ${parsed.data.mandateId} has empty on-chain agent_evm — rejecting`,
+          );
+          return { ok: false, error: ERROR_CODES.MANDATE_EVM_MISMATCH };
+        }
+        if (
+          onChainMandate.agentEvm.toLowerCase() !==
+          agentContext.agentEvmAddress.toLowerCase()
+        ) {
+          return { ok: false, error: ERROR_CODES.MANDATE_EVM_MISMATCH };
+        }
+
+        // Check on-chain Sui address against the request body.
+        if (
+          onChainMandate.agentSui.toLowerCase() !==
+          parsed.data.agentSuiAddress.toLowerCase()
+        ) {
+          return { ok: false, error: ERROR_CODES.MANDATE_SUI_MISMATCH };
+        }
+
+        // Reject revoked mandates before they reach submit_application.
+        if (onChainMandate.revoked) {
+          return { ok: false, error: ERROR_CODES.SUI_MANDATE_REJECTED };
+        }
+      } else {
+        // No Sui client injected — check cannot run.
+        console.warn(
+          "[reserve] no mandateReader injected — on-chain identity pair is UNENFORCED for this request",
+        );
+      }
+      // ── End on-chain check ────────────────────────────────────────────────────
+
+      if (db) {
 
         // Check duplicate human per listing
         const [usageRow] = await db
@@ -244,23 +316,7 @@ export function createApplicationService(
         return { ok: true, value: application, replayed: false };
       }
 
-      // Memory mode
-      const existingIdempotency = idempotency.get(idempotencyKey);
-
-      if (existingIdempotency) {
-        if (existingIdempotency.fingerprint !== fingerprint) {
-          return { ok: false, error: ERROR_CODES.IDEMPOTENCY_CONFLICT };
-        }
-
-        const existing = applicationsMap.get(existingIdempotency.applicationId);
-
-        if (!existing) {
-          return { ok: false, error: ERROR_CODES.SUI_MANDATE_REJECTED };
-        }
-
-        return { ok: true, value: existing, replayed: true };
-      }
-
+      // Memory mode (idempotency already handled above before the mandate check)
       const usageKey = `${listingId}:${agentContext.humanIdHash}`;
 
       if (humanListingUsage.has(usageKey)) {

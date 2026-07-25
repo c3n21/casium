@@ -1,11 +1,12 @@
 /**
- * RentDelegate Agent HTTP server (RD-113).
+ * RentDelegate Agent HTTP server (RD-113, RD-161).
  *
  * Wraps the runAgent pipeline in a Hono HTTP server so the UI can trigger agent runs
  * without editing .env or using the CLI directly.
  *
  * Endpoints:
  *   GET  /health           → liveness + config snapshot
+ *   GET  /identity         → { agentSuiAddress, agentEvmAddress, agentkitMode, packageId }
  *   POST /runs             → start a new agent run (returns runId immediately)
  *   GET  /runs/:id         → poll run status and result
  */
@@ -31,7 +32,8 @@ const PROVIDER_API_BASE = process.env.PROVIDER_API_URL ?? "http://localhost:4021
 
 const SMOKE_MANDATE_ID = process.env.MANDATE_ID ?? SMOKE_OBJECTS.mandateId;
 const SMOKE_AGENT_SUI_ADDRESS = process.env.AGENT_SUI_ADDRESS ?? PUBLISHER_ADDRESS;
-const SMOKE_AGENT_EVM_ADDRESS =
+// Fallback EVM address for runs — used only when neither live signing nor demo env are set.
+const FALLBACK_AGENT_EVM_ADDRESS =
   process.env.AGENT_EVM_ADDRESS ?? "0x662DbABBeff9B237490bBE6A898776a4A1D87CCe";
 
 function readDemoAgentKitHeaders(): DemoAgentKitHeaders | null {
@@ -49,6 +51,21 @@ function readDemoAgentKitHeaders(): DemoAgentKitHeaders | null {
 
 const demoHeaders = readDemoAgentKitHeaders();
 const agentkitSigner = createAgentkitSigner();
+
+// Derive the EVM address this agent will present — null when not configured.
+// Used in /health and /identity so the mandate form can prefill without hand-typing.
+// Callers must handle null (meaning "not configured") and must not treat a fetched
+// address as verified — verification happens at the provider during reserve.
+const reportedEvmAddress: string | null =
+  agentkitSigner?.address ?? demoHeaders?.agentEvmAddress ?? null;
+
+const agentkitMode: "live-signing" | "live-header" | "mock" | "none" = agentkitSigner
+  ? "live-signing"
+  : process.env.AGENTKIT_HEADER
+    ? "live-header"
+    : demoHeaders
+      ? "mock"
+      : "none";
 
 if (agentkitSigner) {
   console.log(`AgentKit:  live signing as ${agentkitSigner.address} (${agentkitSigner.chainId})`);
@@ -75,14 +92,22 @@ app.get("/health", (c) =>
     ok: true,
     service: "rentdelegate-agent",
     agentSuiAddress: SMOKE_AGENT_SUI_ADDRESS,
-    agentkitMode: agentkitSigner
-      ? "live-signing"
-      : process.env.AGENTKIT_HEADER
-        ? "live-header"
-        : demoHeaders
-          ? "mock"
-          : "none",
-    agentEvmAddress: agentkitSigner?.address ?? SMOKE_AGENT_EVM_ADDRESS,
+    agentkitMode,
+    // null when neither a live EVM key nor AGENTKIT_DEMO_AGENT_EVM_ADDRESS is set.
+    agentEvmAddress: reportedEvmAddress,
+  }),
+);
+
+// Dedicated identity endpoint — the mandate form fetches this on mount so renters
+// never have to type either address. The packageId field lets the form warn when the
+// agent targets a different contract package than the browser.
+// NOTE: this endpoint publishes only public addresses. It carries no authentication.
+app.get("/identity", (c) =>
+  c.json({
+    agentSuiAddress: SMOKE_AGENT_SUI_ADDRESS,
+    agentEvmAddress: reportedEvmAddress,
+    agentkitMode,
+    packageId: PACKAGE_ID,
   }),
 );
 
@@ -104,7 +129,7 @@ app.post("/runs", async (c) => {
     // When signing live this must be the signer's own address: the provider compares
     // the reserved body against the address it recovered from the signature and
     // rejects a mismatch with MANDATE_EVM_MISMATCH.
-    agentEvmAddress: agentkitSigner?.address ?? SMOKE_AGENT_EVM_ADDRESS,
+    agentEvmAddress: agentkitSigner?.address ?? FALLBACK_AGENT_EVM_ADDRESS,
     agentCapId: process.env.AGENT_CAP_ID,
     privateKey: process.env.AGENT_SUI_PRIVATE_KEY ?? process.env.AGENT_SUI_PRIVATE_KEY_BASE64,
     packageId: PACKAGE_ID,
@@ -139,12 +164,12 @@ app.get("/runs/:id", (c) => {
 
 export { app };
 
-// Start the server when this file is the entry point.
-const PORT = Number(process.env.AGENT_SERVER_PORT ?? 4022);
-serve({ fetch: app.fetch, port: PORT }, () => {
-  console.log(`[rentdelegate-agent] server listening on http://localhost:${PORT}`);
-  console.log(`  agentSuiAddress: ${SMOKE_AGENT_SUI_ADDRESS}`);
-  console.log(
-    `  agentkitMode:    ${process.env.AGENTKIT_HEADER ? "live" : demoHeaders ? "mock" : "none"}`,
-  );
-});
+// Start the server when not running under a test runner.
+if (process.env.NODE_ENV !== "test") {
+  const PORT = Number(process.env.AGENT_SERVER_PORT ?? 4022);
+  serve({ fetch: app.fetch, port: PORT }, () => {
+    console.log(`[rentdelegate-agent] server listening on http://localhost:${PORT}`);
+    console.log(`  agentSuiAddress: ${SMOKE_AGENT_SUI_ADDRESS}`);
+    console.log(`  agentkitMode:    ${agentkitMode}`);
+  });
+}

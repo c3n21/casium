@@ -70,7 +70,35 @@ unregistered address fails at the AgentBook lookup with `agentbook lookup failed
 The address the agent signs with is also sent in the reservation body, because the
 provider rejects a mismatch between the two with `MANDATE_EVM_MISMATCH`.
 
-## Manual Real Verification
+## Agent Identity Binding (RD-161–164)
+
+Each rental mandate records a **pair** of agent addresses — one per chain — because the agent has one identity per chain:
+
+| Value | On-chain field | Enforced by |
+|---|---|---|
+| `agentSuiAddress` | `RentalMandate.agent_sui` | Move (`submit_application` requires `sender == mandate.agent_sui`); `AgentCap` transferred only to this address at mandate creation |
+| `agentEvmAddress` | `RentalMandate.agent_evm` | Provider's `reserve()` endpoint: reads the on-chain value and compares against the **AgentKit-verified signer** (RD-164) |
+
+**On-chain EVM enforcement is deliberately out of scope.** The Move module would need secp256k1 recovery and AgentKit message format parsing; the agent submits from its Sui key, so there is no EVM signature in that transaction to check. The enforcement point is the provider — it is the only place that simultaneously holds an AgentKit-verified EVM signer, a Sui client, and the mandate ID.
+
+### Where each identity value comes from
+
+| Value | Source | How the form sees it |
+|---|---|---|
+| `agentSuiAddress` | `AGENT_SUI_ADDRESS` env or derived from `AGENT_SUI_PRIVATE_KEY` | `GET /identity` on mount — never typed |
+| `agentEvmAddress` | Live: derived from `AGENT_EVM_PRIVATE_KEY`; mock: `AGENTKIT_DEMO_AGENT_EVM_ADDRESS` | Same `GET /identity` call |
+
+The renter's mandate form (since RD-163) fetches `GET /identity` and renders both addresses as a read-only card. The addresses are visible before signing — a renter who cannot see who they are authorizing is worse off than one who types it. The form is **not** a security claim: the agent's `/identity` endpoint asserts its own addresses, and verification happens at the provider.
+
+### Error codes for identity mismatches
+
+| Code | HTTP | Meaning |
+|---|---|---|
+| `MANDATE_EVM_MISMATCH` | 403 | The AgentKit-verified EVM signer does not match the mandate's on-chain `agent_evm`. Also raised when `agent_evm` is empty (legacy mandate). |
+| `MANDATE_SUI_MISMATCH` | 403 | The request body's `agentSuiAddress` does not match the mandate's on-chain `agent_sui`. |
+| `SUI_MANDATE_REJECTED` | 422 | The mandate object was not found on chain, or the mandate has been revoked. |
+
+
 
 Real verification requires a registered AgentBook EVM agent wallet and an `agentkit` request header created by `createAgentkitClient`/`agentkit.fetch`.
 

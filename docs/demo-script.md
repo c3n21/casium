@@ -58,6 +58,7 @@ Verify:
 ```bash
 curl http://localhost:4021/health   # {"ok":true,"service":"provider-api","store":"memory"}
 curl http://localhost:4022/health   # {"ok":true,"service":"rentdelegate-agent",...}
+curl http://localhost:4022/identity # {"agentSuiAddress":"0x...","agentEvmAddress":"0x...","agentkitMode":"mock","packageId":"0x..."}
 ```
 
 <details>
@@ -93,10 +94,14 @@ Open `http://localhost:3000`. **Port 3000 specifically** — the saved wallet se
    - Remaining applications: 1
    - Max rent: €1800
    - Allowed municipalities: Lisbon, Oeiras, Cascais
-5. Click **Encrypt and upload packet** in the PacketBuilder section.
+5. To create a new mandate, scroll to the mandate form.
+   - The **agent card** fetches both addresses automatically from `GET /identity` on the agent service — the renter no longer types either address.
+   - Both addresses remain visible in the card before signing.
+   - The card shows the `agentkitMode` badge (`mock` or `live-signing`).
+6. Click **Encrypt and upload packet** in the PacketBuilder section.
    The form generates a synthetic document, encrypts it, and shows the Walrus blob ID and packet hash.
    The plaintext never leaves the browser.
-6. The success panel now offers **Start the agent run on this packet →**, which opens `/agent` with
+7. The success panel now offers **Start the agent run on this packet →**, which opens `/agent` with
    this packet's mandate already filled in. Use it — it is the only way the two pages are guaranteed
    to name the same mandate, and a mismatch is the most common cause of a failed run.
 

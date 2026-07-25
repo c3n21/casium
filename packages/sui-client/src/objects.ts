@@ -8,6 +8,12 @@ export function parseMandate(json: unknown): RentalMandate {
     id: idOf(fields.id),
     owner: stringOf(fields.owner),
     agentSui: stringOf(fields.agent_sui),
+    // agent_evm arrives as a number array (vector<u8>). An empty array means the
+    // field was never set — return null so callers can distinguish "not set" from
+    // a real address. A non-empty array is normalised to lowercase 0x-prefixed hex
+    // regardless of byte length; wrong-length values are kept unpadded/untruncated
+    // so downstream code (e.g. the provider's mismatch check) can detect them.
+    agentEvm: evmHexOf(fields.agent_evm),
     maxMonthlyRentEur: numberOf(fields.max_monthly_rent_eur),
     allowedMunicipalities: numberArrayOf(fields.allowed_municipalities),
     minBedrooms: numberOf(fields.min_bedrooms),
@@ -95,4 +101,22 @@ function byteArrayOf(value: unknown): number[] {
     return [...Uint8Array.from(atob(value), (char) => char.charCodeAt(0))];
   }
   return numberArrayOf(value);
+}
+
+/**
+ * Normalise an on-chain `vector<u8>` EVM address field to a lowercase 0x-prefixed
+ * hex string, or null when the vector is empty (field never set).
+ *
+ * Design choices (see RD-162):
+ * - Empty vector → null:  test mandates use `vector[]`; callers must handle null.
+ * - 20-byte vector → canonical 40-hex-char address.
+ * - Wrong-length vector → hex of whatever bytes are present, unpadded/untruncated.
+ *   The provider's mismatch check will then reject it as malformed rather than
+ *   silently comparing a truncated value.
+ */
+function evmHexOf(value: unknown): string | null {
+  if (!Array.isArray(value)) return null;
+  if (value.length === 0) return null;
+  const bytes = value.map(numberOf);
+  return "0x" + bytes.map((b) => b.toString(16).padStart(2, "0")).join("");
 }

@@ -7,8 +7,7 @@ import {
   EXPLORER_TX,
   EXPLORER_OBJECT,
 } from "@rentdelegate/contracts-config";
-
-const AGENT_API = process.env.NEXT_PUBLIC_AGENT_API_URL ?? "http://localhost:4022";
+import { AGENT_API } from "@/lib/agentApi";
 const PROVIDER_API = process.env.NEXT_PUBLIC_PROVIDER_API_URL ?? "http://localhost:4021";
 
 type HealthResponse = {

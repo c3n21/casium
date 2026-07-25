@@ -53,6 +53,8 @@ export type RentalMandate = {
   id: string;
   owner: string;
   agentSui: string;
+  /** Lowercase 0x-prefixed EVM address, or null when the on-chain vector is empty. */
+  agentEvm: string | null;
   maxMonthlyRentEur: number;
   allowedMunicipalities: number[];
   minBedrooms: number;

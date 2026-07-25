@@ -4,10 +4,12 @@ import { useCurrentAccount, useCurrentClient, useDAppKit } from "@mysten/dapp-ki
 import { ConnectButton } from "@mysten/dapp-kit-react/ui";
 import { CreateMandateSchema } from "@rentdelegate/shared";
 import { createRentDelegateClient } from "@rentdelegate/sui-client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { EXPLORER_TX, PACKAGE_ID } from "@/lib/constants";
 import { signAndExecuteWithExplicitGas } from "@/lib/walletTransaction";
 import type { CreateMandateInput } from "@rentdelegate/sui-client";
+import { AGENT_API, fetchAgentIdentity } from "@/lib/agentApi";
+import type { AgentIdentity } from "@/lib/agentApi";
 
 const MUNICIPALITIES = [
   { code: 1, label: "Lisbon" },
@@ -26,16 +28,27 @@ type CreatedMandate = {
 
 type MandateFormProps = { onCreated?: (mandate: CreatedMandate) => void };
 
+type IdentityState =
+  | { status: "loading" }
+  | { status: "loaded"; identity: AgentIdentity }
+  | { status: "error"; reason: string };
+
+function truncate(addr: string): string {
+  return `${addr.slice(0, 8)}…${addr.slice(-6)}`;
+}
+
 export function MandateForm({ onCreated }: MandateFormProps) {
   const account = useCurrentAccount();
   const currentClient = useCurrentClient();
   const dAppKit = useDAppKit();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [identityState, setIdentityState] = useState<IdentityState>({ status: "loading" });
+  const [showOverride, setShowOverride] = useState(false);
 
   const [fields, setFields] = useState({
     agentSuiAddress: "",
-    agentEvmAddress: "0x662DbABBeff9B237490bBE6A898776a4A1D87CCe",
+    agentEvmAddress: "",
     maxMonthlyRentEur: 2000,
     allowedMunicipalities: [1],
     minBedrooms: 1,
@@ -43,6 +56,30 @@ export function MandateForm({ onCreated }: MandateFormProps) {
     permittedActions: 1,
     expiresAtMs: Date.now() + 30 * 24 * 60 * 60 * 1000,
   });
+
+  // Fetch agent identity on mount and populate the address fields.
+  useEffect(() => {
+    fetchAgentIdentity().then((result) => {
+      if (result.ok) {
+        const { identity } = result;
+        setFields((f) => ({
+          ...f,
+          agentSuiAddress: identity.agentSuiAddress,
+          agentEvmAddress: identity.agentEvmAddress ?? "",
+        }));
+        setIdentityState({ status: "loaded", identity });
+
+        // Warn (but don't block) when the agent targets a different package.
+        if (identity.packageId && identity.packageId !== PACKAGE_ID) {
+          console.warn(
+            `[MandateForm] Agent targets package ${identity.packageId} but browser uses ${PACKAGE_ID}`,
+          );
+        }
+      } else {
+        setIdentityState({ status: "error", reason: result.reason });
+      }
+    });
+  }, []);
 
   if (!account) {
     return (
@@ -52,6 +89,18 @@ export function MandateForm({ onCreated }: MandateFormProps) {
       </div>
     );
   }
+
+  // Determine whether submit should be blocked and why.
+  const submitBlockReason: string | null =
+    identityState.status === "loading"
+      ? "Connecting to agent…"
+      : identityState.status === "error"
+        ? `Agent offline: ${identityState.reason}`
+        : identityState.identity.agentEvmAddress === null
+          ? "Agent is not registered with World — agentEvmAddress is null"
+          : null;
+
+  const submitDisabled = busy || (submitBlockReason !== null && !showOverride);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -67,19 +116,21 @@ export function MandateForm({ onCreated }: MandateFormProps) {
         return;
       }
 
+      // Convert EVM address bytes after schema validation so a malformed address
+      // cannot be silently truncated into a short byte vector (RD-163 cleanup).
       const agentEvmBytes = Array.from(
-        Buffer.from(fields.agentEvmAddress.slice(2), "hex"),
+        Buffer.from(parsed.data.agentEvmAddress.slice(2), "hex"),
       );
 
       const input: CreateMandateInput = {
-        agentSuiAddress: fields.agentSuiAddress,
+        agentSuiAddress: parsed.data.agentSuiAddress,
         agentEvmAddressBytes: agentEvmBytes,
-        maxMonthlyRentEur: fields.maxMonthlyRentEur,
-        allowedMunicipalities: fields.allowedMunicipalities,
-        minBedrooms: fields.minBedrooms,
-        expiresAtMs: fields.expiresAtMs,
-        remainingApplications: fields.remainingApplications,
-        permittedActions: fields.permittedActions,
+        maxMonthlyRentEur: parsed.data.maxMonthlyRentEur,
+        allowedMunicipalities: parsed.data.allowedMunicipalities,
+        minBedrooms: parsed.data.minBedrooms,
+        expiresAtMs: parsed.data.expiresAtMs,
+        remainingApplications: parsed.data.remainingApplications,
+        permittedActions: parsed.data.permittedActions,
       };
 
       const client = createRentDelegateClient({ network: "testnet", rpcUrl: "https://fullnode.testnet.sui.io:443", packageId: PACKAGE_ID });
@@ -109,26 +160,125 @@ export function MandateForm({ onCreated }: MandateFormProps) {
     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
       <h2 style={{ marginTop: 0 }}>Create Rental Mandate</h2>
 
-      <label>
-        Agent Sui address
-        <input
-          type="text"
-          value={fields.agentSuiAddress}
-          onChange={(e) => setFields((f) => ({ ...f, agentSuiAddress: e.target.value }))}
-          placeholder="0x..."
-          style={inputStyle}
-        />
-      </label>
+      {/* ── Agent identity card ── */}
+      <div style={{
+        padding: "0.75rem 1rem",
+        border: "1px solid #e2e8f0",
+        borderRadius: 6,
+        background: identityState.status === "loaded"
+          ? "#f0fdf4"
+          : identityState.status === "error"
+            ? "#fef2f2"
+            : "#f8fafc",
+        fontSize: "0.9rem",
+      }}>
+        {identityState.status === "loading" && (
+          <span style={{ color: "#94a3b8" }}>Connecting to agent…</span>
+        )}
 
-      <label>
-        Agent EVM address (registered AgentBook address)
-        <input
-          type="text"
-          value={fields.agentEvmAddress}
-          onChange={(e) => setFields((f) => ({ ...f, agentEvmAddress: e.target.value }))}
-          style={inputStyle}
-        />
-      </label>
+        {identityState.status === "error" && (
+          <span style={{ color: "#dc2626" }}>
+            Agent offline: {identityState.reason}
+            {" — "}
+            <button
+              type="button"
+              onClick={() => setShowOverride(true)}
+              style={{ background: "none", border: "none", color: "#2563eb", cursor: "pointer", textDecoration: "underline", padding: 0 }}
+            >
+              enter addresses manually
+            </button>
+          </span>
+        )}
+
+        {identityState.status === "loaded" && (
+          <>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>Agent</strong>
+              {" "}
+              <span
+                style={{
+                  display: "inline-block",
+                  padding: "0.1rem 0.4rem",
+                  borderRadius: 4,
+                  fontSize: "0.75rem",
+                  background: identityState.identity.agentkitMode === "mock"
+                    ? "#fef3c7"
+                    : "#dbeafe",
+                  color: identityState.identity.agentkitMode === "mock"
+                    ? "#92400e"
+                    : "#1e40af",
+                }}
+              >
+                {identityState.identity.agentkitMode}
+              </span>
+            </div>
+            <table style={{ width: "100%", fontSize: "0.85rem", borderCollapse: "collapse" }}>
+              <tbody>
+                <tr>
+                  <td style={{ paddingRight: "0.5rem", color: "#64748b", whiteSpace: "nowrap" }}>Sui address</td>
+                  <td>
+                    <code title={identityState.identity.agentSuiAddress}>
+                      {truncate(identityState.identity.agentSuiAddress)}
+                    </code>
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ paddingRight: "0.5rem", color: "#64748b", whiteSpace: "nowrap" }}>EVM address</td>
+                  <td>
+                    {identityState.identity.agentEvmAddress ? (
+                      <code title={identityState.identity.agentEvmAddress}>
+                        {truncate(identityState.identity.agentEvmAddress)}
+                      </code>
+                    ) : (
+                      <span style={{ color: "#dc2626" }}>not registered with World</span>
+                    )}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            {!identityState.identity.agentEvmAddress && (
+              <p style={{ margin: "0.5rem 0 0", fontSize: "0.8rem", color: "#dc2626" }}>
+                Cannot create mandate: the agent has no World EVM address configured.
+                Set <code>AGENTKIT_DEMO_AGENT_EVM_ADDRESS</code> (mock) or{" "}
+                <code>AGENT_EVM_PRIVATE_KEY</code> (live) in the agent&apos;s environment.
+              </p>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* ── Advanced override (dev / multi-agent) ── */}
+      <details open={showOverride} onToggle={(e) => setShowOverride((e.target as HTMLDetailsElement).open)}>
+        <summary style={{ cursor: "pointer", fontSize: "0.85rem", color: "#64748b" }}>
+          Advanced: enter addresses manually (unverified)
+        </summary>
+        <div style={{ marginTop: "0.5rem", padding: "0.75rem", border: "1px solid #fde68a", borderRadius: 4, background: "#fffbeb", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          <p style={{ margin: 0, fontSize: "0.8rem", color: "#92400e" }}>
+            These addresses are not verified against the agent service. Use only for development
+            or when running a different agent instance.
+          </p>
+          <label>
+            Agent Sui address (unverified)
+            <input
+              type="text"
+              value={fields.agentSuiAddress}
+              onChange={(e) => setFields((f) => ({ ...f, agentSuiAddress: e.target.value }))}
+              placeholder="0x…"
+              style={inputStyle}
+            />
+          </label>
+          <label>
+            Agent EVM address (unverified — registered AgentBook address)
+            <input
+              type="text"
+              value={fields.agentEvmAddress}
+              onChange={(e) => setFields((f) => ({ ...f, agentEvmAddress: e.target.value }))}
+              placeholder="0x…"
+              style={inputStyle}
+            />
+          </label>
+        </div>
+      </details>
 
       <label>
         Max monthly rent (EUR)
@@ -174,9 +324,16 @@ export function MandateForm({ onCreated }: MandateFormProps) {
         />
       </label>
 
+      {/* Block submit with a specific reason when agent is not ready. */}
+      {submitBlockReason && !showOverride && (
+        <p role="alert" style={{ color: "#dc2626", margin: 0, fontSize: "0.9rem" }}>
+          {submitBlockReason}
+        </p>
+      )}
+
       {error && <p role="alert" style={{ color: "#dc2626", margin: 0 }}>{error}</p>}
 
-      <button type="submit" disabled={busy} style={buttonStyle}>
+      <button type="submit" disabled={submitDisabled} style={buttonStyle}>
         {busy ? "Sending transaction…" : "Create mandate on testnet"}
       </button>
     </form>

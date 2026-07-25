@@ -1,4 +1,5 @@
 import { ERROR_CODES } from "@rentdelegate/shared";
+import type { RentalMandate } from "@rentdelegate/sui-client";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../app.js";
 import type { ReceiptVerificationService } from "../services/suiVerifier.js";
@@ -21,8 +22,28 @@ const mockHeaders = {
   "x-demo-mandate-agent-sui-address": reserveRequest.agentSuiAddress,
 };
 
+// A mandate reader stub whose getMandate matches the happy-path reserveRequest.
+function matchingMandateReader(overrides?: Partial<RentalMandate>) {
+  const mandate: RentalMandate = {
+    id: reserveRequest.mandateId,
+    owner: "0xowner",
+    agentSui: reserveRequest.agentSuiAddress,
+    agentEvm: reserveRequest.agentEvmAddress,
+    maxMonthlyRentEur: 2000,
+    allowedMunicipalities: [1],
+    minBedrooms: 1,
+    expiresAtMs: Date.now() + 30 * 24 * 60 * 60 * 1000,
+    remainingApplications: 3,
+    revoked: false,
+    permittedActions: 1,
+    ...overrides,
+  };
+  return { getMandate: async (_id: string) => mandate };
+}
+
 describe("application reservation routes", () => {
   it("reserves an application and returns a Sui submit hint", async () => {
+    // No mandateReader → check skipped, warning logged — existing behaviour preserved.
     const app = createApp();
     const response = await reserve(app, reserveRequest);
 
@@ -51,7 +72,7 @@ describe("application reservation routes", () => {
     expect(await duplicate.json()).toEqual({ error: ERROR_CODES.DUPLICATE_HUMAN_LISTING });
   });
 
-  it("rejects EVM and Sui agent mismatches", async () => {
+  it("rejects EVM and Sui agent mismatches (header vs request body)", async () => {
     const evmMismatch = await reserve(createApp(), {
       ...reserveRequest,
       agentEvmAddress: "0x2222222222222222222222222222222222222222",
@@ -133,6 +154,96 @@ describe("application reservation routes", () => {
   });
 });
 
+// ── RD-164: on-chain mandate identity enforcement ─────────────────────────────
+describe("on-chain mandate identity enforcement (RD-164)", () => {
+  it("accepts a reserve whose on-chain mandate matches the AgentKit signer", async () => {
+    const app = createApp(undefined, matchingMandateReader());
+    const response = await reserve(app, reserveRequest);
+    expect(response.status).toBe(202);
+  });
+
+  it("rejects when the on-chain agentEvm does not match the AgentKit signer", async () => {
+    const reader = matchingMandateReader({ agentEvm: "0x9999999999999999999999999999999999999999" });
+    const response = await reserve(createApp(undefined, reader), reserveRequest);
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ error: ERROR_CODES.MANDATE_EVM_MISMATCH });
+  });
+
+  it("rejects when the on-chain agentSui does not match the request body", async () => {
+    const reader = matchingMandateReader({
+      agentSui: "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    });
+    const response = await reserve(createApp(undefined, reader), reserveRequest);
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ error: ERROR_CODES.MANDATE_SUI_MISMATCH });
+  });
+
+  it("rejects when the mandate is not found on chain", async () => {
+    const reader = {
+      getMandate: async (_id: string): Promise<RentalMandate> => {
+        throw new Error("object not found");
+      },
+    };
+    const response = await reserve(createApp(undefined, reader), reserveRequest);
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({ error: ERROR_CODES.SUI_MANDATE_REJECTED });
+  });
+
+  it("rejects legacy mandates with empty agentEvm as MANDATE_EVM_MISMATCH", async () => {
+    const reader = matchingMandateReader({ agentEvm: null });
+    const response = await reserve(createApp(undefined, reader), reserveRequest);
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ error: ERROR_CODES.MANDATE_EVM_MISMATCH });
+  });
+
+  it("rejects revoked mandates before they reach submit_application", async () => {
+    const reader = matchingMandateReader({ revoked: true });
+    const response = await reserve(createApp(undefined, reader), reserveRequest);
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({ error: ERROR_CODES.SUI_MANDATE_REJECTED });
+  });
+
+  it("is case-insensitive when comparing EVM addresses", async () => {
+    // on-chain stored in uppercase, header in lowercase (or vice versa)
+    const reader = matchingMandateReader({ agentEvm: reserveRequest.agentEvmAddress.toUpperCase() });
+    const response = await reserve(createApp(undefined, reader), reserveRequest);
+    expect(response.status).toBe(202);
+  });
+
+  it("replayed idempotent requests are not re-fetched (no duplicate getMandate calls)", async () => {
+    let getMandate_calls = 0;
+    const reader = {
+      getMandate: async (_id: string): Promise<RentalMandate> => {
+        getMandate_calls++;
+        return {
+          id: reserveRequest.mandateId,
+          owner: "0xowner",
+          agentSui: reserveRequest.agentSuiAddress,
+          agentEvm: reserveRequest.agentEvmAddress,
+          maxMonthlyRentEur: 2000,
+          allowedMunicipalities: [1],
+          minBedrooms: 1,
+          expiresAtMs: Date.now() + 86_400_000,
+          remainingApplications: 3,
+          revoked: false,
+          permittedActions: 1,
+        };
+      },
+    };
+
+    const app = createApp(undefined, reader);
+    expect((await reserve(app, reserveRequest)).status).toBe(202);
+    expect(getMandate_calls).toBe(1);
+
+    // Replay — idempotency shortcut runs before the mandate fetch.
+    const replay = await reserve(app, reserveRequest);
+    expect(replay.status).toBe(200);
+    // Replayed requests return early from the idempotency map before reaching the
+    // mandate fetch, so getMandate should still be 1.
+    expect(getMandate_calls).toBe(1);
+  });
+});
+
 describe.skipIf(process.env.RUN_SUI_TESTNET !== "1")("application receipt live smoke", () => {
   it("verifies the RD-007 testnet receipt through the provider route", async () => {
     const app = createApp();
@@ -195,6 +306,7 @@ function mockReceiptVerifier(): ReceiptVerificationService {
           listingObjectId: application.listingObjectId,
           submittedAtMs: 1_784_962_851_988,
           accessExpiresAtMs: 1_790_000_000_000,
+          blobVerification: "skipped-mock",
           rawObject: {
             id: input.receiptId,
             mandateId: application.mandateId,
