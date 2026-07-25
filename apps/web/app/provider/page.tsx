@@ -1,16 +1,40 @@
 "use client";
 
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { ListingForm } from "@/components/ListingForm";
-import { ApplicationInbox } from "@/components/ApplicationInbox";
-import { DEMO_LISTING_OBJECT_ID, INELIGIBLE_LISTING_OBJECT_ID, EXPLORER_OBJECT } from "@rentdelegate/contracts-config";
+import { ApplicationInbox, type ReservedApplication } from "@/components/ApplicationInbox";
+import {
+  DEMO_LISTING_OBJECT_ID,
+  INELIGIBLE_LISTING_OBJECT_ID,
+  EXPLORER_OBJECT,
+  EXPLORER_TX,
+  SMOKE,
+  LIVE_AGENT_RUN,
+} from "@rentdelegate/contracts-config";
 
-const DEMO_APPLICATION_IDS = ["app_1"];
+const PROVIDER_API = process.env.NEXT_PUBLIC_PROVIDER_API_URL ?? "http://localhost:4021";
 
 export default function ProviderPage() {
-  const [applicationIds, setApplicationIds] = useState<string[]>(DEMO_APPLICATION_IDS);
   const [showForm, setShowForm] = useState(false);
   const [createdTx, setCreatedTx] = useState<string | null>(null);
+
+  const {
+    data: applicationsResponse,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ["applications"],
+    queryFn: async () => {
+      const response = await fetch(`${PROVIDER_API}/applications`);
+      if (!response.ok) throw new Error(`Failed to fetch applications: ${response.status}`);
+      return response.json() as Promise<{ applications: ReservedApplication[] }>;
+    },
+    refetchInterval: 15_000,
+  });
+
+  const applications: ReservedApplication[] = applicationsResponse?.applications ?? [];
 
   return (
     <main style={{ maxWidth: 720, margin: "2rem auto", padding: "0 1rem" }}>
@@ -29,13 +53,21 @@ export default function ProviderPage() {
 
         {showForm && (
           <div style={{ marginTop: "1rem" }}>
-            <ListingForm onCreated={(_id, tx) => { setCreatedTx(tx); setShowForm(false); }} />
+            <ListingForm
+              onCreated={(_id, tx) => {
+                setCreatedTx(tx);
+                setShowForm(false);
+              }}
+            />
           </div>
         )}
 
         {createdTx && (
           <p style={{ marginTop: 8 }}>
-            ✅ Listing created. <a href={`https://suivision.xyz/txblock/${createdTx}?network=testnet`} target="_blank" rel="noreferrer">View tx</a>
+            ✅ Listing created.{" "}
+            <a href={`https://suivision.xyz/txblock/${createdTx}?network=testnet`} target="_blank" rel="noreferrer">
+              View tx
+            </a>
           </p>
         )}
 
@@ -44,26 +76,43 @@ export default function ProviderPage() {
             <thead style={{ background: "#f8fafc" }}>
               <tr>
                 {["ID", "Object", "Municipality", "Rent", "Bedrooms", "Status"].map((h) => (
-                  <th key={h} style={{ textAlign: "left", padding: "0.6rem 0.75rem", borderBottom: "1px solid #e2e8f0" }}>{h}</th>
+                  <th
+                    key={h}
+                    style={{ textAlign: "left", padding: "0.6rem 0.75rem", borderBottom: "1px solid #e2e8f0" }}
+                  >
+                    {h}
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td style={td}>listing_lisbon_eligible</td>
-                <td style={td}><a href={EXPLORER_OBJECT(DEMO_LISTING_OBJECT_ID)} target="_blank" rel="noreferrer"><code>{DEMO_LISTING_OBJECT_ID.slice(0, 6)}…</code></a></td>
+                <td style={td}>
+                  <a href={EXPLORER_OBJECT(DEMO_LISTING_OBJECT_ID)} target="_blank" rel="noreferrer">
+                    <code>{DEMO_LISTING_OBJECT_ID.slice(0, 6)}…</code>
+                  </a>
+                </td>
                 <td style={td}>Lisbon</td>
                 <td style={td}>€1700</td>
                 <td style={td}>2</td>
-                <td style={td}><span style={{ color: "#16a34a" }}>Active</span></td>
+                <td style={td}>
+                  <span style={{ color: "#16a34a" }}>Active</span>
+                </td>
               </tr>
               <tr>
                 <td style={td}>listing_porto_ineligible</td>
-                <td style={td}><a href={EXPLORER_OBJECT(INELIGIBLE_LISTING_OBJECT_ID)} target="_blank" rel="noreferrer"><code style={{ color: "#94a3b8" }}>{INELIGIBLE_LISTING_OBJECT_ID.slice(0, 6)}…</code></a></td>
+                <td style={td}>
+                  <a href={EXPLORER_OBJECT(INELIGIBLE_LISTING_OBJECT_ID)} target="_blank" rel="noreferrer">
+                    <code style={{ color: "#94a3b8" }}>{INELIGIBLE_LISTING_OBJECT_ID.slice(0, 6)}…</code>
+                  </a>
+                </td>
                 <td style={td}>Porto (demo)</td>
                 <td style={td}>€1200</td>
                 <td style={td}>2</td>
-                <td style={td}><span style={{ color: "#f59e0b" }}>Ineligible</span></td>
+                <td style={td}>
+                  <span style={{ color: "#f59e0b" }}>Ineligible</span>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -75,26 +124,53 @@ export default function ProviderPage() {
         <p style={{ color: "#64748b", fontSize: "0.9rem", marginTop: 0 }}>
           Each application shows World AgentKit human hash (uniqueness proof) and Sui receipt verification.
         </p>
-        <ApplicationInbox applicationIds={applicationIds} />
 
-        <div style={{ marginTop: "1rem" }}>
-          <input
-            type="text"
-            placeholder="Add application ID (e.g. app_2)"
-            style={{ padding: "0.4rem 0.5rem", border: "1px solid #cbd5e1", borderRadius: 4, fontSize: "inherit", marginRight: 8 }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && e.currentTarget.value) {
-                setApplicationIds((ids) => [...new Set([...ids, e.currentTarget.value])]);
-                e.currentTarget.value = "";
-              }
-            }}
-          />
-          <span style={{ color: "#94a3b8", fontSize: "0.85rem" }}>Press Enter to add</span>
-        </div>
+        {isLoading && <p style={{ color: "#64748b" }}>Loading applications…</p>}
+        {error && (
+          <p style={{ color: "#dc2626" }}>
+            Error loading applications: {error instanceof Error ? error.message : "unknown"}
+          </p>
+        )}
+        {!isLoading && !error && (
+          <ApplicationInbox applications={applications} onRefetch={() => void refetch()} />
+        )}
+
+        <details style={{ marginTop: "2rem" }}>
+          <summary style={{ cursor: "pointer", color: "#64748b", fontSize: "0.85rem" }}>
+            Demo evidence (known testnet receipts)
+          </summary>
+          <div style={{ marginTop: "0.5rem", fontSize: "0.85rem", color: "#64748b" }}>
+            <p style={{ margin: "0 0 4px" }}>
+              Smoke receipt:{" "}
+              <a href={EXPLORER_OBJECT(SMOKE.receiptId)} target="_blank" rel="noreferrer">
+                <code>{SMOKE.receiptId.slice(0, 20)}…</code>
+              </a>
+            </p>
+            <p style={{ margin: "0 0 4px" }}>
+              Live agent receipt:{" "}
+              <a href={EXPLORER_OBJECT(LIVE_AGENT_RUN.receiptId)} target="_blank" rel="noreferrer">
+                <code>{LIVE_AGENT_RUN.receiptId.slice(0, 20)}…</code>
+              </a>
+            </p>
+            <p style={{ margin: 0 }}>
+              Live agent tx:{" "}
+              <a href={EXPLORER_TX(LIVE_AGENT_RUN.submitApplicationTxDigest)} target="_blank" rel="noreferrer">
+                <code>{LIVE_AGENT_RUN.submitApplicationTxDigest}</code>
+              </a>
+            </p>
+          </div>
+        </details>
       </section>
     </main>
   );
 }
 
-const secondaryBtn: React.CSSProperties = { padding: "0.5rem 1rem", border: "1px solid #cbd5e1", borderRadius: 4, background: "#fff", cursor: "pointer", fontSize: "inherit" };
+const secondaryBtn: React.CSSProperties = {
+  padding: "0.5rem 1rem",
+  border: "1px solid #cbd5e1",
+  borderRadius: 4,
+  background: "#fff",
+  cursor: "pointer",
+  fontSize: "inherit",
+};
 const td: React.CSSProperties = { padding: "0.6rem 0.75rem", borderBottom: "1px solid #e2e8f0" };
