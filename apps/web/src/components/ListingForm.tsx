@@ -1,10 +1,11 @@
 "use client";
 
-import { useCurrentAccount, useDAppKit } from "@mysten/dapp-kit-react";
+import { useCurrentAccount, useCurrentClient, useDAppKit } from "@mysten/dapp-kit-react";
 import { ConnectButton } from "@mysten/dapp-kit-react/ui";
 import { createRentDelegateClient } from "@rentdelegate/sui-client";
 import { useState } from "react";
 import { EXPLORER_TX, PACKAGE_ID } from "@/lib/constants";
+import { signAndExecuteWithExplicitGas } from "@/lib/walletTransaction";
 
 const MUNICIPALITY_LABELS: Record<number, string> = {
   1: "Lisbon",
@@ -17,6 +18,7 @@ const MUNICIPALITY_LABELS: Record<number, string> = {
 
 export function ListingForm({ onCreated }: { onCreated?: (listingId: string, txDigest: string) => void }) {
   const account = useCurrentAccount();
+  const currentClient = useCurrentClient();
   const dAppKit = useDAppKit();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +44,8 @@ export function ListingForm({ onCreated }: { onCreated?: (listingId: string, txD
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!account) return;
+
     setError(null);
     setBusy(true);
 
@@ -55,7 +59,7 @@ export function ListingForm({ onCreated }: { onCreated?: (listingId: string, txD
       const idBytes = Array.from(new TextEncoder().encode(fields.externalId));
       const tx = client.buildCreateListingTx({
         externalListingIdBytes: idBytes,
-        landlordSuiAddress: fields.landlordAddress || account!.address,
+        landlordSuiAddress: fields.landlordAddress || account.address,
         municipality: fields.municipality,
         monthlyRentEur: fields.monthlyRentEur,
         bedrooms: fields.bedrooms,
@@ -64,9 +68,8 @@ export function ListingForm({ onCreated }: { onCreated?: (listingId: string, txD
         metadataRefBytes: [],
       });
 
-      const result = await dAppKit.signAndExecuteTransaction({ transaction: tx });
-      if (result.FailedTransaction) throw new Error(result.FailedTransaction.status.error?.message ?? "Transaction failed");
-      onCreated?.("(see tx)", result.Transaction.digest);
+      const result = await signAndExecuteWithExplicitGas(dAppKit, currentClient, tx, account.address);
+      onCreated?.("(see tx)", result.digest);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {

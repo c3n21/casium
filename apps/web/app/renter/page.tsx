@@ -33,7 +33,7 @@ export default function RenterPage() {
         Create a mandate scoped to your requirements. Your agent will only be able to apply within these limits.
       </p>
 
-      {!mandate && <MandateForm onCreated={(id, tx) => setMandate({ mandateId: id, ownerCapId: "", agentCapId: "", txDigest: tx })} />}
+      {!mandate && <MandateForm onCreated={setMandate} />}
 
       <MandateStatus
         mandateId={active.mandateId}

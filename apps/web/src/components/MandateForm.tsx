@@ -1,11 +1,12 @@
 "use client";
 
-import { useCurrentAccount, useDAppKit } from "@mysten/dapp-kit-react";
+import { useCurrentAccount, useCurrentClient, useDAppKit } from "@mysten/dapp-kit-react";
 import { ConnectButton } from "@mysten/dapp-kit-react/ui";
 import { CreateMandateSchema } from "@rentdelegate/shared";
 import { createRentDelegateClient } from "@rentdelegate/sui-client";
 import { useState } from "react";
 import { EXPLORER_TX, PACKAGE_ID } from "@/lib/constants";
+import { signAndExecuteWithExplicitGas } from "@/lib/walletTransaction";
 import type { CreateMandateInput } from "@rentdelegate/sui-client";
 
 const MUNICIPALITIES = [
@@ -16,10 +17,18 @@ const MUNICIPALITIES = [
   { code: 5, label: "Almada" },
 ];
 
-type MandateFormProps = { onCreated?: (mandateId: string, txDigest: string) => void };
+type CreatedMandate = {
+  mandateId: string;
+  ownerCapId: string;
+  agentCapId: string;
+  txDigest: string;
+};
+
+type MandateFormProps = { onCreated?: (mandate: CreatedMandate) => void };
 
 export function MandateForm({ onCreated }: MandateFormProps) {
   const account = useCurrentAccount();
+  const currentClient = useCurrentClient();
   const dAppKit = useDAppKit();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +55,8 @@ export function MandateForm({ onCreated }: MandateFormProps) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!account) return;
+
     setError(null);
     setBusy(true);
 
@@ -74,10 +85,10 @@ export function MandateForm({ onCreated }: MandateFormProps) {
       const client = createRentDelegateClient({ network: "testnet", rpcUrl: "https://fullnode.testnet.sui.io:443", packageId: PACKAGE_ID });
       const tx = client.buildCreateMandateTx(input);
 
-      const result = await dAppKit.signAndExecuteTransaction({ transaction: tx });
-      if (result.FailedTransaction) throw new Error(result.FailedTransaction.status.error?.message ?? "Transaction failed");
+      const result = await signAndExecuteWithExplicitGas(dAppKit, currentClient, tx, account.address);
+      const created = parseCreatedMandate(result.effects, result.objectTypes, PACKAGE_ID);
 
-      onCreated?.("(see tx)", result.Transaction.digest);
+      onCreated?.({ ...created, txDigest: result.digest });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -170,6 +181,47 @@ export function MandateForm({ onCreated }: MandateFormProps) {
       </button>
     </form>
   );
+}
+
+function parseCreatedMandate(
+  effects: unknown,
+  objectTypes: unknown,
+  packageId: string,
+): Omit<CreatedMandate, "txDigest"> {
+  if (!effects || typeof effects !== "object") {
+    throw new Error("Transaction succeeded but did not include effects");
+  }
+
+  const typedEffects = effects as {
+    created?: Array<{ objectId?: string; objectType?: string }>;
+    changedObjects?: Array<{ objectId?: string; objectType?: string; idOperation?: string }>;
+  };
+  const typeByObject = objectTypes && typeof objectTypes === "object"
+    ? objectTypes as Record<string, string>
+    : {};
+
+  const createdObjects = [
+    ...(typedEffects.created ?? []),
+    ...(typedEffects.changedObjects ?? []).filter((obj) => obj.idOperation === "Created"),
+  ];
+
+  const findId = (typeName: string) => {
+    const type = `${packageId}::rental::${typeName}`;
+    return createdObjects.find((obj) => {
+      const objectType = obj.objectType ?? (obj.objectId ? typeByObject[obj.objectId] : undefined);
+      return objectType?.startsWith(type);
+    })?.objectId;
+  };
+
+  const mandateId = findId("RentalMandate");
+  const ownerCapId = findId("OwnerCap");
+  const agentCapId = findId("AgentCap");
+
+  if (!mandateId || !ownerCapId || !agentCapId) {
+    throw new Error("Transaction succeeded but created mandate objects could not be found");
+  }
+
+  return { mandateId, ownerCapId, agentCapId };
 }
 
 const inputStyle: React.CSSProperties = {

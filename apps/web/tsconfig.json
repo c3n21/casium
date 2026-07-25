@@ -11,7 +11,7 @@
     "strict": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "target": "ES2017",
+    "target": "ES2020",
     "allowJs": true,
     "skipLibCheck": true,
     "incremental": true,
@@ -37,6 +37,7 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    ".next/dev"
   ]
 }

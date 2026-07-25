@@ -1,9 +1,10 @@
 "use client";
 
-import { useCurrentAccount, useDAppKit } from "@mysten/dapp-kit-react";
+import { useCurrentAccount, useCurrentClient, useDAppKit } from "@mysten/dapp-kit-react";
 import { createRentDelegateClient } from "@rentdelegate/sui-client";
 import { useState } from "react";
 import { EXPLORER_TX, PACKAGE_ID } from "@/lib/constants";
+import { signAndExecuteWithExplicitGas } from "@/lib/walletTransaction";
 
 type RevokeButtonProps = {
   mandateId: string;
@@ -13,6 +14,7 @@ type RevokeButtonProps = {
 
 export function RevokeButton({ mandateId, ownerCapId, onRevoked }: RevokeButtonProps) {
   const account = useCurrentAccount();
+  const currentClient = useCurrentClient();
   const dAppKit = useDAppKit();
   const [busy, setBusy] = useState(false);
   const [txDigest, setTxDigest] = useState<string | null>(null);
@@ -21,6 +23,7 @@ export function RevokeButton({ mandateId, ownerCapId, onRevoked }: RevokeButtonP
   if (!account) return null;
 
   async function handleRevoke() {
+    if (!account) return;
     if (!confirm("Revoke this mandate? The agent will no longer be able to submit applications.")) return;
     setError(null);
     setBusy(true);
@@ -32,9 +35,8 @@ export function RevokeButton({ mandateId, ownerCapId, onRevoked }: RevokeButtonP
         packageId: PACKAGE_ID,
       });
       const tx = client.buildRevokeMandateTx({ mandateId, ownerCapId });
-      const result = await dAppKit.signAndExecuteTransaction({ transaction: tx });
-      if (result.FailedTransaction) throw new Error(result.FailedTransaction.status.error?.message ?? "Transaction failed");
-      const digest = result.Transaction.digest;
+      const result = await signAndExecuteWithExplicitGas(dAppKit, currentClient, tx, account.address);
+      const digest = result.digest;
       setTxDigest(digest);
       onRevoked?.(digest);
     } catch (err) {
