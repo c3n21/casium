@@ -37,7 +37,7 @@ Sources for the Seal contract used below: [Encryption with Seal — Sui docs](ht
 | Field | Value |
 |---|---|
 | Priority | P1-completion |
-| Status | NOT STARTED |
+| Status | DONE — 2026-07-25 |
 | Lane | L6 Seal |
 | Objective | Decide, before any code, what the encrypted identity is and which package ID namespaces it. |
 | Suggested implementation | Two decisions, both written down in `docs/seal.md` with reasoning. **(1) Inner identity.** The renter encrypts before an `ApplicationReceipt` exists, so the identity cannot be the receipt ID. Recommended: `id = bcs(mandate_id) ‖ bcs(listing_id)` — both are known at packet-build time and together scope the ciphertext to exactly one intended application. Alternative (mandate-only) makes one packet reusable across listings but widens who can eventually decrypt; if chosen, say so explicitly. **(2) Namespace.** Seal prepends the package ID to the inner identity, and `seal_approve` must exist in the package being dry-run. Adding it requires an upgrade, so pin whether encryption uses the original published package ID (`0x7e0130cd…`, stable forever, and what existing receipts already reference) or the upgraded one — and confirm the choice against current Seal upgrade guidance rather than assuming. Getting this wrong makes every previously encrypted packet permanently unreadable. |
