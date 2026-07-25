@@ -9,6 +9,7 @@ import {
 } from "@rentdelegate/contracts-config";
 
 const AGENT_API = process.env.NEXT_PUBLIC_AGENT_API_URL ?? "http://localhost:4022";
+const PROVIDER_API = process.env.NEXT_PUBLIC_PROVIDER_API_URL ?? "http://localhost:4021";
 
 type HealthResponse = {
   ok: boolean;
@@ -133,18 +134,30 @@ function RunSection({
   mandateId,
   listingObjectId,
   description,
+  acceptQueryMandate,
 }: {
   title: string;
   mandateId: string;
   listingObjectId?: string;
   description?: string;
+  /** Pre-fill from `?mandateId=`, so the renter arrives from the packet upload ready to run. */
+  acceptQueryMandate?: boolean;
 }) {
   const [mandateInput, setMandateInput] = useState(mandateId);
   const [stage, setStage] = useState<Stage | null>(null);
   const [runRecord, setRunRecord] = useState<RunRecord | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [packetMissing, setPacketMissing] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Read the query param directly rather than via useSearchParams, which would force
+  // this whole page behind a Suspense boundary for a single optional prefill.
+  useEffect(() => {
+    if (!acceptQueryMandate) return;
+    const fromQuery = new URLSearchParams(window.location.search).get("mandateId");
+    if (fromQuery) setMandateInput(fromQuery);
+  }, [acceptQueryMandate]);
 
   function stopPolling() {
     if (pollRef.current) {
@@ -155,11 +168,22 @@ function RunSection({
 
   async function startRun() {
     setError(null);
+    setPacketMissing(false);
     setRunRecord(null);
     setStage("loading-mandate");
     setBusy(true);
 
     try {
+      // Preflight. The agent needs a packet registered for this mandate, and without
+      // this check its absence surfaces four stages later as an opaque run failure.
+      const packetRes = await fetch(
+        `${PROVIDER_API}/packets/${encodeURIComponent(mandateInput)}`,
+      );
+      if (packetRes.status === 404) {
+        setPacketMissing(true);
+        throw new Error("No packet is registered for this mandate.");
+      }
+
       const res = await fetch(`${AGENT_API}/runs`, {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -274,6 +298,15 @@ function RunSection({
       {error && (
         <p role="alert" style={{ color: "#dc2626", marginTop: 8 }}>
           {error}
+          {packetMissing && (
+            <>
+              {" "}
+              <a href={`/renter?mandateId=${encodeURIComponent(mandateInput)}`}>
+                Upload one on the Renter page
+              </a>
+              , then come back.
+            </>
+          )}
         </p>
       )}
 
@@ -337,6 +370,7 @@ export default function AgentPage() {
         title="Run: Eligible listing (Lisbon)"
         mandateId={SMOKE.mandateId}
         description="Uses the smoke mandate and eligible Lisbon listing. Expect status: complete."
+        acceptQueryMandate
       />
 
       {/* Ineligible listing proof */}

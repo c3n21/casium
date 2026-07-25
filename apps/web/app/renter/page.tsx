@@ -143,6 +143,15 @@ function ApplicationsSection({
 
 export default function RenterPage() {
   const [mandate, setMandate] = useState<MandateRecord | null>(null);
+  const [queryMandateId, setQueryMandateId] = useState<string | null>(null);
+
+  // Arriving from the agent page's "no packet registered" error: build the packet for
+  // the mandate the agent actually asked about, not whichever one this page defaults to.
+  useEffect(() => {
+    setQueryMandateId(new URLSearchParams(window.location.search).get("mandateId"));
+  }, []);
+
+  const packetMandateId = queryMandateId ?? mandate?.mandateId ?? SMOKE.mandateId;
   const [revoked, setRevoked] = useState(false);
 
   return (
@@ -214,7 +223,7 @@ export default function RenterPage() {
 
       <h2>Upload Application Packet</h2>
       <p style={{ color: "#64748b" }}>Encrypt your synthetic document packet before the agent submits it.</p>
-      <PacketBuilder mandateId={mandate?.mandateId ?? SMOKE.mandateId} listingObjectId={DEMO_LISTING_OBJECT_ID} />
+      <PacketBuilder mandateId={packetMandateId} listingObjectId={DEMO_LISTING_OBJECT_ID} />
     </main>
   );
 }

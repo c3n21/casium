@@ -263,6 +263,14 @@ export function PacketBuilder({
             </tbody>
           </table>
           <p style={{ color: "#166534", marginBottom: 0, marginTop: 8 }}>Only ciphertext was uploaded. Plaintext never sent to provider API.</p>
+          {/* Hand off to the agent with this packet's mandate already filled in — the two
+              pages must name the same mandate, and copying a 66-char ID by hand is where
+              that goes wrong. */}
+          <p style={{ marginBottom: 0, marginTop: 12 }}>
+            <a href={`/agent?mandateId=${encodeURIComponent(mandateId)}`} style={{ fontWeight: 600 }}>
+              Start the agent run on this packet →
+            </a>
+          </p>
           {stage.encrypted && stage.key && (
             <button onClick={handleVerifyDecrypt} style={{ ...buttonStyle, marginTop: 12, background: "#16a34a" }}>Verify decryption round-trip</button>
           )}
