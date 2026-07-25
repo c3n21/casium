@@ -289,6 +289,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Field | Value |
 |---|---|
 | Priority | P0 |
+| Status | BLOCKED - active testnet address has no SUI and official faucet returned rate-limit responses. |
 | Lane | L0/L1 DevOps |
 | Objective | Publish Move package to Sui testnet and save deployment metadata. |
 | Suggested implementation | Use Sui CLI testnet env, faucet-funded publisher wallet, deploy script, and JSON config consumed by apps. |
@@ -297,6 +298,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Blocks | RD-008, RD-103, RD-105, RD-106. |
 | Acceptance criteria | Package ID saved; create mandate/listing/apply tx digests recorded; explorer links work. |
 | Tests | Run deploy script against testnet; run smoke transaction. |
+| Verification | 2026-07-25: `~/.local/bin/sui client active-env` -> `testnet`; `~/.local/bin/sui client active-address` -> `0x371321932fb4c4b79b9b0762ac0878ebfb670cc6f6327ecf9d1d06cd9489243e`; `~/.local/bin/sui client balance` -> no balances found; official docs-confirmed `curl POST https://faucet.testnet.sui.io/v2/gas` -> `Too Many Requests! Wait for 4s` on repeated attempts; balance remained empty. Blocker: fund active address via https://faucet.sui.io, Discord `#testnet-faucet`, or another Testnet faucet, then rerun RD-007 publish. |
 | Failure fallback | Use localnet for development but record that public demo requires testnet before submission. |
 | Sponsor | Sui. |
 | Demo impact | Required for Sui qualification. |
