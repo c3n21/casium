@@ -15,7 +15,54 @@ Ticket detail lives in the epic files. `spec/development-spec.md` is the impleme
 | `plan/backlog-seal.md` | RD-131 … RD-138 | **Epic S — Seal Access Control.** Active. |
 | `plan/backlog-e2e.md` | RD-141 … RD-152 | **Epic E — Playwright E2E Tests.** Active. Not front-to-back: start with Phase 1 (RD-141 → RD-144 → RD-147, RD-145, RD-146, RD-149), which needs no wallet. See that file's *Recommended Order*. |
 | `plan/backlog-identity.md` | RD-161 … RD-166 | **Epic I — Agent Identity Binding.** Active. Closes the gap where the renter hand-types the agent's Sui and EVM addresses and nothing ever reads `agent_evm`. Start with RD-161 ‖ RD-162 — two agents, zero shared files. |
+| `plan/backlog-deploy.md` | RD-171 … RD-179 | **Epic D — Demo Deployment.** Active. Hosting the three services on the NixOS VPS so a judge can open a URL. Everything runs on `localhost` today and there is no Dockerfile in the repo. Start with RD-171 (a decision the user must make) ‖ RD-172. |
 | `plan/backlog-stretch.md` | RD-202, RD-203 | Optional. RD-201 superseded by Epic S. |
+
+## ⚠️ Open Thread — RD-180 AgentKit Mode Mismatch (deferred to last)
+
+**Status: OPEN, deliberately deferred.** Fix this *after* the epics above, but before any demo that
+claims live World verification. It is not in an epic because it belongs to none — it is a
+configuration-consistency bug on the demo path.
+
+**Symptom.** Run `pnpm demo:up`, upload a packet, click *Start run*:
+
+```
+Run failed: Provider API /listings/listing_lisbon_eligible/applications
+returned 401: AGENTKIT_UNVERIFIED
+```
+
+with the `/agent` page showing `agentkit: mock` when real mode was expected.
+
+**Diagnosis — the shipped `.env.example` is internally inconsistent.** Copy it to `.env` verbatim
+and you get exactly this failure:
+
+| Line in `.env.example` | Effect |
+|---|---|
+| `AGENTKIT_MODE=real` (set) | Provider selects the **real** verifier, which requires an `agentkit` header (`packages/agentkit/src/server.ts:118`). |
+| `# AGENT_EVM_PRIVATE_KEY=0x...` (**commented out**) | `createAgentkitSigner()` returns `null` (`apps/agent/src/agentkitSigner.ts:42`), so the agent cannot mint a header. |
+| `AGENTKIT_DEMO_*` (set) | The agent falls through to mock `x-demo-*` headers (`apps/agent/src/providerClient.ts:51-58`). |
+
+The agent sends the header set the real verifier ignores, and the real verifier finds no `agentkit`
+header at all. Neither side logs the disagreement unless `AGENTKIT_DEBUG=1`. The agent *does* print
+`AgentKit:  [MOCK] demo headers — rejected by a provider in AGENTKIT_MODE=real` at startup
+(`apps/agent/src/server.ts:57`), which is accurate but scrolls past in `.demo-logs/agent.log`.
+
+**Fix direction** (for whoever picks this up — do not treat as settled):
+
+1. Make `.env.example` self-consistent. Either default `AGENTKIT_MODE=mock` to match the credentials
+   it actually ships, or keep `real` and make the missing `AGENT_EVM_PRIVATE_KEY` a startup failure
+   rather than a silent downgrade. The second is more honest; the first is friendlier to a first run.
+   Whichever is chosen, the file must not ship a mode it cannot satisfy.
+2. Make the mismatch self-diagnosing at the point of failure, not only at startup — the 401 response
+   or the agent's error should name both modes.
+3. Provide the real-mode path a working default: registering an agent EVM key in AgentBook is a
+   user action (`pnpm dlx @worldcoin/agentkit-cli register …`), so the docs must say so where the
+   operator hits the wall.
+
+**Cross-references.** RD-177 (Epic D) detects this class at startup and will refuse to deploy a
+mismatched stack — but detection is not a fix, and RD-179's live run will fail the same way until
+this is resolved. Epic I's RD-164 adds two more 403s to the same reserve path; whoever fixes this
+should read that ticket first so the error surfaces do not conflict.
 
 ## Current State
 
@@ -53,7 +100,7 @@ environment variables and hardcoded fixtures rather than by code.
 
 | Lane | Owner profile | Primary paths | Active epic tickets |
 |---|---|---|---|
-| L0 Project setup | DevOps/full-stack | root, `scripts/`, `packages/contracts-config/` | RD-115, RD-133 |
+| L0 Project setup | DevOps/full-stack | root, `scripts/`, `deploy/`, `packages/contracts-config/` | RD-115, RD-133, RD-171 … RD-177 |
 | L1 Sui Move | Move engineer | `packages/move/` | RD-132, RD-133 |
 | L2 Sui TS | Full-stack Sui | `packages/sui-client/` | RD-112, RD-162 |
 | L3 Provider API | Backend | `apps/provider-api/` | RD-109, RD-110, RD-117, RD-118, RD-126, RD-164 |
@@ -62,8 +109,8 @@ environment variables and hardcoded fixtures rather than by code.
 | L6 Seal | Privacy engineer | `packages/seal/`, Move policy | RD-131 … RD-137 |
 | L7 Frontend | Frontend | `apps/web/` | RD-114, RD-116, RD-117, RD-135, RD-136, RD-142, RD-163 |
 | L8 Agent | Agent/full-stack | `apps/agent/` | RD-111, RD-112, RD-113, RD-161 |
-| L9 Demo/docs | Writer | `README.md`, `docs/`, `plan/` | RD-138, RD-152, RD-165 |
-| L10 QA/E2E | Test engineer | `apps/e2e/` | RD-141, RD-143 … RD-151, RD-166 |
+| L9 Demo/docs | Writer | `README.md`, `docs/`, `plan/` | RD-138, RD-152, RD-165, RD-178 |
+| L10 QA/E2E | Test engineer | `apps/e2e/` | RD-141, RD-143 … RD-151, RD-166, RD-179 |
 
 ## Dependency Graph
 
@@ -129,6 +176,11 @@ flowchart TD
 Epic I (RD-161…RD-166) hangs off the completed Epic C work and is otherwise independent — it shares no
 files with Epic W or Epic S. Detail and its own graph live in `plan/backlog-identity.md`.
 
+Epic D (RD-171…RD-179) is deliberately absent from the graph above: it depends on no feature ticket and
+blocks none. It packages and hosts whatever is on `main` at deploy time, so it can run concurrently with
+any other epic. Its only cross-epic contact points are `apps/agent/src/server.ts` (RD-161) and the
+health-payload shape — see its own Contended Files table. Detail lives in `plan/backlog-deploy.md`.
+
 ## Parallel Execution Evaluation
 
 ### Is splitting the backlog useful?
@@ -171,11 +223,13 @@ genuinely independent early work is in the leaf packages: `packages/move`, `pack
 | `apps/web/src/components/PacketBuilder.tsx` | RD-111, RD-125, RD-135 | Same owner should take all three. |
 | `apps/web/src/components/MandateForm.tsx` | RD-163 | Sole owner; announce if any other L7 work is live. |
 | `apps/web/app/agent/page.tsx` | RD-142, RD-163 | RD-163's edit is one shared-constant import — announce, do not serialize. |
-| `apps/agent/src/server.ts` | RD-161 | Sole owner. |
+| `apps/agent/src/server.ts` | RD-161, RD-175 (public-agent case only) | RD-161 first; RD-175's token is deferrable. |
+| `apps/agent/src/checkEnv.ts` | RD-177 | Sole owner. |
+| `deploy/Dockerfile`, `deploy/docker-compose.yml` | RD-172, RD-173, RD-175, RD-177 | RD-172 creates both; the rest extend distinct sections. Announce, do not serialize. |
 | `apps/web/app/landlord/page.tsx` | RD-114, RD-136 | RD-114 lands first, always. |
 | `apps/agent/src/index.ts` | RD-111, RD-112, RD-113, RD-115, RD-124 | RD-115 first (mechanical), then one owner for the rest. |
 | `packages/move/sources/rental.move` | RD-132, RD-202 | Single owner; RD-133 deploys it. |
-| `packages/contracts-config/testnet.json` | RD-115, RD-123, RD-133 | Append-only blocks; announce before writing. |
+| `packages/contracts-config/testnet.json` | RD-115, RD-123, RD-133, RD-179 | Append-only blocks; announce before writing. |
 
 ### Suggested waves
 

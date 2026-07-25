@@ -14,6 +14,9 @@
   `plan/backlog-completion.md` (Epic C, RD-109..RD-118, close the loop),
   `plan/backlog-walrus.md` (Epic W, RD-121..RD-126, live Walrus),
   `plan/backlog-seal.md` (Epic S, RD-131..RD-138, Seal access control),
+  `plan/backlog-e2e.md` (Epic E, RD-141..RD-152, Playwright E2E tests),
+  `plan/backlog-identity.md` (Epic I, RD-161..RD-166, agent identity binding),
+  `plan/backlog-deploy.md` (Epic D, RD-171..RD-179, hosting the demo on the VPS),
   `plan/backlog-stretch.md` (RD-202, RD-203; RD-201 superseded by Epic S).
   `spec/development-spec.md` is the implementation contract for
   object shapes, endpoints, and schemas — if it conflicts with executable
@@ -85,8 +88,14 @@ spec/development-spec.md   Implementation contract (schemas, endpoints, Move spe
 - Seal live evidence: package upgraded to
   `0xbab0d70134d065a2f48ad8d18f2d8681de0464b7417485cbda8446eff31e8937` in tx
   `BLqv4XRxg5MEGAt4jDr1v2eeNzuauQ7MhixH5971HgyS`; Move denial matrix is unit-test proven.
-- Nothing is currently broken: the workspace builds and all tests pass (143 JS/TS tests with 3 skips,
-  plus 28 Move tests). Do not treat optional stretch work as bug-fixing.
+- The workspace builds and all tests pass (143 JS/TS tests with 3 skips, plus 28 Move tests). Do not
+  treat optional stretch work as bug-fixing.
+- **One known runtime bug: RD-180, the AgentKit mode mismatch** — see the *Open Thread* section at the
+  top of `plan/backlog.md`. Copying `.env.example` to `.env` verbatim puts the provider in
+  `AGENTKIT_MODE=real` while the agent has no EVM key and falls back to mock headers, so *Start run*
+  fails with `401 AGENTKIT_UNVERIFIED`. Tests pass because no test exercises that pairing. The user has
+  deferred the fix until after the active epics; do not "helpfully" fix it mid-ticket, and do not claim
+  live World verification on the demo path until it is resolved.
 - RD-202 agent rotation and RD-203 zkLogin remain genuinely optional (`plan/backlog-stretch.md`).
 - Before starting new work, check the ticket's `Status` field in its epic file rather than assuming
   from this file — statuses change. Respect the file-ownership matrix in `plan/backlog.md` before
