@@ -28,6 +28,12 @@ const STATUS_WITHDRAWN: u8 = 2;
 const EWRONG_OWNER_CAP: u64 = 14;
 const EWRONG_OWNER: u64 = 15;
 const EWRONG_RECEIPT: u64 = 16;
+const ESEAL_WRONG_SENDER: u64 = 17;
+const ESEAL_WRONG_IDENTITY: u64 = 18;
+const ESEAL_WRONG_STATUS: u64 = 19;
+const ESEAL_EXPIRED_ACCESS: u64 = 20;
+const ESEAL_WRONG_MANDATE: u64 = 21;
+const ESEAL_MANDATE_REVOKED: u64 = 22;
 
 public struct RentalMandate has key {
     id: UID,
@@ -323,6 +329,63 @@ public fun receipt_provider(receipt: &ApplicationReceipt): address { receipt.pro
 public fun receipt_landlord(receipt: &ApplicationReceipt): address { receipt.landlord }
 public fun receipt_status(receipt: &ApplicationReceipt): u8 { receipt.status }
 
+/// Seal policy function — called by Seal key servers in a dry-run PTB to decide
+/// whether to release the decryption key for a rental application packet.
+///
+/// The key servers call this with:
+///   id = bcs(mandate_id) || bcs(listing_id)   (64 bytes)
+///
+/// Approval requires all of:
+///   1. Caller is the receipt's landlord.
+///   2. `id` equals bcs(receipt.mandate_id) || bcs(receipt.listing_id).
+///   3. Receipt status is STATUS_SUBMITTED (not withdrawn or any other state).
+///   4. Current time <= access_expires_at_ms.
+///   5. The supplied mandate object matches receipt.mandate_id.
+///   6. Mandate is not revoked.
+entry fun seal_approve_packet(
+    id: vector<u8>,
+    receipt: &ApplicationReceipt,
+    mandate: &RentalMandate,
+    clock: &Clock,
+    ctx: &TxContext,
+) {
+    // 1. Caller must be the landlord named on the receipt.
+    assert!(tx_context::sender(ctx) == receipt.landlord, ESEAL_WRONG_SENDER);
+
+    // 2. id must equal bcs(receipt.mandate_id) || bcs(receipt.listing_id).
+    let expected_id = encode_seal_id(receipt.mandate_id, receipt.listing_id);
+    assert!(id == expected_id, ESEAL_WRONG_IDENTITY);
+
+    // 3. Receipt must be in submitted (active) state.
+    assert!(receipt.status == STATUS_SUBMITTED, ESEAL_WRONG_STATUS);
+
+    // 4. Access must not have expired.
+    assert!(clock::timestamp_ms(clock) <= receipt.access_expires_at_ms, ESEAL_EXPIRED_ACCESS);
+
+    // 5. Supplied mandate must match the receipt's mandate_id.
+    assert!(object::id(mandate) == receipt.mandate_id, ESEAL_WRONG_MANDATE);
+
+    // 6. Mandate must not be revoked.
+    assert!(!mandate.revoked, ESEAL_MANDATE_REVOKED);
+}
+
+/// Encode the 64-byte Seal inner identity: bcs(mandate_id) || bcs(listing_id).
+/// Both IDs are Sui object IDs (32 bytes each), so no length prefix is needed.
+fun encode_seal_id(mandate_id: ID, listing_id: ID): vector<u8> {
+    let mandate_bytes = object::id_to_bytes(&mandate_id);
+    let listing_bytes = object::id_to_bytes(&listing_id);
+    let mut id = vector[];
+    vector::append(&mut id, mandate_bytes);
+    vector::append(&mut id, listing_bytes);
+    id
+}
+
+/// Return the 64-byte Seal identity for an existing receipt.
+/// Useful for TS consumers deriving the identity without constructing it manually.
+public fun receipt_seal_identity(receipt: &ApplicationReceipt): vector<u8> {
+    encode_seal_id(receipt.mandate_id, receipt.listing_id)
+}
+
 #[test_only]
 public fun revoke_for_testing(mandate: &mut RentalMandate) {
     mandate.revoked = true;
@@ -336,4 +399,65 @@ public fun set_agent_cap_mandate_for_testing(cap: &mut AgentCap, mandate_id: ID)
 #[test_only]
 public fun set_owner_cap_mandate_for_testing(cap: &mut OwnerCap, mandate_id: ID) {
     cap.mandate_id = mandate_id;
+}
+
+/// Create an ApplicationReceipt with arbitrary fields for unit-testing seal logic.
+/// The receipt is returned (not shared) so tests can pass it by reference directly.
+#[test_only]
+public fun create_test_receipt(
+    mandate_id: ID,
+    listing_id: ID,
+    landlord: address,
+    status: u8,
+    access_expires_at_ms: u64,
+    ctx: &mut TxContext,
+): ApplicationReceipt {
+    ApplicationReceipt {
+        id: object::new(ctx),
+        mandate_id,
+        listing_id,
+        agent: @0x1,
+        provider: @0x1,
+        landlord,
+        walrus_blob_id: b"mock",
+        packet_hash: b"hash",
+        submitted_at_ms: 0,
+        access_expires_at_ms,
+        status,
+        world_ref_hash: vector[],
+    }
+}
+
+/// Create a RentalMandate with default fields for unit-testing seal logic.
+/// The mandate is returned (not shared) so tests can obtain its ID and pass it by reference.
+#[test_only]
+public fun create_test_mandate(ctx: &mut TxContext): RentalMandate {
+    RentalMandate {
+        id: object::new(ctx),
+        owner: tx_context::sender(ctx),
+        agent_sui: @0x1,
+        agent_evm: vector[],
+        max_monthly_rent_eur: 2_000,
+        allowed_municipalities: vector[1],
+        min_bedrooms: 1,
+        expires_at_ms: 9_999_999_999,
+        remaining_applications: 5,
+        revoked: false,
+        permitted_actions: 1,
+        created_at_ms: 0,
+        metadata_version: METADATA_VERSION,
+        submitted_listings: vector[],
+    }
+}
+
+/// Thin wrapper so external test modules can exercise the non-public entry fun.
+#[test_only]
+public fun seal_approve_for_testing(
+    id: vector<u8>,
+    receipt: &ApplicationReceipt,
+    mandate: &RentalMandate,
+    clock: &Clock,
+    ctx: &TxContext,
+) {
+    seal_approve_packet(id, receipt, mandate, clock, ctx);
 }
