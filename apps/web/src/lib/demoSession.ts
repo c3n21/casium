@@ -6,6 +6,19 @@
  * other apps running on the same origin.
  */
 
+import { SMOKE } from "@rentdelegate/contracts-config";
+
+/**
+ * Mandate IDs that must never be used as the live-demo default.
+ * These objects predate the agent_evm binding (RD-162/RD-164) and will be
+ * rejected by the provider with MANDATE_EVM_MISMATCH — their agentEvm is null.
+ */
+const LEGACY_SMOKE_MANDATE_IDS = new Set([SMOKE.mandateId]);
+
+function isLegacySmoke(id: string | null): boolean {
+  return id !== null && LEGACY_SMOKE_MANDATE_IDS.has(id);
+}
+
 const K = {
   lastMandateId: "rentdelegate:lastMandateId",
   lastOwnerCapId: "rentdelegate:lastOwnerCapId",
@@ -79,13 +92,22 @@ export const demoSession = {
     lsSet(K.lastPacketHash, packetHash);
   },
 
-  /** Mandate ID whose packet was most recently uploaded. Used by `/agent` as priority-2 source. */
+  /** Mandate ID whose packet was most recently uploaded. Used by `/agent` as priority-2 source.
+   *  Returns null when the stored value is a legacy smoke mandate — those have agentEvm=null and
+   *  will always fail MANDATE_EVM_MISMATCH with a live AgentKit signer.
+   */
   getLastPacketMandateId(): string | null {
-    return lsGet(K.lastPacketMandateId);
+    const id = lsGet(K.lastPacketMandateId);
+    if (isLegacySmoke(id)) return null;
+    return id;
   },
 
-  /** Most recently created mandate ID. Used by `/agent` as priority-3 source. */
+  /** Most recently created mandate ID. Used by `/agent` as priority-3 source.
+   *  Returns null when the stored value is a legacy smoke mandate.
+   */
   getLastMandateId(): string | null {
-    return lsGet(K.lastMandateId);
+    const id = lsGet(K.lastMandateId);
+    if (isLegacySmoke(id)) return null;
+    return id;
   },
 } as const;
