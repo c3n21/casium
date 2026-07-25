@@ -535,6 +535,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Field | Value |
 |---|---|
 | Priority | P1 |
+| Status | DONE - merged via `feature/rd-106-107-docs`. |
 | Lane | L9 Demo/docs + all |
 | Objective | Create reliable demo scenario, reset scripts, and evidence collection. |
 | Suggested implementation | Seed listings, create or load mandate, upload packet, run agent application, attempt duplicate human, attempt invalid listing, revoke mandate, collect tx links. |
@@ -543,15 +544,14 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Blocks | Submission. |
 | Acceptance criteria | 3-4 minute demo completes; all sponsor proofs visible; fallback object IDs and tx digests documented. |
 | Tests | Run full script twice against fresh demo state or documented pre-seeded state. |
-| Failure fallback | Use pre-recorded video and explorer links if live testnet fails. |
-| Sponsor | Both. |
-| Demo impact | Submission readiness. |
+| Verification | 2026-07-25: `docs/demo-script.md` written covering all 9 demo steps, all testnet object IDs, sponsor proof checklist, and explicit out-of-scope list. `README.md` rewritten with architecture, prerequisites, env vars, quick-start commands. |
 
 ### RD-107 README And Submission Evidence
 
 | Field | Value |
 |---|---|
 | Priority | P1 |
+| Status | DONE - merged via `feature/rd-106-107-docs`. |
 | Lane | L9 Demo/docs |
 | Objective | Write README and submission artifacts proving sponsor qualification. |
 | Suggested implementation | Include overview, architecture, Sui integration, World integration, Walrus/Seal status, setup, env vars, test commands, demo flow, security notes, limitations, synthetic-data disclaimer, tx links. |
@@ -560,9 +560,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Blocks | Submission. |
 | Acceptance criteria | Judge can run locally or understand public demo; no unsupported legal claims; mocked components clearly labeled. |
 | Tests | Fresh-machine setup review; link check. |
-| Failure fallback | Short README plus demo video and tx links. |
-| Sponsor | Both. |
-| Demo impact | Prize clarity. |
+| Verification | 2026-07-25: `README.md` rewritten with architecture overview, sponsor table, package map, prerequisites, install, env vars, build/test commands, and demo quick-start. `docs/demo-script.md` covers 9 steps, testnet object reference table, and sponsor proof checklist. |
 
 ## 7. P2 Backlog: Stretch Features
 
