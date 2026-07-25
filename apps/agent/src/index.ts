@@ -22,7 +22,7 @@ import { executeSubmitApplication } from "./suiSubmit.js";
 const PACKAGE_ID =
   process.env.SUI_PACKAGE_ID ?? "0x7e0130cdc105d06707f1f3abd4c76aac8211a09a5502692ba454d1b4b758af3d";
 const RPC_URL = process.env.SUI_RPC_URL ?? "https://fullnode.testnet.sui.io:443";
-const PROVIDER_API_BASE = process.env.PROVIDER_API_URL ?? "http://localhost:3000";
+const PROVIDER_API_BASE = process.env.PROVIDER_API_URL ?? "http://localhost:4021";
 
 const SMOKE_MANDATE_ID =
   process.env.MANDATE_ID ?? "0x835478969ce38a0a1d0f981aa1a278a8862f9283de735ebba81c6169d388dbee";

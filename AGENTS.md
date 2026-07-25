@@ -51,6 +51,36 @@
 - If `walrus` is not on `PATH`, run `~/.local/bin/walrus ...` instead.
 - Do not invent additional commands until manifests/scripts exist; read executable config first once added.
 
+## Local Web Server During Browser Testing
+
+- For short browser smoke tests, it is acceptable to keep the web app running in the background with `nohup`, for example `nohup pnpm --filter @rentdelegate/web start > /tmp/rentdelegate-web.log 2>&1 &`.
+- Use `pnpm --filter @rentdelegate/web start` only after a successful production build; it serves the built app and does not hot-reload.
+- For active UI development, prefer `pnpm --filter @rentdelegate/web dev`; if it must run in the background, use `nohup pnpm --filter @rentdelegate/web dev > /tmp/rentdelegate-web.log 2>&1 &`.
+- Before starting a background web server, check whether port `3000` is already in use and avoid leaving stale processes running.
+- Treat `nohup` as a pragmatic local testing helper, not as project infrastructure. For repeated demo workflows, prefer a documented script, `tmux`, or another explicit process manager that makes logs and cleanup clear.
+
+## Sui Wallet Browser Testing
+
+- For Slush browser flows, prefer wallet `signTransaction` plus app-side Sui `executeTransaction` when wallet `signAndExecuteTransaction` is unreliable or popup handoff fails.
+- Always set explicit gas before wallet signing. Select a live SUI gas coin, call `tx.setGasBudget(...)`, and call `tx.setGasPayment(...)`; do not rely on unresolved wallet gas data for Slush requests.
+- When parsing executed Sui gRPC results for created object types, request `include: { effects: true, objectTypes: true }`.
+- In the `@mysten/sui` gRPC client, parsed `effects.changedObjects` may not include `objectType`; join created `objectId` values with `result.objectTypes[objectId]`.
+- Do not use transaction digests, placeholder strings, or labels like `(see tx)` as Sui object IDs. For `create_mandate`, extract and store `RentalMandate`, `OwnerCap`, and `AgentCap` object IDs.
+- Persistent Playwright/Slush browser state is useful, but old wallet tabs can hold stale transaction bytes, gas versions, or request payloads.
+- It is acceptable to refresh, close, or reopen browser tabs during Playwright testing if it helps clear stale dapp or wallet state.
+- After changing signing or execution code, reload the app tab and start a fresh wallet request instead of approving an already-open Slush request.
+- Browser tests should verify both wallet approval and post-approval app state; a successful signature alone is not enough if the app still fails result parsing or object reads.
+- For Sui CLI object debugging, this installed CLI accepts `sui client objects <address> --json`; do not assume `--address` is supported.
+- Do not assume legacy JSON-RPC endpoints for browser-path debugging. The frontend uses Sui gRPC through `@mysten/sui`.
+
+## Frontend Verification Notes
+
+- Run `pnpm --filter @rentdelegate/web typecheck` after frontend wallet or transaction-result parsing changes; `next build` can succeed while skipping type validation.
+- BigInt gas budgets require the web TypeScript target to be `ES2020` or newer.
+- `next build` may mutate `apps/web/tsconfig.json` and re-add `.next/dev/types/**/*.ts` to `include`.
+- If stale `.next/dev` validator files break typecheck while source routes are valid, explicitly exclude `.next/dev` rather than treating generated dev artifacts as application source.
+- `tsc --noEmit` may update `apps/web/tsconfig.tsbuildinfo`; inspect this as generated incremental state before treating it as a meaningful source change.
+
 ## Sponsor-Critical Constraints
 
 - Do not fake Sui or World integrations. Mock only Walrus/Seal fallbacks, and label mocks clearly in UI and README.

@@ -8,7 +8,9 @@
         "dlx",
         "@playwright/mcp",
         "--executable-path",
-        "/home/zhifan/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome"
+        "/home/zhifan/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome",
+        "--user-data-dir",
+        "/home/zhifan/Downloads/github/eth-lisbona-2026/.playwright-wallet-profile"
       ],
       "enabled": true,
       "env": {}

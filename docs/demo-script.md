@@ -45,7 +45,7 @@ pnpm --filter @rentdelegate/provider-api start
 Verify health:
 
 ```bash
-curl http://localhost:3000/health
+curl http://localhost:4021/health
 # {"ok":true,"service":"provider-api","mode":"local"}
 ```
 
@@ -134,6 +134,16 @@ Requires a registered MetaMask address on World Chain (see `docs/world-agentkit.
 ---
 
 ## Step 7 — Agent Run (Tab B)
+
+First verify that the agent signer address is known and has SUI gas on testnet:
+
+```bash
+pnpm --filter @rentdelegate/agent build
+pnpm --filter @rentdelegate/agent check:env
+```
+
+If the check reports no gas, fund the printed agent address with the Sui testnet faucet before
+running the agent.
 
 ```bash
 node apps/agent/dist/index.js

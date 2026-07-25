@@ -85,7 +85,7 @@ AGENTKIT_EVM_RPC_URL=https://worldchain-mainnet.g.alchemy.com/public
 AGENTKIT_HEADER=<base64-encoded-agentkit-header>
 
 # Provider API
-PROVIDER_API_URL=http://localhost:3000
+PROVIDER_API_URL=http://localhost:4021
 
 # Agent
 MANDATE_ID=0x835478969ce38a0a1d0f981aa1a278a8862f9283de735ebba81c6169d388dbee
@@ -145,7 +145,10 @@ pnpm --filter @rentdelegate/web start
 # 3. Run duplicate-human demo script
 pnpm demo:duplicate-human
 
-# 4. Run agent (executes only if an env-only agent Sui private key is configured)
+# 4. Check the agent signer/address before Sui execution
+pnpm --filter @rentdelegate/agent check:env
+
+# 5. Run agent (executes only if an env-only agent Sui private key is configured)
 node apps/agent/dist/index.js
 ```
 

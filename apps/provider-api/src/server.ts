@@ -1,7 +1,7 @@
 import { serve } from "@hono/node-server";
 import { createApp } from "./app.js";
 
-const port = Number(process.env.PORT ?? 3000);
+const port = Number(process.env.PORT ?? 4021);
 
 serve({ fetch: createApp().fetch, port }, (info) => {
   console.log(`provider-api listening on http://localhost:${info.port}`);
