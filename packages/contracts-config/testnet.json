@@ -1,0 +1,25 @@
+{
+  "network": "testnet",
+  "rpcUrl": "https://fullnode.testnet.sui.io:443",
+  "publishedAtMs": 1784962791499,
+  "publisherAddress": "0x371321932fb4c4b79b9b0762ac0878ebfb670cc6f6327ecf9d1d06cd9489243e",
+  "packageId": "0x7e0130cdc105d06707f1f3abd4c76aac8211a09a5502692ba454d1b4b758af3d",
+  "upgradeCapId": "0x2250bb6b4e9804285aa42d9dd7f2737ecdd93ed4b03edbf515459fb7223d62af",
+  "publishTxDigest": "GvxTETJej5RH4U3rFD2PNCENW65tG8vynRF1xskTrxP7",
+  "module": "rental",
+  "smoke": {
+    "mandateId": "0x835478969ce38a0a1d0f981aa1a278a8862f9283de735ebba81c6169d388dbee",
+    "ownerCapId": "0xcdb3924e29345c3be077f3c54de78435144ad141d0458a93f6fb6ae0381a571d",
+    "agentCapId": "0xabeb55d1266102eed4235531c542fb01fd85bb3095c3d579960923f2e1e25c2a",
+    "listingObjectId": "0xe7f676b93b9df816c7c44806ca2bbda0c6bf29334802206fb025c12e320ad72a",
+    "receiptId": "0xc46d42744b7381447851f9f2adb6cf32322ab4bd6aba243e925597418899ad20",
+    "createMandateTxDigest": "ANNzWCc4StQWGnbdDKmxkwozYhk2V8CDVDUk4UA1sfDA",
+    "createListingTxDigest": "AqH68Fwb3t61KGxshTn5PbJ7JWTDiQcvbF7rS9URNgZR",
+    "submitApplicationTxDigest": "6vKuZNC3p5uoaSni2N5NifW1eQjqdLDesBAj9gN799Lh"
+  },
+  "explorer": {
+    "package": "https://suivision.xyz/package/0x7e0130cdc105d06707f1f3abd4c76aac8211a09a5502692ba454d1b4b758af3d?network=testnet",
+    "publishTx": "https://suivision.xyz/txblock/GvxTETJej5RH4U3rFD2PNCENW65tG8vynRF1xskTrxP7?network=testnet",
+    "submitApplicationTx": "https://suivision.xyz/txblock/6vKuZNC3p5uoaSni2N5NifW1eQjqdLDesBAj9gN799Lh?network=testnet"
+  }
+}

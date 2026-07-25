@@ -289,7 +289,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Field | Value |
 |---|---|
 | Priority | P0 |
-| Status | BLOCKED - active testnet address has no SUI and official faucet returned rate-limit responses. |
+| Status | DONE - merged via `feature/rd-007-sui-testnet-publish-live`. |
 | Lane | L0/L1 DevOps |
 | Objective | Publish Move package to Sui testnet and save deployment metadata. |
 | Suggested implementation | Use Sui CLI testnet env, faucet-funded publisher wallet, deploy script, and JSON config consumed by apps. |
@@ -298,7 +298,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Blocks | RD-008, RD-103, RD-105, RD-106. |
 | Acceptance criteria | Package ID saved; create mandate/listing/apply tx digests recorded; explorer links work. |
 | Tests | Run deploy script against testnet; run smoke transaction. |
-| Verification | 2026-07-25: `~/.local/bin/sui client active-env` -> `testnet`; `~/.local/bin/sui client active-address` -> `0x371321932fb4c4b79b9b0762ac0878ebfb670cc6f6327ecf9d1d06cd9489243e`; `~/.local/bin/sui client balance` -> no balances found; official docs-confirmed `curl POST https://faucet.testnet.sui.io/v2/gas` -> `Too Many Requests! Wait for 4s` on repeated attempts; balance remained empty. Blocker: fund active address via https://faucet.sui.io, Discord `#testnet-faucet`, or another Testnet faucet, then rerun RD-007 publish. |
+| Verification | 2026-07-25: `~/.local/bin/sui move build --path packages/move` -> success; `~/.local/bin/sui move test --path packages/move` -> success, 21 tests passed; `~/.local/bin/sui client publish packages/move --gas-budget 500000000 --dry-run --json` -> success, estimated net gas 35,549,600 MIST; `~/.local/bin/sui client publish packages/move --gas-budget 500000000 --json` -> success, package `0x7e0130cdc105d06707f1f3abd4c76aac8211a09a5502692ba454d1b4b758af3d`, upgrade cap `0x2250bb6b4e9804285aa42d9dd7f2737ecdd93ed4b03edbf515459fb7223d62af`, tx `GvxTETJej5RH4U3rFD2PNCENW65tG8vynRF1xskTrxP7`; smoke `create_mandate` -> tx `ANNzWCc4StQWGnbdDKmxkwozYhk2V8CDVDUk4UA1sfDA`, mandate `0x835478969ce38a0a1d0f981aa1a278a8862f9283de735ebba81c6169d388dbee`, owner cap `0xcdb3924e29345c3be077f3c54de78435144ad141d0458a93f6fb6ae0381a571d`, agent cap `0xabeb55d1266102eed4235531c542fb01fd85bb3095c3d579960923f2e1e25c2a`; smoke `create_listing` -> tx `AqH68Fwb3t61KGxshTn5PbJ7JWTDiQcvbF7rS9URNgZR`, listing `0xe7f676b93b9df816c7c44806ca2bbda0c6bf29334802206fb025c12e320ad72a`; smoke `submit_application` -> tx `6vKuZNC3p5uoaSni2N5NifW1eQjqdLDesBAj9gN799Lh`, receipt `0xc46d42744b7381447851f9f2adb6cf32322ab4bd6aba243e925597418899ad20`; `~/.local/bin/sui client balance` after publish/smoke -> 0.95 SUI. Config saved in `packages/contracts-config/testnet.json`; evidence documented in `docs/sui-deployment.md`. |
 | Failure fallback | Use localnet for development but record that public demo requires testnet before submission. |
 | Sponsor | Sui. |
 | Demo impact | Required for Sui qualification. |
