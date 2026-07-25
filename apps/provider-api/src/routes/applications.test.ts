@@ -1,6 +1,7 @@
 import { ERROR_CODES } from "@rentdelegate/shared";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../app.js";
+import type { ReceiptVerificationService } from "../services/suiVerifier.js";
 
 const reserveRequest = {
   mandateId: "0xabc123",
@@ -92,12 +93,124 @@ describe("application reservation routes", () => {
     expect(response.status).toBe(401);
     expect(await response.json()).toEqual({ error: ERROR_CODES.AGENTKIT_UNVERIFIED });
   });
+
+  it("verifies a matching Sui receipt and accepts the application", async () => {
+    const app = createApp(mockReceiptVerifier());
+    expect((await reserve(app, reserveRequest)).status).toBe(202);
+
+    const response = await app.request("/applications/app_1/verify", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ applicationId: "app_1", txDigest: "tx_1", receiptId: "0xcafe" }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      id: "app_1",
+      status: "accepted",
+      receipt: { receiptId: "0xcafe", txDigest: "tx_1" },
+    });
+  });
+
+  it("rejects invalid receipts and duplicate tx digests", async () => {
+    const app = createApp(mockReceiptVerifier());
+    expect((await reserve(app, reserveRequest)).status).toBe(202);
+
+    const mismatch = await app.request("/applications/app_1/verify", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ applicationId: "app_2", txDigest: "tx_bad", receiptId: "0xcafe" }),
+    });
+    expect(mismatch.status).toBe(422);
+    expect(await mismatch.json()).toEqual({ error: ERROR_CODES.RECEIPT_INVALID });
+
+    const first = await verify(app, "tx_1");
+    expect(first.status).toBe(200);
+
+    const duplicateTx = await verify(app, "tx_1");
+    expect(duplicateTx.status).toBe(422);
+    expect(await duplicateTx.json()).toEqual({ error: ERROR_CODES.RECEIPT_INVALID });
+  });
 });
 
-function reserve(app: ReturnType<typeof createApp>, body: unknown) {
+describe.skipIf(process.env.RUN_SUI_TESTNET !== "1")("application receipt live smoke", () => {
+  it("verifies the RD-007 testnet receipt through the provider route", async () => {
+    const app = createApp();
+    const liveReserveRequest = {
+      ...reserveRequest,
+      mandateId: "0x835478969ce38a0a1d0f981aa1a278a8862f9283de735ebba81c6169d388dbee",
+      agentSuiAddress: "0x371321932fb4c4b79b9b0762ac0878ebfb670cc6f6327ecf9d1d06cd9489243e",
+      packetHash: "0x68617368",
+      idempotencyKey: "123e4567-e89b-12d3-a456-426614174099",
+    };
+
+    const reserveResponse = await reserve(app, liveReserveRequest, {
+      ...mockHeaders,
+      "x-demo-mandate-agent-sui-address": liveReserveRequest.agentSuiAddress,
+    });
+    expect(reserveResponse.status).toBe(202);
+
+    const verifyResponse = await app.request("/applications/app_1/verify", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        applicationId: "app_1",
+        txDigest: "6vKuZNC3p5uoaSni2N5NifW1eQjqdLDesBAj9gN799Lh",
+        receiptId: "0xc46d42744b7381447851f9f2adb6cf32322ab4bd6aba243e925597418899ad20",
+      }),
+    });
+
+    expect(verifyResponse.status).toBe(200);
+    expect(await verifyResponse.json()).toMatchObject({ status: "accepted" });
+  });
+});
+
+function reserve(app: ReturnType<typeof createApp>, body: unknown, headers = mockHeaders) {
   return app.request("/listings/listing_lisbon_eligible/applications", {
     method: "POST",
-    headers: mockHeaders,
+    headers,
     body: JSON.stringify(body),
   });
+}
+
+function verify(app: ReturnType<typeof createApp>, txDigest: string) {
+  return app.request("/applications/app_1/verify", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ applicationId: "app_1", txDigest, receiptId: "0xcafe" }),
+  });
+}
+
+function mockReceiptVerifier(): ReceiptVerificationService {
+  return {
+    async verify(application, input) {
+      if (input.receiptId !== "0xcafe") return { ok: false };
+
+      return {
+        ok: true,
+        value: {
+          receiptId: input.receiptId,
+          txDigest: input.txDigest,
+          mandateId: application.mandateId,
+          listingObjectId: application.listingObjectId,
+          submittedAtMs: 1_784_962_851_988,
+          accessExpiresAtMs: 1_790_000_000_000,
+          rawObject: {
+            id: input.receiptId,
+            mandateId: application.mandateId,
+            listingId: application.listingObjectId,
+            agent: application.agentSuiAddress,
+            provider: application.providerSuiAddress,
+            landlord: application.landlordSuiAddress,
+            walrusBlobIdBytes: [...new TextEncoder().encode(application.walrusBlobId)],
+            packetHashBytes: [190, 239],
+            submittedAtMs: 1_784_962_851_988,
+            accessExpiresAtMs: 1_790_000_000_000,
+            status: 1,
+            worldRefHashBytes: [],
+          },
+        },
+      };
+    },
+  };
 }

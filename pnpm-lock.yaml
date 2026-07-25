@@ -18,6 +18,9 @@ importers:
       '@rentdelegate/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@rentdelegate/sui-client':
+        specifier: workspace:*
+        version: link:../../packages/sui-client
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.2(@types/pg@8.20.0)(pg@8.22.0)
