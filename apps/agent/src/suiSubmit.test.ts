@@ -93,6 +93,10 @@ describe("executeSubmitApplication", () => {
 
   it("signs, executes, and returns digest plus receipt ID", async () => {
     const keypair = Ed25519Keypair.generate();
+    const tx = fakeTransaction();
+    const listCoins = vi.fn(async () => ({
+      objects: [{ objectId: "0xgas", version: "1", digest: "digest", balance: "200000000" }],
+    }));
     const signAndExecuteTransaction = vi.fn(async () => ({
       $kind: "Transaction",
       Transaction: {
@@ -109,8 +113,8 @@ describe("executeSubmitApplication", () => {
     }));
 
     const result = await executeSubmitApplication({
-      suiClient: fakeRentDelegateClient(),
-      executionClient: { core: { signAndExecuteTransaction } } as never,
+      suiClient: fakeRentDelegateClient(tx),
+      executionClient: { core: { listCoins, signAndExecuteTransaction } } as never,
       packageId: PACKAGE_ID,
       expectedAgentSuiAddress: keypair.toSuiAddress(),
       privateKey: keypair.getSecretKey(),
@@ -118,9 +122,32 @@ describe("executeSubmitApplication", () => {
     });
 
     expect(result).toEqual({ txDigest: "txdigest", receiptId: "0xreceipt" });
+    expect(listCoins).toHaveBeenCalledWith({ owner: keypair.toSuiAddress(), coinType: "0x2::sui::SUI" });
+    expect(tx.setGasBudget).toHaveBeenCalledWith(100_000_000n);
+    expect(tx.setGasPayment).toHaveBeenCalledWith([{ objectId: "0xgas", version: "1", digest: "digest" }]);
     expect(signAndExecuteTransaction).toHaveBeenCalledWith(
       expect.objectContaining({ signer: expect.objectContaining({}), include: { effects: true, events: true } }),
     );
+  });
+
+  it("fails before signing when no gas coin can cover the budget", async () => {
+    const keypair = Ed25519Keypair.generate();
+    const signAndExecuteTransaction = vi.fn();
+
+    await expect(
+      executeSubmitApplication({
+        suiClient: fakeRentDelegateClient(),
+        executionClient: {
+          core: { listCoins: vi.fn(async () => ({ objects: [] })), signAndExecuteTransaction },
+        } as never,
+        packageId: PACKAGE_ID,
+        expectedAgentSuiAddress: keypair.toSuiAddress(),
+        privateKey: keypair.getSecretKey(),
+        input: INPUT,
+      }),
+    ).rejects.toThrow(/No SUI gas coin/);
+
+    expect(signAndExecuteTransaction).not.toHaveBeenCalled();
   });
 });
 
@@ -147,12 +174,21 @@ describe("provider receipt verification handoff", () => {
   });
 });
 
-function fakeRentDelegateClient() {
+function fakeRentDelegateClient(tx = fakeTransaction()) {
   return {
-    buildSubmitApplicationTx: vi.fn(() => ({ setSenderIfNotSet: vi.fn(), build: vi.fn() })),
+    buildSubmitApplicationTx: vi.fn(() => tx),
   } as never;
 }
 
 function fakeExecutionClient() {
-  return { core: { signAndExecuteTransaction: vi.fn() } } as never;
+  return { core: { listCoins: vi.fn(), signAndExecuteTransaction: vi.fn() } } as never;
+}
+
+function fakeTransaction() {
+  return {
+    setGasBudget: vi.fn(),
+    setGasPayment: vi.fn(),
+    setSenderIfNotSet: vi.fn(),
+    build: vi.fn(),
+  };
 }

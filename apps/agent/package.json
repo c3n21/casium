@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "check:env": "node dist/checkEnv.js",
     "test": "vitest run",
     "start": "node dist/index.js"
   },

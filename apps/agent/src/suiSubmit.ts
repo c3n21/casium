@@ -2,6 +2,9 @@ import type { RentDelegateClient } from "@rentdelegate/sui-client";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import type { ClientWithCoreApi, SuiClientTypes } from "@mysten/sui/client";
 
+const SUBMIT_APPLICATION_GAS_BUDGET_MIST = 100_000_000n;
+const SUI_COIN_TYPE = "0x2::sui::SUI";
+
 export type SuiSubmitInput = {
   mandateId: string;
   listingObjectId: string;
@@ -61,6 +64,10 @@ export async function executeSubmitApplication(
   }
 
   const tx = await buildSubmitApplicationTx(options.suiClient, options.input);
+  const gasCoin = await selectGasCoin(options.executionClient, keypair.toSuiAddress());
+  tx.setGasBudget(SUBMIT_APPLICATION_GAS_BUDGET_MIST);
+  tx.setGasPayment([gasCoin]);
+
   const result = await options.executionClient.core.signAndExecuteTransaction({
     transaction: tx,
     signer: keypair,
@@ -74,6 +81,27 @@ export async function executeSubmitApplication(
 
   const receiptId = parseReceiptIdFromTransaction(result.Transaction, options.packageId);
   return { txDigest: result.Transaction.digest, receiptId };
+}
+
+async function selectGasCoin(executionClient: ClientWithCoreApi, owner: string) {
+  const coins = await executionClient.core.listCoins({ owner, coinType: SUI_COIN_TYPE });
+  const sorted = coins.objects
+    .map((coin) => ({ ...coin, balanceMist: BigInt(coin.balance) }))
+    .filter((coin) => coin.balanceMist >= SUBMIT_APPLICATION_GAS_BUDGET_MIST)
+    .sort((a, b) => Number(b.balanceMist - a.balanceMist));
+
+  const coin = sorted[0];
+  if (!coin) {
+    throw new Error(
+      `No SUI gas coin with at least ${SUBMIT_APPLICATION_GAS_BUDGET_MIST} MIST found for agent ${owner}`,
+    );
+  }
+
+  return {
+    objectId: coin.objectId,
+    version: coin.version,
+    digest: coin.digest,
+  };
 }
 
 export function keypairFromPrivateKey(privateKey: string): Ed25519Keypair {
