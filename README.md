@@ -120,6 +120,33 @@ It only works against a provider started with `AGENTKIT_MODE=mock`, both variabl
 `AGENTKIT_HEADER` always takes precedence, and the agent labels the run `[MOCK]`. It proves nothing
 about World identity.
 
+### Web app: mock vs live packet upload
+
+The browser bundle reads only `NEXT_PUBLIC_*` variables, and Next.js **inlines them at build time** —
+after editing, restart `next dev`; a hot reload will not pick them up. Put them in `apps/web/.env.local`
+(see `apps/web/.env.example`).
+
+| Variable | `mock` (default when unset) | Live |
+|---|---|---|
+| `NEXT_PUBLIC_ENCRYPTION_MODE` | AES-GCM in-browser, key held in page state | `seal` — policy-gated, keys in Seal key servers |
+| `NEXT_PUBLIC_WALRUS_MODE` | in-memory `Map`, blob IDs prefixed `mock:` | `http` — real Walrus testnet publisher/aggregator |
+
+With no `.env.local` present, **both default to `mock`** and the Upload Application Packet panel shows
+`[MOCK encryption — AES-GCM, key in browser only]`. The upload still succeeds and still registers with
+the provider API, so a `201` is not evidence that Seal or Walrus ran — check the badge and the blob ID
+prefix.
+
+Two mock-mode limitations, both expected:
+
+- `NEXT_PUBLIC_ENCRYPTION_MODE=seal` silently falls back to the AES-GCM branch unless `PacketBuilder`
+  also receives a `listingObjectId` — the Seal identity cannot be derived without it.
+- A `mock:` blob lives in a `Map` created inside `handleBuild` and discarded when it returns. The blob
+  ID is registered with the provider but is unresolvable afterwards, so `PacketViewer` cannot decrypt
+  it. Use `NEXT_PUBLIC_WALRUS_MODE=http` for anything involving the landlord decrypt flow.
+
+Live mode needs no credentials: the Walrus HTTP adapter defaults to the public testnet
+publisher/aggregator, and Seal defaults to the two Mysten open-mode testnet key servers.
+
 ## Single-Agent Model
 
 For the demo and current implementation, RentDelegate assumes one stable agent identity:

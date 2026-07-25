@@ -39,17 +39,41 @@ Using only `mandate_id` would make one encrypted packet reusable across any list
 
 ### Decision
 
-Encryption uses the **upgraded package ID** (`latestPackageId` from `packages/contracts-config/testnet.json` after RD-133), not the original.
+The Seal identity namespace is the **original package ID** (`packageId` from
+`packages/contracts-config/testnet.json` — the v1 package `0x7e0130cd…`).
+
+The **upgraded package ID** (`latestPackageId`) is used only as the move-call target of the
+`seal_approve_packet` PTB that key servers dry-run.
+
+| Call site | Package ID |
+|---|---|
+| `SealClient.encrypt` / `createSealClient({ packageId })` | `packageId` (v1) |
+| `SessionKey.create({ packageId })` | `packageId` (v1) |
+| `tx.moveCall({ target: … })` for `seal_approve_packet` | `latestPackageId` (v2) |
+| All other transaction targets | `latestPackageId` (v2) |
 
 ### Reasoning
 
-Seal prepends the package ID to the inner identity at encryption time and verifies it by dry-running a PTB that calls `<packageId>::rental::seal_approve_packet`. That function does not exist in the original package (`0x7e0130cd…`); it is added by the RD-132/RD-133 upgrade. If we encrypted using the original package ID, the key servers would try to dry-run `seal_approve_packet` in the original package and find no such function — decryption would fail permanently.
+`@mysten/seal` **requires** the namespace to be the first version of the package. Both
+`SealClient.encrypt` and `SessionKey.create` fetch the package object and reject anything else:
+
+```
+InvalidPackageError: Package 0xbab0d701… is not the first version
+```
+
+This is deliberate on Seal's part. Pinning the namespace to v1 is what makes encrypted data
+survive package upgrades — if the namespace tracked the latest version, every upgrade would
+change the derived identity and permanently orphan all previously encrypted blobs.
+
+Seal resolves the latest version itself when dry-running `seal_approve_packet`, so a v1
+namespace does **not** mean key servers look for the function in the v1 package. This corrects
+an earlier assumption in this document: encrypting under the original package ID does not break
+decryption, and encrypting under the upgraded ID does not work at all.
 
 Reference: [Seal documentation — the `seal_approve` convention](https://docs.sui.io/sui-stack/seal/sui-stack-seal#the-seal_approve-convention): "Seal prepends the package ID to form the full namespaced identity."
 
-Consequence: all packets encrypted before the package upgrade (i.e., before RD-133) are encrypted in mock/AES-GCM mode and are unaffected. Once the upgraded package is live, the renter flow switches to Seal-encrypted mode using `latestPackageId`.
-
-The `latestPackageId` must be read from `packages/contracts-config` at runtime — it must not be hardcoded in application code outside that package.
+Both IDs must be read from `packages/contracts-config` at runtime — neither may be hardcoded in
+application code outside that package.
 
 ---
 
@@ -144,10 +168,10 @@ upgrade:
 | Upgrade tx digest | `BLqv4XRxg5MEGAt4jDr1v2eeNzuauQ7MhixH5971HgyS` |
 | Explorer | https://suivision.xyz/package/0xbab0d70134d065a2f48ad8d18f2d8681de0464b7417485cbda8446eff31e8937?network=testnet |
 
-All transaction targets use `latestPackageId`. The Seal identity namespace also uses
-`latestPackageId` (see Namespace section above). If a packet were encrypted under the original
-package ID, key servers would attempt to dry-run `seal_approve_packet` in the original package,
-find no such function, and refuse the decryption permanently.
+All transaction targets use `latestPackageId`, including the `seal_approve_packet` PTB. The Seal
+identity namespace, however, uses the **original** `packageId` — `@mysten/seal` enforces a
+first-version namespace and rejects `latestPackageId` with `InvalidPackageError` (see Namespace
+section above).
 
 Pre-upgrade shared objects (`RentalMandate`, `RentalListing`, `ApplicationReceipt`) remain usable
 by both the original and the upgraded package — no object-model change was required.

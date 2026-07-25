@@ -5,8 +5,13 @@ export type SealSessionOptions = {
   /** Sui address of the user creating the session (landlord). */
   address: string;
   /**
-   * Package ID containing seal_approve_packet.
-   * Must be LATEST_PACKAGE_ID (the upgraded package from RD-133).
+   * Seal namespace package ID. Must be PACKAGE_ID — the *original* (v1)
+   * package. `SessionKey.create` rejects any later version with
+   * InvalidPackageError ("Package … is not the first version"), and the value
+   * must match the namespace used at encryption time.
+   *
+   * Not to be confused with the PTB move-call target for seal_approve_packet,
+   * which uses LATEST_PACKAGE_ID because the function only exists in v2.
    */
   packageId: string;
   /** Sui client compatible with @mysten/seal. */

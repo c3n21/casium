@@ -16,7 +16,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useCurrentAccount, useCurrentClient, useDAppKit } from "@mysten/dapp-kit-react";
 import { createSealClient, DEFAULT_THRESHOLD, SessionKey } from "@rentdelegate/seal";
 import { deriveSealIdentity, identityToHex } from "@rentdelegate/shared";
-import { LATEST_PACKAGE_ID } from "@rentdelegate/contracts-config";
+import { LATEST_PACKAGE_ID, PACKAGE_ID } from "@rentdelegate/contracts-config";
 import { createWalrusHttpAdapter } from "@rentdelegate/walrus/http";
 import type { ApplicationReceipt } from "@rentdelegate/sui-client";
 import type { PacketDocument } from "@rentdelegate/shared";
@@ -110,9 +110,12 @@ export function PacketViewer({ receipt }: PacketViewerProps) {
     setStage({ type: "creating_session" });
 
     try {
+      // Seal namespace = original (v1) package ID. SessionKey.create enforces
+      // this the same way SealClient.encrypt does, and it must match the
+      // namespace the packet was encrypted under in PacketBuilder.
       const sessionKey = await SessionKey.create({
         address: account.address,
-        packageId: LATEST_PACKAGE_ID,
+        packageId: PACKAGE_ID,
         ttlMin: 10,
         suiClient,
       });
@@ -157,6 +160,8 @@ export function PacketViewer({ receipt }: PacketViewerProps) {
 
       // 2. Build the seal_approve_packet PTB (onlyTransactionKind: true)
       //    Key servers dry-run this to evaluate the access policy.
+      //    This is the one place LATEST_PACKAGE_ID is correct: the function
+      //    only exists in the v2 package. The Seal *namespace* stays on v1.
       const tx = new Transaction();
       tx.moveCall({
         target: `${LATEST_PACKAGE_ID}::rental::seal_approve_packet`,
@@ -169,10 +174,10 @@ export function PacketViewer({ receipt }: PacketViewerProps) {
       });
       const txBytes = await tx.build({ client: suiClient, onlyTransactionKind: true });
 
-      // 3. Create the Seal client
+      // 3. Create the Seal client (namespace = v1, matching encryption)
       const sealClientWrapper = createSealClient({
         suiClient,
-        packageId: LATEST_PACKAGE_ID,
+        packageId: PACKAGE_ID,
         threshold: DEFAULT_THRESHOLD,
       });
 

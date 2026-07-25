@@ -11,14 +11,23 @@
 export const NETWORK = "testnet" as const;
 export const RPC_URL = "https://fullnode.testnet.sui.io:443";
 
-/** Published Move package ID (original, stable — v1). */
+/**
+ * Published Move package ID (original, stable — v1).
+ *
+ * Also the **Seal identity namespace**. `@mysten/seal` requires the first
+ * version of a package for both `SealClient.encrypt` and `SessionKey.create`,
+ * and throws InvalidPackageError otherwise; it resolves the latest version
+ * itself when dry-running `seal_approve_packet`. Using a v1 namespace is what
+ * keeps encrypted packets readable across package upgrades.
+ */
 export const PACKAGE_ID = "0x7e0130cdc105d06707f1f3abd4c76aac8211a09a5502692ba454d1b4b758af3d";
 
 /**
  * Latest deployed Move package ID (v2, upgraded in RD-133).
- * Contains seal_approve_packet. Use for:
- *   - Transaction call targets
- *   - Seal identity namespace (as specified in RD-131)
+ * Contains seal_approve_packet. Use for transaction call targets only —
+ * including the seal_approve_packet PTB that key servers dry-run.
+ *
+ * Do NOT use as the Seal identity namespace; that is PACKAGE_ID (see above).
  * The original PACKAGE_ID remains stable for compatibility.
  */
 export const LATEST_PACKAGE_ID = "0xbab0d70134d065a2f48ad8d18f2d8681de0464b7417485cbda8446eff31e8937";

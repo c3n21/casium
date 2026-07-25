@@ -9,7 +9,7 @@ import type { EncryptedPacket } from "../lib/packet";
 import { createWalrusHttpAdapter } from "@rentdelegate/walrus/http";
 import type { WalrusAdapter } from "@rentdelegate/walrus";
 import { createSealClient } from "@rentdelegate/seal";
-import { LATEST_PACKAGE_ID } from "@rentdelegate/contracts-config";
+import { PACKAGE_ID } from "@rentdelegate/contracts-config";
 
 // Determine the active Walrus mode from the Next.js public env var.
 // This mirrors what getWalrusMode() returns server-side.
@@ -101,9 +101,13 @@ export function PacketBuilder({
         // -----------------------------------------------------------------------
         // Seal encryption path (RD-135)
         // -----------------------------------------------------------------------
+        // The Seal namespace must be the *original* (v1) package ID. @mysten/seal
+        // rejects any other version ("Package … is not the first version"), and
+        // resolves the latest version itself when dry-running seal_approve_packet.
+        // Only the PTB move-call target uses LATEST_PACKAGE_ID — see PacketViewer.
         const sealClientWrapper = createSealClient({
           suiClient,
-          packageId: LATEST_PACKAGE_ID,
+          packageId: PACKAGE_ID,
           threshold: 2,
         });
 

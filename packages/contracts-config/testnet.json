@@ -14,8 +14,8 @@
     "latestPackageId": "0xbab0d70134d065a2f48ad8d18f2d8681de0464b7417485cbda8446eff31e8937",
     "version": 2,
     "upgradeTxDigest": "BLqv4XRxg5MEGAt4jDr1v2eeNzuauQ7MhixH5971HgyS",
-    "note": "Added seal_approve_packet entry function for Seal policy-controlled access (RD-132). Transaction targets and Seal identity namespace use latestPackageId.",
-    "sealIdentityNamespace": "latestPackageId",
+    "note": "Added seal_approve_packet entry function for Seal policy-controlled access (RD-132). Transaction targets use latestPackageId; the Seal identity namespace uses the original packageId because @mysten/seal requires a first-version package for encrypt and SessionKey.create.",
+    "sealIdentityNamespace": "packageId",
     "explorer": {
       "upgradedPackage": "https://suivision.xyz/package/0xbab0d70134d065a2f48ad8d18f2d8681de0464b7417485cbda8446eff31e8937?network=testnet",
       "upgradeTx": "https://suivision.xyz/txblock/BLqv4XRxg5MEGAt4jDr1v2eeNzuauQ7MhixH5971HgyS?network=testnet"
@@ -70,6 +70,28 @@
     },
     "explorer": {
       "blob": "https://walruscan.com/testnet/blob/84g0OLjpe_P0nZYUqz2Vwy82C4EtTec0dNCXliXZCDc"
+    }
+  },
+  "seal": {
+    "ranAtMs": 1784999333653,
+    "note": "Live Seal encrypt + Walrus HTTP upload + aggregator download round-trip, mirroring PacketBuilder's seal branch. Confirmed @mysten/seal requires the first-version package as the identity namespace: SealClient.encrypt and SessionKey.create both reject latestPackageId with InvalidPackageError. Decryption was not exercised end to end — seal_approve_packet requires a landlord wallet signature.",
+    "identityNamespacePackageId": "0x7e0130cdc105d06707f1f3abd4c76aac8211a09a5502692ba454d1b4b758af3d",
+    "approvePtbTarget": "0xbab0d70134d065a2f48ad8d18f2d8681de0464b7417485cbda8446eff31e8937::rental::seal_approve_packet",
+    "mandateId": "0x835478969ce38a0a1d0f981aa1a278a8862f9283de735ebba81c6169d388dbee",
+    "listingObjectId": "0xe7f676b93b9df816c7c44806ca2bbda0c6bf29334802206fb025c12e320ad72a",
+    "innerIdentityHex": "835478969ce38a0a1d0f981aa1a278a8862f9283de735ebba81c6169d388dbeee7f676b93b9df816c7c44806ca2bbda0c6bf29334802206fb025c12e320ad72a",
+    "threshold": 2,
+    "keyServers": [
+      "0x73d05d62c18d9374e3ea529e8e0ed6161da1a141a94d3f76ae3fe4e99356db75",
+      "0xf5d14a81a982144ae441cd7d64b09027f116a468bd36e7eca494f750591623c8"
+    ],
+    "plaintextBytes": 480,
+    "ciphertextBytes": 861,
+    "walrusBlobId": "Riay0e27s2cJsnAQYjsgOEDWI4YvTUSLCVXwO4LUpzA",
+    "packetHash": "0x93037e28a931e5bef227955e53e522f31cd51effbdd54b7d58e8ac9b9f2f0dd3",
+    "roundTripByteIdentical": true,
+    "explorer": {
+      "blob": "https://walruscan.com/testnet/blob/Riay0e27s2cJsnAQYjsgOEDWI4YvTUSLCVXwO4LUpzA"
     }
   }
 }
