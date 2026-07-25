@@ -194,6 +194,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Field | Value |
 |---|---|
 | Priority | P0 |
+| Status | DONE - merged via `feature/rd-002-shared-schemas`. |
 | Lane | L0/L2 shared |
 | Objective | Define shared TypeScript types, Zod schemas, constants, and error code mapping. |
 | Suggested implementation | Export schemas for mandate form, listing, application reserve, receipt verify, municipality codes, permission flags, and user-facing errors. |
@@ -202,6 +203,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Blocks | RD-009, RD-101, RD-103, RD-105. |
 | Acceptance criteria | Shared package builds; backend/frontend/agent can import schemas; schemas match section 4. |
 | Tests | Vitest schema parse tests for valid and invalid application reserve requests. |
+| Verification | 2026-07-25: `pnpm --filter @rentdelegate/shared build` -> success; `pnpm --filter @rentdelegate/shared test` -> success, 1 file/2 tests; `pnpm -r --if-present build` -> success; `pnpm -r --if-present test` -> success, shared package 1 file/2 tests. |
 | Failure fallback | Inline duplicated types temporarily, then reconcile before E2E. |
 | Sponsor | Both. |
 | Demo impact | Prevents integration drift. |
