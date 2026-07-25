@@ -422,6 +422,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Field | Value |
 |---|---|
 | Priority | P0 |
+| Status | PARTIAL - controlled duplicate-human fixture implemented via `feature/rd-014-duplicate-human-demo`; full live proof needs a second EVM agent registered to the same World human. |
 | Lane | L4/L3 World + backend |
 | Objective | Prove same World human cannot apply to same listing through multiple agents. |
 | Suggested implementation | Register two EVM agent wallets to the same World human in sandbox/demo. Run first application reserve success, second reserve 409. Also test different human accepted if feasible. |
@@ -430,6 +431,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Blocks | RD-106, submission evidence. |
 | Acceptance criteria | Logs and UI show first success, second duplicate rejection, unverified rejection. |
 | Tests | Scripted API calls with real or controlled AgentKit fixtures; DB assertion for unique row. |
+| Verification | 2026-07-25: `pnpm demo:duplicate-human` -> success; controlled mock AgentKit fixture returned first reserve `202`, same `humanIdHash` through different EVM/Sui demo agent `409 DUPLICATE_HUMAN_LISTING`, and missing AgentKit context `401 AGENTKIT_UNVERIFIED`; `pnpm --filter @rentdelegate/provider-api test` -> success, 3 files/11 tests passed/1 live smoke skipped. RD-012 live AgentKit is verified for one registered World Chain EVM address, but full RD-014 live same-human/two-agent proof remains pending until a second EVM agent address is registered to the same World human. |
 | Failure fallback | If second same-human registration cannot be done live, show AgentKit docs-aligned design plus DB fixture test, but do not overclaim live proof. |
 | Sponsor | World. |
 | Demo impact | Required World prize proof. |
