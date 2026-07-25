@@ -7,7 +7,19 @@ Current local mode exposes a Hono app from `apps/provider-api/src/app.ts`.
 Set `PROVIDER_STORE=postgres` and `DATABASE_URL=postgres://...` to use Postgres via drizzle-orm.
 Omit `PROVIDER_STORE` or set it to `memory` to use the default in-memory Maps (required for tests).
 
-Run `docker compose up -d` to start a local Postgres instance (port 5432, credentials `rentdelegate/rentdelegate`).
+```bash
+pnpm db:up        # start Postgres (port 5432, credentials rentdelegate/rentdelegate)
+pnpm db:migrate   # apply every drizzle/*.sql exactly once
+```
+
+**Migrations are not automatic.** `pnpm db:migrate` runs each file in `apps/provider-api/drizzle/`
+in filename order inside its own transaction, recording what it applied in `schema_migrations`, so
+re-running it is a no-op and a partially migrated database can be brought forward. Starting the API
+against an un-migrated database fails on the first write, not at boot.
+
+Everything the API stores is durable in `postgres` mode: listings, applications, human/listing
+uniqueness, receipts, access grants, **and registered packets**. In `memory` mode all of it is lost
+on restart — most confusingly the packet, whose absence only surfaces when the agent runs.
 
 ## Health
 
@@ -132,3 +144,37 @@ Returns `201` with the registration record on success.
 `GET /mandates/:id`
 
 Returns a registered mandate by mandateId or `404`.
+
+## Packets
+
+The renter's browser encrypts a document packet, uploads the ciphertext to Walrus, and registers the
+resulting blob reference here. The agent reads it before every run — it never creates a packet.
+
+`POST /packets`
+
+```json
+{
+  "mandateId": "0x...",
+  "walrusBlobId": "blob... or mock:...",
+  "packetHash": "0x...",
+  "sizeBytes": 2048,
+  "encryptionMode": "seal | aes-gcm | mock"
+}
+```
+
+Returns `201` with the record plus `registeredAtMs`, or `422 { "error": "INVALID_PACKET_RECORD" }`.
+
+**No plaintext is ever sent** — only the blob ID, the ciphertext hash, and the size. That is the
+privacy claim the renter flow makes on screen, and the request body is what backs it.
+
+**One packet per mandate.** Re-uploading replaces the previous record, which is what a renter expects
+after rebuilding a packet.
+
+`GET /packets/:mandateId`
+
+Returns the record or `404 { "error": "PACKET_NOT_FOUND" }`. The `/agent` page calls this as a
+preflight before starting a run, so a missing packet is reported at the button rather than four
+stages into the pipeline.
+
+Packets are durable under `PROVIDER_STORE=postgres` (`packets` table, migration `0002_packets.sql`).
+Under `memory` they live in a process-level `Map` and do not survive a restart.

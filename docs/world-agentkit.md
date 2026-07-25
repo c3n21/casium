@@ -25,6 +25,51 @@ the Sui and provider layers only — never cite them as World verification.
 
 Raw AgentKit human IDs are hashed immediately with SHA-256 before entering provider application services.
 
+## Agent-Side Credentials
+
+The agent has three ways to authenticate. Precedence is top to bottom, and it never
+silently degrades — a missing credential is an error, not a fallback to mock.
+
+| Mode | Config | Works against | Notes |
+|---|---|---|---|
+| **Live signing** | `AGENT_EVM_PRIVATE_KEY` | `AGENTKIT_MODE=real` | Mints a header per request URL. The only mode that survives changing listing or host. |
+| Static header | `AGENTKIT_HEADER` | `AGENTKIT_MODE=real` | One URL, until it expires. Fine for a manual curl. |
+| Mock pair | `AGENTKIT_DEMO_*` | `AGENTKIT_MODE=mock` **only** | Proves the Sui path. Never cite as World verification. |
+
+**Mixing modes is the most common failure.** An agent holding only the demo pair against
+a provider in `real` mode gets `401 AGENTKIT_UNVERIFIED`, because the real verifier reads
+the `agentkit` header and ignores `x-demo-*` entirely. The agent prints its mode at
+startup and `GET /health` reports `agentkitMode` — check both sides match.
+
+### Why the header must be minted per request
+
+The provider calls `validateAgentkitMessage(payload, c.req.url)`, so the signature is
+bound to the **exact** request URL, and the payload carries a nonce and issue time. One
+header covers one endpoint on one host.
+
+`apps/agent/src/agentkitSigner.ts` therefore calls `client.createHeader(extension)` per
+request, mirroring `scripts/agentkit-live-request.html`. It deliberately does **not** use
+the AgentKit client's auto-negotiating `fetch`: that waits for the server to advertise an
+AgentKit challenge via the resource-server extension, and this provider verifies with the
+low-level helpers instead, so it never advertises one and no header is ever attached.
+
+Behind a reverse proxy, `c.req.url` is built from the forwarded Host and the path *after*
+any rewrite — not the URL in the browser's address bar. Prefer a subdomain over path
+rewriting, and use `AGENTKIT_DEBUG=1` to read the URI the provider actually validated.
+
+### Registering the agent's address
+
+```bash
+pnpm dlx @worldcoin/agentkit-cli register 0xYOUR_AGENT_EVM_ADDRESS
+```
+
+Use a dedicated key for the agent rather than exporting a personal MetaMask key. An
+unregistered address fails at the AgentBook lookup with `agentbook lookup failed:
+0x…` in the provider log — signature verification having already succeeded.
+
+The address the agent signs with is also sent in the reservation body, because the
+provider rejects a mismatch between the two with `MANDATE_EVM_MISMATCH`.
+
 ## Manual Real Verification
 
 Real verification requires a registered AgentBook EVM agent wallet and an `agentkit` request header created by `createAgentkitClient`/`agentkit.fetch`.

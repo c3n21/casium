@@ -35,37 +35,48 @@ Expected: all builds succeed, all tests pass.
 
 ---
 
-## Step 2 — Start Provider API (Tab A)
+## Step 2 — Start Everything (one tab)
 
 ```bash
-pnpm --filter @rentdelegate/provider-api build
-pnpm --filter @rentdelegate/provider-api start
+cp .env.example .env    # once; edit modes here, not on the command line
+pnpm demo:up
 ```
 
-Verify health:
+Builds the workspace and starts the provider API (`:4021`), agent (`:4022`), and web app (`:3000`),
+health-gating each before starting the next. Logs go to `.demo-logs/`. Ctrl-C stops all three.
+
+For a durable run — **use this for anything rehearsed**, since a provider restart otherwise discards
+the renter's uploaded packet — set `PROVIDER_STORE=postgres` in `.env`. `demo:up` then starts Postgres
+and applies migrations automatically.
+
+For live World AgentKit, set `AGENTKIT_MODE=real` and `AGENTKIT_HEADER` in `.env` (needs a registered
+MetaMask address — see `docs/world-agentkit.md`). Note the signed header is bound to one exact request
+URL, so a header signed for localhost will not verify against a deployed host.
+
+Verify:
 
 ```bash
-curl http://localhost:4021/health
-# {"ok":true,"service":"provider-api","mode":"local"}
+curl http://localhost:4021/health   # {"ok":true,"service":"provider-api","store":"memory"}
+curl http://localhost:4022/health   # {"ok":true,"service":"rentdelegate-agent",...}
 ```
 
-For live World AgentKit mode (optional — needs registered MetaMask address):
+<details>
+<summary>Starting services individually (Tabs A/B/C)</summary>
 
 ```bash
-AGENTKIT_MODE=real \
-AGENTKIT_EVM_RPC_URL=https://worldchain-mainnet.g.alchemy.com/public \
-pnpm --filter @rentdelegate/provider-api start
+pnpm --filter @rentdelegate/provider-api build && pnpm --filter @rentdelegate/provider-api start
+pnpm --filter @rentdelegate/agent build && pnpm --filter @rentdelegate/agent start:server
+pnpm --filter @rentdelegate/web build && pnpm --filter @rentdelegate/web start
 ```
+
+</details>
 
 ---
 
-## Step 3 — Start Frontend (Tab C)
+## Step 3 — Open The App
 
-```bash
-pnpm --filter @rentdelegate/web start
-```
-
-Open `http://localhost:3000` (or port Next.js reports). You will see three links:
+Open `http://localhost:3000`. **Port 3000 specifically** — the saved wallet session and the baked
+`NEXT_PUBLIC_*` URLs are bound to that origin. You will see three links:
 - **Renter** — create mandate, encrypt packet, track applications
 - **Provider** — manage listings, review applications, verify receipts
 - **Landlord** — view on-chain receipt
@@ -83,10 +94,17 @@ Open `http://localhost:3000` (or port Next.js reports). You will see three links
    - Max rent: €1800
    - Allowed municipalities: Lisbon, Oeiras, Cascais
 5. Click **Encrypt and upload packet** in the PacketBuilder section.
-   The form generates a synthetic document, encrypts it with AES-GCM, and shows the Walrus blob ID and packet hash.
+   The form generates a synthetic document, encrypts it, and shows the Walrus blob ID and packet hash.
    The plaintext never leaves the browser.
+6. The success panel now offers **Start the agent run on this packet →**, which opens `/agent` with
+   this packet's mandate already filled in. Use it — it is the only way the two pages are guaranteed
+   to name the same mandate, and a mismatch is the most common cause of a failed run.
 
 **Fallback (no wallet):** All values are pre-seeded on the page from testnet smoke objects.
+
+**If the agent later reports no registered packet:** the provider was restarted in `memory` mode, or
+the run targeted a different mandate. `/agent` now catches this before starting and links back here
+carrying the right mandate ID. `PROVIDER_STORE=postgres` prevents the restart case entirely.
 
 ---
 

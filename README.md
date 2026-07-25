@@ -75,7 +75,20 @@ pnpm install
 
 ## Environment Variables
 
-Create a local `.env` file (not committed) for live modes:
+Copy `.env.example` to `.env` at the repo root:
+
+```bash
+cp .env.example .env
+```
+
+The provider API and agent load it automatically — their `start` scripts pass
+`node --env-file-if-exists=../../.env`, so no `dotenv` or manual `export` is needed. `pnpm demo:up`
+sources the same file.
+
+**The browser does not read it.** Web app settings live in `apps/web/.env.local` and are inlined at
+build time (see below).
+
+Reference of every variable:
 
 ```env
 # Sui
@@ -105,6 +118,10 @@ AGENT_EVM_ADDRESS=0x662DbABBeff9B237490bBE6A898776a4A1D87CCe
 AGENT_CAP_ID=0xabeb55d1266102eed4235531c542fb01fd85bb3095c3d579960923f2e1e25c2a
 AGENT_SUI_PRIVATE_KEY=suiprivkey...
 # or AGENT_SUI_PRIVATE_KEY_BASE64=<32-byte-ed25519-secret-key-base64>
+# Landlord document-access window written onto the receipt. Defaults to 3 days and
+# must stay inside the packet blob's Walrus lifetime, or the run aborts before gas.
+# See "Access window vs blob lifetime" below.
+AGENT_ACCESS_WINDOW_DAYS=3
 
 # Agent -> provider running AGENTKIT_MODE=mock (local Sui-focused runs only)
 AGENTKIT_DEMO_HUMAN_ID_HASH=sha256:local-demo
@@ -147,6 +164,26 @@ Two mock-mode limitations, both expected:
 Live mode needs no credentials: the Walrus HTTP adapter defaults to the public testnet
 publisher/aggregator, and Seal defaults to the two Mysten open-mode testnet key servers.
 
+### Access window vs blob lifetime
+
+Three independent timers govern landlord document access. They are easy to confuse, and two of them
+must agree or an agent run aborts.
+
+| Timer | Lives in | Default | Governs |
+|---|---|---|---|
+| Access window | `ApplicationReceipt.access_expires_at_ms`, on chain | 3 days (`AGENT_ACCESS_WINDOW_DAYS`) | Whether the landlord may decrypt at all — enforced by `seal_approve_packet` |
+| Blob lifetime | Walrus epochs (1 epoch ≈ 1 day) | 5 epochs | Whether the ciphertext still exists to download |
+| SessionKey TTL | Landlord's browser | 10 minutes | How long one personal-message signature keeps working |
+
+The access window is written on chain and cannot be changed afterwards, so the agent refuses to submit
+when the blob would expire first (`Blob lifecycle mismatch`) rather than putting an unbacked promise on
+chain. This check is **skipped for `mock:` blobs**, so it only appears once `NEXT_PUBLIC_WALRUS_MODE=http`
+is in play.
+
+The browser uploader cannot read `WALRUS_EPOCHS` — it is not a `NEXT_PUBLIC_*` variable — so packets are
+always stored for the adapter default of 5 epochs. That is what bounds the window to 3 days. Raising
+`AGENT_ACCESS_WINDOW_DAYS` above ~4 requires teaching `PacketBuilder` to upload with more epochs first.
+
 ## Single-Agent Model
 
 For the demo and current implementation, RentDelegate assumes one stable agent identity:
@@ -178,30 +215,52 @@ pnpm -r --if-present test
 
 See `docs/demo-script.md` for the full step-by-step walkthrough.
 
-Quick start:
+### One command
 
 ```bash
-# 1. Start provider API (mock AgentKit mode)
-pnpm --filter @rentdelegate/provider-api build
-pnpm --filter @rentdelegate/provider-api start
+cp .env.example .env     # once
+pnpm demo:up
+```
 
-# 2. Start frontend
-pnpm --filter @rentdelegate/web build
-pnpm --filter @rentdelegate/web start
+Builds the workspace and starts all three services — provider API (`:4021`), agent (`:4022`), web
+(`:3000`) — waiting for each to report healthy before starting the next. Logs stream into
+`.demo-logs/`. Ctrl-C stops everything.
 
-# 3. Run duplicate-human demo script
-pnpm demo:duplicate-human
+Set `PROVIDER_STORE=postgres` in `.env` and it also starts Postgres and applies migrations first. It
+refuses to start if any of the three ports is occupied, rather than half-starting a stack.
 
-# 4. Check the agent signer/address before Sui execution
+### Durable state
+
+```bash
+pnpm db:up        # start Postgres (docker compose)
+pnpm db:migrate   # apply every drizzle/*.sql exactly once; safe to re-run
+pnpm db:reset     # wipe the volume and rebuild from scratch
+pnpm db:down      # stop Postgres
+```
+
+`PROVIDER_STORE=memory` (the default) keeps listings, applications, **and uploaded packets** in
+process memory. Restarting the provider throws them away, and the loss surfaces later as
+`No packet registered for mandate …` when the agent runs. Use `postgres` for anything you intend to
+demo — but run `pnpm db:migrate` first, or writes fail against missing tables.
+
+### Individual services
+
+```bash
+# Provider API
+pnpm --filter @rentdelegate/provider-api build && pnpm --filter @rentdelegate/provider-api start
+
+# Web app
+pnpm --filter @rentdelegate/web build && pnpm --filter @rentdelegate/web start
+
+# Agent server, so /agent can trigger runs from the browser
+pnpm --filter @rentdelegate/agent build && pnpm --filter @rentdelegate/agent start:server
+
+# Agent once from the CLI (executes only if an agent Sui private key is configured)
 pnpm --filter @rentdelegate/agent check:env
-
-# 5. Run agent once from the CLI (executes only if an env-only agent Sui private key is configured)
-pnpm --filter @rentdelegate/agent build
 node apps/agent/dist/index.js
 
-# 6. Or start the agent server so the /agent page can trigger runs from the browser
-pnpm --filter @rentdelegate/agent build
-pnpm --filter @rentdelegate/agent run start:server
+# Duplicate-human proof
+pnpm demo:duplicate-human
 ```
 
 ### Triggering the agent
@@ -211,9 +270,9 @@ over the same `runAgent` pipeline:
 
 | Trigger | How |
 |---|---|
-| Browser | Open `/agent`, enter the Mandate ID, click **Start run**. Requires step 6 above. |
+| Browser | After uploading a packet on `/renter`, click **Start the agent run on this packet →**. It links to `/agent?mandateId=…` with the mandate pre-filled, so the ID is never retyped. |
 | HTTP | `curl -X POST http://localhost:4022/runs -H 'content-type: application/json' -d '{"mandateId":"0x..."}'` then poll `GET /runs/:id`. |
-| CLI | `MANDATE_ID=0x... node apps/agent/dist/index.js` (step 5). |
+| CLI | `MANDATE_ID=0x... node apps/agent/dist/index.js`. |
 
 Two renter actions must happen **before** a run, in this order:
 
@@ -221,7 +280,12 @@ Two renter actions must happen **before** a run, in this order:
    `AgentCap` transferred to `AGENT_SUI_ADDRESS`. Without a matching cap the run fails with
    `No AgentCap found for mandate …`.
 2. **Build and upload the packet** on `/renter` — the agent only *reads* the packet, it never creates
-   one. Skipping this fails the run with `No packet registered for mandate <id>`.
+   one.
+
+**The packet and the run must name the same mandate.** `/renter` registers the packet under the
+mandate it is currently showing; `/agent` runs against whatever is in its Mandate ID box. The `/agent`
+page checks for a registered packet before starting and refuses immediately with a link back to
+`/renter` if there is none — rather than failing four stages into the pipeline as it used to.
 
 Revoking the mandate is the renter's stop control: every later run returns
 `status: "ineligible", reason: "Mandate is revoked"` without spending gas. Triggering is off-chain;
