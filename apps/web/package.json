@@ -13,6 +13,7 @@
     "@mysten/dapp-kit-react": "^2.1.11",
     "@mysten/sui": "^2.22.1",
     "@rentdelegate/contracts-config": "workspace:*",
+    "@rentdelegate/seal": "workspace:*",
     "@rentdelegate/shared": "workspace:*",
     "@rentdelegate/sui-client": "workspace:*",
     "@rentdelegate/walrus": "workspace:*",

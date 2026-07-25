@@ -14,6 +14,7 @@
     "@rentdelegate/contracts-config": "workspace:*",
     "@rentdelegate/shared": "workspace:*",
     "@rentdelegate/sui-client": "workspace:*",
+    "@rentdelegate/walrus": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.31",
     "pg": "^8.22.0",

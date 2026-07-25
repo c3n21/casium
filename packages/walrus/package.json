@@ -7,12 +7,17 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./http": {
+      "types": "./dist/httpAdapter.d.ts",
+      "default": "./dist/httpAdapter.js"
     }
   },
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check:env": "node --experimental-vm-modules dist/checkEnv.js || tsx src/checkEnv.ts"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",
