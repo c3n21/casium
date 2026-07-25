@@ -1,5 +1,6 @@
 import { createRentDelegateClient } from "@rentdelegate/sui-client";
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { createAgentKitMiddleware } from "./middleware/agentkit.js";
 import { createApplicationRoutes } from "./routes/applications.js";
 import { createListingRoutes } from "./routes/listings.js";
@@ -14,6 +15,8 @@ export function createApp(receiptVerifier?: ReceiptVerificationService) {
   const app = new Hono();
   const listingService = createListingService();
   const applicationService = createApplicationService(listingService, receiptVerifier ?? createDefaultReceiptVerifier());
+
+  app.use("*", cors({ allowHeaders: ["content-type", "agentkit"] }));
 
   app.get("/health", (c) =>
     c.json({

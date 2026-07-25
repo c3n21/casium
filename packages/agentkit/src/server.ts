@@ -65,6 +65,7 @@ export function createRealAgentKitVerifier(): AgentKitVerifier {
       const header = request.headers.get("agentkit");
 
       if (!header) {
+        debugAgentKit("missing agentkit header");
         return { ok: false, error: "AGENTKIT_UNVERIFIED" };
       }
 
@@ -73,18 +74,21 @@ export function createRealAgentKitVerifier(): AgentKitVerifier {
         const validation = await validateAgentkitMessage(payload, resourceUri);
 
         if (!validation.valid) {
+          debugAgentKit("message validation failed", validation.error);
           return { ok: false, error: "AGENTKIT_UNVERIFIED" };
         }
 
         const signature = await verifyAgentkitSignature(payload, process.env.AGENTKIT_EVM_RPC_URL);
 
         if (!signature.valid || !signature.address) {
+          debugAgentKit("signature verification failed", signature.error);
           return { ok: false, error: "AGENTKIT_UNVERIFIED" };
         }
 
         const humanId = await agentBook.lookupHuman(signature.address);
 
         if (!humanId) {
+          debugAgentKit("agentbook lookup failed", signature.address);
           return { ok: false, error: "AGENTKIT_UNVERIFIED" };
         }
 
@@ -96,11 +100,18 @@ export function createRealAgentKitVerifier(): AgentKitVerifier {
             agentEvmAddress: signature.address,
           },
         };
-      } catch {
+      } catch (error) {
+        debugAgentKit("verification threw", error instanceof Error ? error.message : String(error));
         return { ok: false, error: "AGENTKIT_UNVERIFIED" };
       }
     },
   };
+}
+
+function debugAgentKit(message: string, detail?: string) {
+  if (process.env.AGENTKIT_DEBUG === "1") {
+    console.error(`[agentkit] ${message}${detail ? `: ${detail}` : ""}`);
+  }
 }
 
 export function createAgentKitVerifier(mode = process.env.AGENTKIT_MODE): AgentKitVerifier {

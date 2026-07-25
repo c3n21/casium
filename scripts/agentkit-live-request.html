@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RentDelegate AgentKit Live Request</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 2rem; max-width: 56rem; line-height: 1.4; }
+      label { display: block; margin-top: 1rem; font-weight: 600; }
+      input, textarea { box-sizing: border-box; width: 100%; padding: 0.6rem; font: inherit; }
+      textarea { min-height: 12rem; font-family: ui-monospace, monospace; }
+      button { margin-top: 1rem; padding: 0.7rem 1rem; font: inherit; cursor: pointer; }
+      pre { white-space: pre-wrap; background: #111; color: #eee; padding: 1rem; overflow: auto; }
+    </style>
+  </head>
+  <body>
+    <h1>RentDelegate AgentKit Live Request</h1>
+    <p>This page uses MetaMask to sign an AgentKit header. It never asks for or exports private keys.</p>
+
+    <label for="apiBase">Provider API base URL</label>
+    <input id="apiBase" value="http://localhost:3000" />
+
+    <label for="listingId">Listing ID</label>
+    <input id="listingId" value="listing_lisbon_eligible" />
+
+    <label for="body">Reserve request JSON</label>
+    <textarea id="body"></textarea>
+
+    <button id="send">Connect MetaMask, sign AgentKit header, and send</button>
+    <pre id="output">Ready.</pre>
+
+    <script type="module">
+      import { buildAgentkitSchema, createAgentkitClient } from "https://esm.sh/@worldcoin/agentkit@0.2.0";
+
+      const defaultBody = {
+        mandateId: "0x835478969ce38a0a1d0f981aa1a278a8862f9283de735ebba81c6169d388dbee",
+        listingObjectId: "0xe7f676b93b9df816c7c44806ca2bbda0c6bf29334802206fb025c12e320ad72a",
+        agentSuiAddress: "0x371321932fb4c4b79b9b0762ac0878ebfb670cc6f6327ecf9d1d06cd9489243e",
+        agentEvmAddress: "0x662DbABBeff9B237490bBE6A898776a4A1D87CCe",
+        walrusBlobId: "mock:blob",
+        packetHash: "0x68617368",
+        accessExpiresAtMs: 1790000000000,
+        idempotencyKey: crypto.randomUUID(),
+      };
+
+      const bodyInput = document.querySelector("#body");
+      const output = document.querySelector("#output");
+      bodyInput.value = JSON.stringify(defaultBody, null, 2);
+
+      document.querySelector("#send").addEventListener("click", async () => {
+        try {
+          if (!globalThis.ethereum) throw new Error("MetaMask/EIP-1193 provider not found");
+
+          const apiBase = document.querySelector("#apiBase").value.replace(/\/$/, "");
+          const listingId = document.querySelector("#listingId").value;
+          const url = `${apiBase}/listings/${encodeURIComponent(listingId)}/applications`;
+          const body = JSON.parse(bodyInput.value);
+          const [address] = await ethereum.request({ method: "eth_requestAccounts" });
+          const chainIdHex = await ethereum.request({ method: "eth_chainId" });
+          const chainId = `eip155:${Number.parseInt(chainIdHex, 16)}`;
+
+          if (chainId !== "eip155:480") {
+            throw new Error(`Switch MetaMask to World Chain (eip155:480). Current chain is ${chainId}.`);
+          }
+
+          if (body.agentEvmAddress.toLowerCase() !== address.toLowerCase()) {
+            throw new Error(`Body agentEvmAddress ${body.agentEvmAddress} must match MetaMask ${address}`);
+          }
+
+          const checksumAddress = body.agentEvmAddress;
+
+          const client = createAgentkitClient({
+            signer: {
+              address: checksumAddress,
+              chainId,
+              type: "eip191",
+              async signMessage(message) {
+                return ethereum.request({ method: "personal_sign", params: [message, address] });
+              },
+            },
+          });
+
+          const extension = {
+            info: {
+              domain: new URL(apiBase).hostname,
+              uri: url,
+              statement: "Verify a World human-backed agent request for RentDelegate.",
+              version: "1",
+              nonce: randomHex(16),
+              issuedAt: new Date().toISOString(),
+              resources: [url],
+            },
+            supportedChains: [{ chainId, type: "eip191" }],
+            schema: buildAgentkitSchema(),
+          };
+
+          const agentkit = await client.createHeader(extension);
+          const response = await fetch(url, {
+            method: "POST",
+            headers: { "content-type": "application/json", agentkit },
+            body: JSON.stringify(body),
+          });
+
+          output.textContent = JSON.stringify(
+            {
+              status: response.status,
+              response: await response.json().catch(() => null),
+              address,
+              chainId,
+              agentkitHeaderPrefix: `${agentkit.slice(0, 24)}...`,
+            },
+            null,
+            2,
+          );
+        } catch (error) {
+          console.log('error', error)
+          output.textContent = error instanceof Error ? error.stack ?? error.message : JSON.stringify(error, null, 2);
+        }
+      });
+
+      function randomHex(byteLength) {
+        return [...crypto.getRandomValues(new Uint8Array(byteLength))]
+          .map((byte) => byte.toString(16).padStart(2, "0"))
+          .join("");
+      }
+    </script>
+  </body>
+</html>
