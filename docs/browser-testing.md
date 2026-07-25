@@ -83,7 +83,7 @@ delete it to "clean up".
 | Web | 3000 | `pnpm --filter @rentdelegate/web dev` | Next.js default. Use `dev` for active UI work. |
 | Web (built) | 3000 | `pnpm --filter @rentdelegate/web build` then `start` | `start` serves the build and does **not** hot-reload. Build first or you serve stale output. |
 | Provider API | 4021 | `pnpm --filter @rentdelegate/provider-api build` then `start` | Overridable via `PORT`. |
-| Agent service | 4022 | `pnpm --filter @rentdelegate/agent serve` | RD-113; does not exist yet. |
+| Agent service | 4022 | `pnpm --filter @rentdelegate/agent build` then `run start:server` | Required by the `/agent` page; without it the page shows "Agent offline". Use `run dev:server` for active agent work. Overridable via `AGENT_SERVER_PORT`. |
 
 Check port 3000 is free before starting, and do not leave stale servers running:
 

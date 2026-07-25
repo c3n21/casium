@@ -195,9 +195,37 @@ pnpm demo:duplicate-human
 # 4. Check the agent signer/address before Sui execution
 pnpm --filter @rentdelegate/agent check:env
 
-# 5. Run agent (executes only if an env-only agent Sui private key is configured)
+# 5. Run agent once from the CLI (executes only if an env-only agent Sui private key is configured)
+pnpm --filter @rentdelegate/agent build
 node apps/agent/dist/index.js
+
+# 6. Or start the agent server so the /agent page can trigger runs from the browser
+pnpm --filter @rentdelegate/agent build
+pnpm --filter @rentdelegate/agent run start:server
 ```
+
+### Triggering the agent
+
+The agent is pull-based — it never watches Sui for new mandates. Three ways to start a run, all
+over the same `runAgent` pipeline:
+
+| Trigger | How |
+|---|---|
+| Browser | Open `/agent`, enter the Mandate ID, click **Start run**. Requires step 6 above. |
+| HTTP | `curl -X POST http://localhost:4022/runs -H 'content-type: application/json' -d '{"mandateId":"0x..."}'` then poll `GET /runs/:id`. |
+| CLI | `MANDATE_ID=0x... node apps/agent/dist/index.js` (step 5). |
+
+Two renter actions must happen **before** a run, in this order:
+
+1. **Create the mandate** on `/renter` — mints the `RentalMandate`, the renter's `OwnerCap`, and the
+   `AgentCap` transferred to `AGENT_SUI_ADDRESS`. Without a matching cap the run fails with
+   `No AgentCap found for mandate …`.
+2. **Build and upload the packet** on `/renter` — the agent only *reads* the packet, it never creates
+   one. Skipping this fails the run with `No packet registered for mandate <id>`.
+
+Revoking the mandate is the renter's stop control: every later run returns
+`status: "ineligible", reason: "Mandate is revoked"` without spending gas. Triggering is off-chain;
+authorization and revocation are on-chain.
 
 ## Safety
 
