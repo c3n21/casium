@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+.next/
+coverage/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Wallets, generated keys, and local chain state
+*.key
+*.keystore
+*.pem
+*.seed
+*.mnemonic
+sui.keystore
+client.yaml
+.sui/
+
+# Logs and editor state
+*.log
+.DS_Store
+.idea/
+.vscode/

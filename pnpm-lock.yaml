@@ -1,0 +1,27 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .: {}
+
+  apps/agent: {}
+
+  apps/provider-api: {}
+
+  apps/web: {}
+
+  packages/agentkit: {}
+
+  packages/contracts-config: {}
+
+  packages/seal: {}
+
+  packages/shared: {}
+
+  packages/sui-client: {}
+
+  packages/walrus: {}
