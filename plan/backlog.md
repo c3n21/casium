@@ -308,6 +308,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Field | Value |
 |---|---|
 | Priority | P0 |
+| Status | DONE - merged via `feature/rd-008-sui-ts-client`. |
 | Lane | L2 Sui TS integration |
 | Objective | Provide reusable TS helpers for Sui object reads and transactions. |
 | Suggested implementation | Wrap `@mysten/sui` transaction builders for create mandate, create listing, submit application, revoke, withdraw, and object parsers for mandate/listing/receipt. |
@@ -316,6 +317,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Blocks | RD-013, RD-103, RD-105. |
 | Acceptance criteria | Package builds; can read published objects; can build PTBs without signing; frontend and agent import helpers. |
 | Tests | Unit tests for PTB construction shape; integration smoke read against testnet config. |
+| Verification | 2026-07-25: `pnpm --filter @rentdelegate/sui-client build` -> success; `pnpm --filter @rentdelegate/sui-client test` -> success, 2 files passed/1 live smoke skipped, 4 tests passed/1 skipped; `RUN_SUI_TESTNET=1 pnpm --filter @rentdelegate/sui-client test` -> success, 3 files/5 tests including live read of RD-007 listing `0xe7f676b93b9df816c7c44806ca2bbda0c6bf29334802206fb025c12e320ad72a`; `pnpm -r --if-present build` -> success; `pnpm -r --if-present test` -> success; `~/.local/bin/sui move build --path packages/move` -> success; `~/.local/bin/sui move test --path packages/move` -> success, 21 tests passed. |
 | Failure fallback | Duplicate minimal tx-building code in frontend and agent for demo, then refactor. |
 | Sponsor | Sui. |
 | Demo impact | Connects apps to Move package. |
