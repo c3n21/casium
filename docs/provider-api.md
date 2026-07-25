@@ -33,13 +33,13 @@ This endpoint is demo scaffolding only and is not production provider authentica
 
 `POST /listings/:id/applications`
 
-Local development mode requires explicit mock AgentKit headers:
+Local development mode uses `AGENTKIT_MODE=mock` by default and requires explicit mock AgentKit headers:
 
 - `x-demo-human-id-hash`
 - `x-demo-agent-evm-address`
 - `x-demo-mandate-agent-sui-address`
 
-These headers are a local RD-011 scaffold only. RD-012 must replace them with real AgentKit verification before any World integration is claimed.
+These headers are a local scaffold only. Set `AGENTKIT_MODE=real` to use the low-level `@worldcoin/agentkit` verifier path. A registered AgentBook EVM address and a real `agentkit` header are required before any World integration is claimed.
 
 The endpoint validates `ReserveApplicationSchema`, rejects request `listingObjectId` values that do not match the provider listing record, enforces duplicate-human rejection per listing, and returns a Sui `submit_application` hint.
 

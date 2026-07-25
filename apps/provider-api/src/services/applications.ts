@@ -1,13 +1,7 @@
 import { ERROR_CODES, ReserveApplicationSchema } from "@rentdelegate/shared";
 import type { ErrorCode } from "@rentdelegate/shared";
+import type { AgentKitContext } from "@rentdelegate/agentkit";
 import type { ListingService } from "./listings.js";
-
-export type AgentContext = {
-  mode: "mock-agentkit";
-  humanIdHash: string;
-  agentEvmAddress: string;
-  mandateAgentSuiAddress: string;
-};
 
 export type ReservedApplication = {
   id: string;
@@ -41,7 +35,7 @@ export function createApplicationService(listingService: ListingService) {
   const idempotency = new Map<string, { fingerprint: string; applicationId: string }>();
 
   return {
-    reserve(listingId: string, input: unknown, agentContext: AgentContext): ReserveResult {
+    reserve(listingId: string, input: unknown, agentContext: AgentKitContext): ReserveResult {
       const listing = listingService.get(listingId);
 
       if (!listing) {
@@ -58,7 +52,10 @@ export function createApplicationService(listingService: ListingService) {
         return { ok: false, error: ERROR_CODES.MANDATE_EVM_MISMATCH };
       }
 
-      if (parsed.data.agentSuiAddress.toLowerCase() !== agentContext.mandateAgentSuiAddress.toLowerCase()) {
+      if (
+        agentContext.mandateAgentSuiAddress &&
+        parsed.data.agentSuiAddress.toLowerCase() !== agentContext.mandateAgentSuiAddress.toLowerCase()
+      ) {
         return { ok: false, error: ERROR_CODES.MANDATE_SUI_MISMATCH };
       }
 

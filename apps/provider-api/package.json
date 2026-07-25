@@ -8,6 +8,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@rentdelegate/agentkit": "workspace:*",
     "@rentdelegate/shared": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.31",
