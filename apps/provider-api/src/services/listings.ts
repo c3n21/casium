@@ -13,10 +13,10 @@ type ListingResult = { ok: true; value: ProviderListing } | { ok: false; error: 
 const DEMO_LISTINGS: ProviderListing[] = [
   {
     id: "listing_lisbon_eligible",
-    listingObjectId: "0x1000000000000000000000000000000000000000000000000000000000000001",
+    listingObjectId: "0xe7f676b93b9df816c7c44806ca2bbda0c6bf29334802206fb025c12e320ad72a",
     externalListingId: "lisbon-demo-1",
-    providerSuiAddress: "0x2000000000000000000000000000000000000000000000000000000000000002",
-    landlordSuiAddress: "0x3000000000000000000000000000000000000000000000000000000000000003",
+    providerSuiAddress: "0x371321932fb4c4b79b9b0762ac0878ebfb670cc6f6327ecf9d1d06cd9489243e",
+    landlordSuiAddress: "0x371321932fb4c4b79b9b0762ac0878ebfb670cc6f6327ecf9d1d06cd9489243e",
     municipalityCode: MUNICIPALITIES.LISBON,
     monthlyRentEur: 1700,
     bedrooms: 2,

@@ -17,7 +17,7 @@ Returns seeded provider-authored listing records:
 - `listing_lisbon_eligible`
 - `listing_porto_ineligible`
 
-The current seed object IDs are synthetic local placeholders while RD-007 testnet publish is blocked on Sui faucet gas. Replace them with real provider-created `RentalListing` object IDs before claiming the live Sui demo.
+The Lisbon seed uses a live Sui testnet `RentalListing` object from RD-007. The Porto ineligible seed remains a deterministic placeholder until a second provider-created testnet listing is added.
 
 `GET /listings/:id`
 
