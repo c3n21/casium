@@ -175,6 +175,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Field | Value |
 |---|---|
 | Priority | P0 |
+| Status | DONE - merged via `feature/rd-001-project-skeleton`. |
 | Lane | L0 Project setup |
 | Objective | Create monorepo structure and package manager setup. |
 | Suggested implementation | Use `pnpm` workspaces with `apps/web`, `apps/provider-api`, `apps/agent`, `packages/move`, `packages/shared`, `packages/sui-client`, `packages/agentkit`, `packages/walrus`, `packages/seal`, `packages/contracts-config`, `scripts`, `docs`, `plan`. Pin `packageManager` in root `package.json`; add only repo-local dependencies through workspace manifests. Do not use `sudo` or global npm installs. |
@@ -183,6 +184,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Blocks | RD-002, RD-003, all app/package work. |
 | Acceptance criteria | `pnpm install` succeeds; workspace filters work; no secrets tracked; app/package directories exist; root manifest documents Node 22 target and pnpm 11 package manager pin. |
 | Tests | `pnpm -r --if-present build`; `pnpm -r --if-present test`. |
+| Verification | 2026-07-25: `node --version` -> `v26.5.0`; `pnpm --version` -> `11.3.0`; `pnpm install` -> success, generated `pnpm-lock.yaml`; `pnpm -r --if-present build` -> success; `pnpm -r --if-present test` -> success; `pnpm --filter @rentdelegate/shared list --depth -1` -> resolved workspace package. |
 | Failure fallback | Create minimal directories and package manifests only; if host Node is incompatible, document blocker instead of installing system packages. |
 | Sponsor | Both. |
 | Demo impact | Enables all parallel work. |
