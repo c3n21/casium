@@ -13,6 +13,7 @@ Ticket detail lives in the epic files. `spec/development-spec.md` is the impleme
 | `plan/backlog-completion.md` | RD-109 … RD-118 | **Epic C — Close The Loop.** Active. |
 | `plan/backlog-walrus.md` | RD-121 … RD-126 | **Epic W — Live Walrus Storage.** Active. |
 | `plan/backlog-seal.md` | RD-131 … RD-138 | **Epic S — Seal Access Control.** Active. |
+| `plan/backlog-e2e.md` | RD-141 … RD-152 | **Epic E — Playwright E2E Tests.** Active. Not front-to-back: start with Phase 1 (RD-141 → RD-144 → RD-147, RD-145, RD-146, RD-149), which needs no wallet. See that file's *Recommended Order*. |
 | `plan/backlog-stretch.md` | RD-202, RD-203 | Optional. RD-201 superseded by Epic S. |
 
 ## Current State
@@ -58,9 +59,10 @@ environment variables and hardcoded fixtures rather than by code.
 | L4 World AgentKit | World specialist | `packages/agentkit/`, provider middleware | RD-014 follow-up only |
 | L5 Walrus/privacy | Storage engineer | `packages/walrus/`, packet flow | RD-111, RD-121 … RD-126, RD-135 |
 | L6 Seal | Privacy engineer | `packages/seal/`, Move policy | RD-131 … RD-137 |
-| L7 Frontend | Frontend | `apps/web/` | RD-114, RD-116, RD-117, RD-135, RD-136 |
+| L7 Frontend | Frontend | `apps/web/` | RD-114, RD-116, RD-117, RD-135, RD-136, RD-142 |
 | L8 Agent | Agent/full-stack | `apps/agent/` | RD-111, RD-112, RD-113 |
-| L9 Demo/docs | Writer | `README.md`, `docs/`, `plan/` | RD-138 |
+| L9 Demo/docs | Writer | `README.md`, `docs/`, `plan/` | RD-138, RD-152 |
+| L10 QA/E2E | Test engineer | `apps/e2e/` | RD-141, RD-143 … RD-151 |
 
 ## Dependency Graph
 
