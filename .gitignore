@@ -25,6 +25,7 @@ client.yaml
 
 # Logs and editor state
 *.log
+.demo-logs/
 .DS_Store
 .idea/
 .vscode/

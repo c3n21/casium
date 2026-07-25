@@ -34,6 +34,9 @@ importers:
       '@worldcoin/agentkit':
         specifier: ^0.2.0
         version: 0.2.0(ethers@6.17.0)(typescript@7.0.2)
+      ethers:
+        specifier: ^6.17.0
+        version: 6.17.0
       hono:
         specifier: ^4.12.31
         version: 4.12.31
