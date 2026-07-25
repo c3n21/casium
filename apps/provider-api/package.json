@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js",
+    "start": "node --env-file-if-exists=../../.env dist/server.js",
+    "db:migrate": "node --env-file-if-exists=../../.env scripts/migrate.mjs",
     "test": "vitest run"
   },
   "dependencies": {
