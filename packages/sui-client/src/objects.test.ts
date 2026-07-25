@@ -72,6 +72,15 @@ describe("parseMandate — agent_evm field (RD-162)", () => {
     expect(mandate.agentEvm).toBe("0x0102030405060708090a0b0c0d0e0f1011121314");
   });
 
+  it("decodes a base64 vector from Sui gRPC JSON", () => {
+    const mandate = parseMandate({
+      ...mandateBase,
+      agent_evm: "Zi26u+/5sjdJC75qiYd2pKHYfM4=",
+    });
+
+    expect(mandate.agentEvm).toBe("0x662dbabbeff9b237490bbe6a898776a4a1d87cce");
+  });
+
   it("lowercases hex digits", () => {
     // 0xABCDEF... → must be lowercase
     const bytes = [0xab, 0xcd, 0xef, ...Array(17).fill(0x00)];

@@ -115,8 +115,8 @@ function byteArrayOf(value: unknown): number[] {
  *   silently comparing a truncated value.
  */
 function evmHexOf(value: unknown): string | null {
-  if (!Array.isArray(value)) return null;
-  if (value.length === 0) return null;
-  const bytes = value.map(numberOf);
+  if (value === undefined || value === null) return null;
+  const bytes = byteArrayOf(value);
+  if (bytes.length === 0) return null;
   return "0x" + bytes.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
