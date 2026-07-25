@@ -13,7 +13,7 @@ import { SMOKE } from "@rentdelegate/contracts-config";
  * These objects predate the agent_evm binding (RD-162/RD-164) and will be
  * rejected by the provider with MANDATE_EVM_MISMATCH — their agentEvm is null.
  */
-const LEGACY_SMOKE_MANDATE_IDS = new Set([SMOKE.mandateId]);
+const LEGACY_SMOKE_MANDATE_IDS: Set<string> = new Set([SMOKE.mandateId]);
 
 function isLegacySmoke(id: string | null): boolean {
   return id !== null && LEGACY_SMOKE_MANDATE_IDS.has(id);
@@ -48,6 +48,15 @@ function lsSet(key: string, value: string): void {
     localStorage.setItem(key, value);
   } catch {
     // Ignore quota or security errors — the demo path degrades gracefully.
+  }
+}
+
+function lsRemove(key: string): void {
+  if (!isClient()) return;
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // Ignore errors.
   }
 }
 
@@ -109,5 +118,20 @@ export const demoSession = {
     const id = lsGet(K.lastMandateId);
     if (isLegacySmoke(id)) return null;
     return id;
+  },
+
+  /** Clear all mandate fields from localStorage (e.g. after revocation). */
+  clearMandate(): void {
+    lsRemove(K.lastMandateId);
+    lsRemove(K.lastOwnerCapId);
+    lsRemove(K.lastAgentCapId);
+    lsRemove(K.lastMandateTxDigest);
+  },
+
+  /** Clear all packet handoff fields from localStorage. */
+  clearPacket(): void {
+    lsRemove(K.lastPacketMandateId);
+    lsRemove(K.lastPacketBlobId);
+    lsRemove(K.lastPacketHash);
   },
 } as const;

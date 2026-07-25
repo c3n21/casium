@@ -8,6 +8,7 @@ import { PacketBuilder } from "@/components/PacketBuilder";
 import { WithdrawButton } from "@/components/WithdrawButton";
 import { SMOKE, DEMO_LISTING_OBJECT_ID, EXPLORER_OBJECT } from "@rentdelegate/contracts-config";
 import { demoSession } from "@/lib/demoSession";
+import { EXPLORER_TX } from "@/lib/constants";
 
 const PROVIDER_API = process.env.NEXT_PUBLIC_PROVIDER_API_URL ?? "http://localhost:4021";
 
@@ -147,6 +148,7 @@ export default function RenterPage() {
   // mandateId supplied via URL when arriving from the agent's "no packet" error link.
   const [queryMandateId, setQueryMandateId] = useState<string | null>(null);
   const [revoked, setRevoked] = useState(false);
+  const [revokeTxDigest, setRevokeTxDigest] = useState<string | null>(null);
 
   // On mount: read URL param and restore mandate from localStorage (SSR-safe).
   useEffect(() => {
@@ -167,18 +169,81 @@ export default function RenterPage() {
   function handleMandateCreated(created: MandateRecord) {
     demoSession.saveMandate(created);
     setMandate(created);
+    setRevoked(false);
+  }
+
+  function handleRevoked(txDigest: string) {
+    demoSession.clearMandate();
+    demoSession.clearPacket();
+    setMandate(null);
+    setQueryMandateId(null);
+    setRevokeTxDigest(txDigest);
+    setRevoked(true);
+  }
+
+  function handleStartOver() {
+    demoSession.clearMandate();
+    demoSession.clearPacket();
+    setMandate(null);
+    setQueryMandateId(null);
+    setRevoked(false);
+    setRevokeTxDigest(null);
   }
 
   return (
     <main style={{ maxWidth: 680, margin: "2rem auto", padding: "0 1rem" }}>
-      <h1>Renter Dashboard</h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <h1 style={{ margin: 0 }}>Renter Dashboard</h1>
+        {mandate && !revoked && (
+          <button
+            onClick={handleStartOver}
+            style={{
+              padding: "0.3rem 0.75rem",
+              background: "transparent",
+              border: "1px solid #cbd5e1",
+              borderRadius: 4,
+              cursor: "pointer",
+              fontSize: "0.85rem",
+              color: "#64748b",
+            }}
+          >
+            Start over
+          </button>
+        )}
+      </div>
       <p style={{ color: "#64748b" }}>
         Create a mandate scoped to your requirements. Your agent will only be able to apply within these limits.
       </p>
 
       {!mandate ? (
         <div>
-          <p style={{ color: "#64748b" }}>No mandate created yet. Create one below to get started.</p>
+          {revoked && (
+            <div
+              style={{
+                marginBottom: "1rem",
+                padding: "0.75rem 1rem",
+                border: "1px solid #bbf7d0",
+                borderRadius: 6,
+                background: "#f0fdf4",
+                color: "#166534",
+                fontSize: "0.9rem",
+              }}
+            >
+              Mandate revoked.{" "}
+              {revokeTxDigest && (
+                <>
+                  <a href={EXPLORER_TX(revokeTxDigest)} target="_blank" rel="noreferrer">
+                    View tx
+                  </a>
+                  {" — "}
+                </>
+              )}
+              Create a new mandate to continue.
+            </div>
+          )}
+          {!revoked && (
+            <p style={{ color: "#64748b" }}>No mandate created yet. Create one below to get started.</p>
+          )}
           <MandateForm onCreated={handleMandateCreated} />
         </div>
       ) : (
@@ -194,7 +259,7 @@ export default function RenterPage() {
             <RevokeButton
               mandateId={mandate.mandateId}
               ownerCapId={mandate.ownerCapId}
-              onRevoked={() => setRevoked(true)}
+              onRevoked={handleRevoked}
             />
           )}
 
