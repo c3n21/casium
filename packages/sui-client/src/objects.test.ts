@@ -39,10 +39,13 @@ describe("RentDelegate Sui object parsers", () => {
         agent: "0xagent",
         provider: "0xprovider",
         landlord: "0xlandlord",
+        walrus_blob_id: [109, 111, 99, 107, 58, 98, 108, 111, 98],
+        packet_hash: [190, 239],
         submitted_at_ms: "1784962851988",
         access_expires_at_ms: "1790000000000",
         status: "1",
+        world_ref_hash: [1, 2, 3],
       }),
-    ).toMatchObject({ id: "0xreceipt", status: 1 });
+    ).toMatchObject({ id: "0xreceipt", status: 1, packetHashBytes: [190, 239] });
   });
 });

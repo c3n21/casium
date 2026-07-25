@@ -41,9 +41,12 @@ export function parseReceipt(json: unknown): ApplicationReceipt {
     agent: stringOf(fields.agent),
     provider: stringOf(fields.provider),
     landlord: stringOf(fields.landlord),
+    walrusBlobIdBytes: byteArrayOf(fields.walrus_blob_id),
+    packetHashBytes: byteArrayOf(fields.packet_hash),
     submittedAtMs: numberOf(fields.submitted_at_ms),
     accessExpiresAtMs: numberOf(fields.access_expires_at_ms),
     status: numberOf(fields.status),
+    worldRefHashBytes: byteArrayOf(fields.world_ref_hash),
   };
 }
 
@@ -85,4 +88,11 @@ function booleanOf(value: unknown): boolean {
 function numberArrayOf(value: unknown): number[] {
   if (!Array.isArray(value)) throw new Error("Expected number array field");
   return value.map(numberOf);
+}
+
+function byteArrayOf(value: unknown): number[] {
+  if (typeof value === "string") {
+    return [...Uint8Array.from(atob(value), (char) => char.charCodeAt(0))];
+  }
+  return numberArrayOf(value);
 }

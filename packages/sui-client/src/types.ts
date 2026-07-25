@@ -80,9 +80,12 @@ export type ApplicationReceipt = {
   agent: string;
   provider: string;
   landlord: string;
+  walrusBlobIdBytes: number[];
+  packetHashBytes: number[];
   submittedAtMs: number;
   accessExpiresAtMs: number;
   status: number;
+  worldRefHashBytes: number[];
 };
 
 export type RentDelegateClient = {

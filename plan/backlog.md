@@ -403,6 +403,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Field | Value |
 |---|---|
 | Priority | P0 |
+| Status | DONE - merged via `feature/rd-013-receipt-verification`. |
 | Lane | L3/L2 backend Sui |
 | Objective | Verify Sui tx digest and `ApplicationReceipt` object against reserved application. |
 | Suggested implementation | Implement `POST /applications/:id/verify`; fetch tx effects and receipt object; compare mandate ID, listing ID, agent Sui address, provider/landlord, blob ID, packet hash, status. Store in `sui_receipts`. |
@@ -411,6 +412,7 @@ Lease signing and fund transfer are not represented as flags. They are impossibl
 | Blocks | RD-014, RD-105, RD-106. |
 | Acceptance criteria | Valid receipt marks application `accepted`; invalid receipt returns `RECEIPT_INVALID`; tx digest unique. |
 | Tests | Mock Sui client route tests; testnet integration once deployed. |
+| Verification | 2026-07-25: `pnpm --filter @rentdelegate/sui-client build` -> success; `RUN_SUI_TESTNET=1 pnpm --filter @rentdelegate/sui-client test` -> success, 3 files/6 tests including live RD-007 receipt read `0xc46d42744b7381447851f9f2adb6cf32322ab4bd6aba243e925597418899ad20`; `pnpm --filter @rentdelegate/provider-api build` -> success; `pnpm --filter @rentdelegate/provider-api test` -> success, 3 files/11 tests passed/1 live smoke skipped; `RUN_SUI_TESTNET=1 pnpm --filter @rentdelegate/provider-api test` -> success, 3 files/12 tests including provider route verification of RD-007 receipt and tx digest `6vKuZNC3p5uoaSni2N5NifW1eQjqdLDesBAj9gN799Lh`; `pnpm -r --if-present build` -> success; `pnpm -r --if-present test` -> success; `~/.local/bin/sui move build --path packages/move` -> success; `~/.local/bin/sui move test --path packages/move` -> success, 21 tests passed. Current verifier reads and compares the receipt object fields and enforces provider-side tx digest uniqueness; tx-effect parsing remains a future hardening step. |
 | Failure fallback | Verify receipt object by object ID only if tx effect parsing takes too long, but document reduced assurance. |
 | Sponsor | Sui. |
 | Demo impact | Provider proves Sui result. |

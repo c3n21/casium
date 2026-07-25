@@ -30,5 +30,16 @@ export function createApplicationRoutes(applicationService: ApplicationService) 
     return c.json(application);
   });
 
+  routes.post("/applications/:id/verify", async (c) => {
+    const body = await c.req.json().catch(() => null);
+    const result = await applicationService.verify(c.req.param("id"), body);
+
+    if (!result.ok) {
+      return c.json({ error: result.error }, ERROR_HTTP_STATUS[result.error] as ErrorStatus);
+    }
+
+    return c.json(result.value);
+  });
+
   return routes;
 }
