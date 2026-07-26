@@ -67,6 +67,27 @@ test("a newly created listing appears in the dashboard and keeps its Sui object 
   expect(persisted?.listingObjectId).toBe(SMOKE.listingObjectId);
 });
 
+test("the live API rejects an EVM-shaped landlord address in a Sui field", async ({ request }) => {
+  const response = await request.post("http://localhost:4021/listings", {
+    data: {
+      id: `listing_bad_landlord_${crypto.randomUUID().slice(0, 8)}`,
+      listingObjectId: SMOKE.listingObjectId,
+      externalListingId: `bad-landlord-${crypto.randomUUID().slice(0, 8)}`,
+      providerSuiAddress: "0x2",
+      landlordSuiAddress: "0x1234567890123456789012345678901234567890",
+      municipalityCode: MUNICIPALITIES.LISBON,
+      monthlyRentEur: 1700,
+      bedrooms: 2,
+      active: true,
+    },
+  });
+
+  expect(response.status()).toBe(400);
+  expect(await response.json()).toMatchObject({
+    error: expect.stringContaining("40-hex EVM address"),
+  });
+});
+
 test("the renter's target selector offers the live listings", async ({ page, request }) => {
   const created = await createListing(request, { monthlyRentEur: 1550, bedrooms: 2 });
   await seedMandate(page);

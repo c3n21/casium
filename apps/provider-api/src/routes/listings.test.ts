@@ -54,4 +54,28 @@ describe("listing routes", () => {
       listingObjectId: "0x4000000000000000000000000000000000000000000000000000000000000004",
     });
   });
+
+  it("rejects EVM-shaped addresses in Sui address fields", async () => {
+    const app = createApp();
+    const response = await app.request("/listings", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        id: "listing_bad_landlord",
+        listingObjectId: "0x4000000000000000000000000000000000000000000000000000000000000004",
+        externalListingId: "bad-landlord-1",
+        providerSuiAddress: "0x2000000000000000000000000000000000000000000000000000000000000002",
+        landlordSuiAddress: "0x1234567890123456789012345678901234567890",
+        municipalityCode: 2,
+        monthlyRentEur: 1600,
+        bedrooms: 1,
+        active: true,
+      }),
+    });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      error: expect.stringContaining("40-hex EVM address"),
+    });
+  });
 });

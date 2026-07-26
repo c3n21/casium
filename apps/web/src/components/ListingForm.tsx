@@ -2,6 +2,7 @@
 
 import { useCurrentAccount, useCurrentClient, useDAppKit } from "@mysten/dapp-kit-react";
 import { ConnectButton } from "@mysten/dapp-kit-react/ui";
+import { normalizeSuiAddress } from "@casium/shared";
 import { createCasiumClient } from "@casium/sui-client";
 import { useState } from "react";
 import { EXPLORER_TX, PACKAGE_ID } from "@/lib/constants";
@@ -59,9 +60,10 @@ export function ListingForm({ onCreated }: { onCreated?: (listingId: string, txD
       });
 
       const idBytes = Array.from(new TextEncoder().encode(fields.externalId));
+      const landlordSuiAddress = parseSuiAddressField(fields.landlordAddress || account.address);
       const tx = client.buildCreateListingTx({
         externalListingIdBytes: idBytes,
-        landlordSuiAddress: fields.landlordAddress || account.address,
+        landlordSuiAddress,
         municipality: fields.municipality,
         monthlyRentEur: fields.monthlyRentEur,
         bedrooms: fields.bedrooms,
@@ -81,7 +83,7 @@ export function ListingForm({ onCreated }: { onCreated?: (listingId: string, txD
         listingObjectId,
         externalListingId: fields.externalId,
         providerSuiAddress: account.address,
-        landlordSuiAddress: fields.landlordAddress || account.address,
+        landlordSuiAddress,
         municipalityCode: fields.municipality,
         monthlyRentEur: fields.monthlyRentEur,
         bedrooms: fields.bedrooms,
@@ -170,6 +172,17 @@ async function registerListing(input: RegisterListingInput): Promise<{ id: strin
   }
 
   return response.json() as Promise<{ id: string }>;
+}
+
+function parseSuiAddressField(address: string): string {
+  const hex = address.slice(2);
+  if (!/^0x[a-fA-F0-9]{1,64}$/.test(address)) {
+    throw new Error("Expected a Sui address with 1 to 64 hex characters");
+  }
+  if (hex.length === 40) {
+    throw new Error("Expected a Sui address, but this looks like a 40-hex EVM address");
+  }
+  return normalizeSuiAddress(address);
 }
 
 const inputStyle: React.CSSProperties = { display: "block", width: "100%", marginTop: 4, padding: "0.5rem", border: "1px solid #cbd5e1", borderRadius: 4, fontSize: "inherit" };

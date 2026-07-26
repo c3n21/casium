@@ -1,9 +1,19 @@
 import { z } from "zod";
 
 const suiObjectIdSchema = z.string().regex(/^0x[a-fA-F0-9]+$/, "Expected a Sui object ID");
-const suiAddressSchema = z.string().regex(/^0x[a-fA-F0-9]+$/, "Expected a Sui address");
+export const suiAddressSchema = z
+  .string()
+  .regex(/^0x[a-fA-F0-9]{1,64}$/, "Expected a Sui address with 1 to 64 hex characters")
+  .refine((value) => value.slice(2).length !== 40, {
+    message: "Expected a Sui address, but this looks like a 40-hex EVM address",
+  })
+  .transform(normalizeSuiAddress);
 const evmAddressSchema = z.string().regex(/^0x[a-fA-F0-9]{40}$/, "Expected an EVM address");
 const hexHashSchema = z.string().regex(/^0x[a-fA-F0-9]+$/, "Expected a hex hash");
+
+export function normalizeSuiAddress(address: string): string {
+  return `0x${address.slice(2).toLowerCase().padStart(64, "0")}`;
+}
 
 export const CreateMandateSchema = z.object({
   agentSuiAddress: suiAddressSchema,

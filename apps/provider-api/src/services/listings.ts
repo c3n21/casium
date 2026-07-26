@@ -96,7 +96,8 @@ export function createListingService(seedListings = DEMO_LISTINGS, db?: Db) {
       const parsed = CreateListingSchema.safeParse(input);
 
       if (!parsed.success) {
-        return { ok: false, error: "LISTING_INVALID" };
+        const message = parsed.error.issues.map((issue) => issue.message).join("; ");
+        return { ok: false, error: `LISTING_INVALID: ${message}` };
       }
 
       const listing = toListing(parsed.data);

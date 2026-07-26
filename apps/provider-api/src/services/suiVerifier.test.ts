@@ -14,9 +14,9 @@ function makeReceipt(overrides: Partial<ApplicationReceipt> = {}): ApplicationRe
     id: "0xcafe",
     mandateId: "0xmandate",
     listingId: "0xlisting",
-    agent: "0xagent",
-    provider: "0xprovider",
-    landlord: "0xlandlord",
+    agent: "0xa",
+    provider: "0xb",
+    landlord: "0xc",
     walrusBlobIdBytes: [...new TextEncoder().encode("mock:testblob")],
     packetHashBytes: [0xbe, 0xef],
     submittedAtMs: 1_784_962_851_988,
@@ -32,10 +32,10 @@ function makeApplication(overrides: Partial<ReservedApplication> = {}): Reserved
     id: "app_1",
     listingId: "listing_1",
     listingObjectId: "0xlisting",
-    providerSuiAddress: "0xprovider",
-    landlordSuiAddress: "0xlandlord",
+    providerSuiAddress: "0x000000000000000000000000000000000000000000000000000000000000000b",
+    landlordSuiAddress: "0x000000000000000000000000000000000000000000000000000000000000000c",
     mandateId: "0xmandate",
-    agentSuiAddress: "0xagent",
+    agentSuiAddress: "0x000000000000000000000000000000000000000000000000000000000000000a",
     agentEvmAddress: "0xevmagent",
     humanIdHash: "sha256:human",
     walrusBlobId: "mock:testblob",
@@ -248,6 +248,22 @@ describe("createSuiReceiptVerifier", () => {
 
     expect(result.ok).toBe(false);
     expect(walrus.status).not.toHaveBeenCalled();
+  });
+
+  it("matches padded and abbreviated Sui addresses", async () => {
+    const receipt = makeReceipt({ agent: "0xa", provider: "0xb", landlord: "0xc" });
+    const application = makeApplication({
+      agentSuiAddress: "0x000000000000000000000000000000000000000000000000000000000000000a",
+      providerSuiAddress: "0x000000000000000000000000000000000000000000000000000000000000000b",
+      landlordSuiAddress: "0x000000000000000000000000000000000000000000000000000000000000000c",
+    });
+    const suiClient = makeMockSuiClient(receipt);
+    const walrus = makeMockWalrusAdapter();
+
+    const verifier = createSuiReceiptVerifier(suiClient, walrus);
+    const result = await verifier.verify(application, makeVerifyInput());
+
+    expect(result.ok).toBe(true);
   });
 
   it("returns ok=false when getReceipt throws", async () => {

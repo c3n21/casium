@@ -1,4 +1,5 @@
 import type { ApplicationReceipt, CasiumClient } from "@casium/sui-client";
+import { normalizeSuiAddress } from "@casium/shared";
 import type { VerifyReceiptInput } from "@casium/shared";
 import { ERROR_CODES } from "@casium/shared";
 import type { ErrorCode } from "@casium/shared";
@@ -99,9 +100,9 @@ function matchesApplication(receipt: ApplicationReceipt, application: ReservedAp
   return (
     receipt.mandateId.toLowerCase() === application.mandateId.toLowerCase() &&
     receipt.listingId.toLowerCase() === application.listingObjectId.toLowerCase() &&
-    receipt.agent.toLowerCase() === application.agentSuiAddress.toLowerCase() &&
-    receipt.provider.toLowerCase() === application.providerSuiAddress.toLowerCase() &&
-    receipt.landlord.toLowerCase() === application.landlordSuiAddress.toLowerCase() &&
+    normalizeSuiAddress(receipt.agent) === normalizeSuiAddress(application.agentSuiAddress) &&
+    normalizeSuiAddress(receipt.provider) === normalizeSuiAddress(application.providerSuiAddress) &&
+    normalizeSuiAddress(receipt.landlord) === normalizeSuiAddress(application.landlordSuiAddress) &&
     bytesToUtf8(receipt.walrusBlobIdBytes) === application.walrusBlobId &&
     bytesToHex(receipt.packetHashBytes) === application.packetHash.toLowerCase() &&
     receipt.status === STATUS_SUBMITTED
