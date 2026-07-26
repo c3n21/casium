@@ -153,9 +153,7 @@ test("the operator page runs the agent and renders the per-listing outcome", asy
   ]);
   await page.goto("/agent");
 
-  const section = page.locator("section").filter({
-    has: page.getByRole("heading", { name: /^Run: / }),
-  });
+  const section = page.getByTestId("active-run-section");
   await expect(section.getByRole("heading", { name: `Run: ${porto.externalListingId}` })).toBeVisible();
   await expect(section.getByRole("textbox")).toHaveValue(LIVE_MANDATE_ID);
 
@@ -163,7 +161,7 @@ test("the operator page runs the agent and renders the per-listing outcome", asy
 
   // `exact` is required: the section description also contains the word
   // "status", and default text matching is a case-insensitive substring.
-  await expect(section.getByText("Status: ineligible", { exact: true })).toBeVisible({
+  await expect(section.getByTestId("run-status")).toHaveAttribute("data-status", "ineligible", {
     timeout: 90_000,
   });
   await expect(section.getByText("Per-listing results:")).toBeVisible();
@@ -187,9 +185,7 @@ test("the page blocks a run whose target has no packet, before calling the agent
   ]);
   await page.goto("/agent");
 
-  const section = page.locator("section").filter({
-    has: page.getByRole("heading", { name: /^Run: / }),
-  });
+  const section = page.getByTestId("active-run-section");
   await section.getByRole("button", { name: "Start run" }).click();
 
   await expect(section.getByRole("alert")).toContainText(

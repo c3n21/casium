@@ -83,7 +83,7 @@ export function MandateForm({ onCreated }: MandateFormProps) {
 
   if (!account) {
     return (
-      <div>
+      <div className="card">
         <p>Connect your Sui wallet to create a mandate.</p>
         <ConnectButton />
       </div>
@@ -157,21 +157,11 @@ export function MandateForm({ onCreated }: MandateFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+    <form onSubmit={handleSubmit} className="stack">
       <h2 style={{ marginTop: 0 }}>Create Rental Mandate</h2>
 
       {/* ── Agent identity card ── */}
-      <div style={{
-        padding: "0.75rem 1rem",
-        border: "1px solid #e2e8f0",
-        borderRadius: 6,
-        background: identityState.status === "loaded"
-          ? "#f0fdf4"
-          : identityState.status === "error"
-            ? "#fef2f2"
-            : "#f8fafc",
-        fontSize: "0.9rem",
-      }}>
+      <div className={identityState.status === "loaded" ? "alert success" : identityState.status === "error" ? "alert error" : "alert"} style={{ fontSize: "0.9rem" }}>
         {identityState.status === "loading" && (
           <span style={{ color: "#94a3b8" }}>Connecting to agent…</span>
         )}
@@ -333,7 +323,7 @@ export function MandateForm({ onCreated }: MandateFormProps) {
 
       {error && <p role="alert" style={{ color: "#dc2626", margin: 0 }}>{error}</p>}
 
-      <button type="submit" disabled={submitDisabled} style={buttonStyle}>
+      <button type="submit" disabled={submitDisabled} data-ui="button" style={buttonStyle}>
         {busy ? "Sending transaction…" : "Create mandate on testnet"}
       </button>
     </form>

@@ -239,7 +239,7 @@ export function PacketViewer({ receipt }: PacketViewerProps) {
     !isMockBlob && blobExpiryEstimate !== null && blobExpiryEstimate < accessExpiry;
 
   return (
-    <div style={{ marginTop: "1rem", borderTop: "1px dashed #e2e8f0", paddingTop: "1rem" }}>
+    <div data-testid="packet-panel" style={{ marginTop: "1rem", borderTop: "1px dashed #e2e8f0", paddingTop: "1rem" }}>
       <strong style={{ fontSize: "0.9rem" }}>Encrypted application packet</strong>
 
       {/* Three key facts */}
@@ -259,7 +259,7 @@ export function PacketViewer({ receipt }: PacketViewerProps) {
             <td style={tdLabel}>Walrus blob lifetime (est.)</td>
             <td style={tdValue}>
               {isMockBlob ? (
-                <span style={{ color: "#f59e0b" }}>Mock blob — no real storage</span>
+                <span data-testid="blob-mode-badge" data-mode="mock" style={{ color: "#f59e0b" }}>Mock blob — no real storage</span>
               ) : blobExpiryEstimate ? (
                 <span style={{ color: blobMismatch ? "#dc2626" : undefined }}>
                   ~{blobExpiryEstimate.toISOString()} ({WALRUS_CONFIGURED_EPOCHS} epochs)
@@ -283,7 +283,7 @@ export function PacketViewer({ receipt }: PacketViewerProps) {
 
       {/* Seal fallback banner */}
       {!useSeal && (
-        <div role="alert" style={fallbackBannerStyle}>
+        <div role="alert" data-testid="seal-mode-alert" data-mode="fallback" style={fallbackBannerStyle}>
           ⚠ Seal fallback mode: The packet uses AES-GCM encryption. Seal key servers are unavailable
           or not configured. Manual key handoff required.
         </div>

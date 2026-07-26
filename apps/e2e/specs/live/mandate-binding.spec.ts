@@ -123,9 +123,7 @@ test("the agent page refuses a mandate bound to a different agent, reading it fr
   // page's highest-priority mandate source, so no session seeding is needed.
   await page.goto(`/agent?mandateId=${SMOKE.mandateId}`);
 
-  const section = page.locator("section").filter({
-    has: page.getByRole("heading", { name: /^Run: / }),
-  });
+  const section = page.getByTestId("active-run-section");
   await section.getByRole("button", { name: "Start run" }).click();
 
   await expect(section.getByRole("alert")).toContainText("Mandate EVM mismatch.");

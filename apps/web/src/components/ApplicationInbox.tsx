@@ -58,14 +58,14 @@ export function ApplicationInbox({ applications, onRefetch }: ApplicationInboxPr
   }
 
   if (applications.length === 0) {
-    return <p style={{ color: "#64748b" }}>No applications yet. The agent will populate this once it submits.</p>;
+    return <p className="muted" data-testid="applications-empty">No applications yet. The agent will populate this once it submits.</p>;
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+    <div className="stack">
       {applications.map((a) => (
-        <div key={a.id} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "1rem" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+        <div key={a.id} className="card" data-testid={`application-card-${a.id}`}>
+          <div className="split" style={{ marginBottom: 8 }}>
             <strong style={{ fontFamily: "monospace", fontSize: "0.9rem" }}>{a.id}</strong>
             <StatusBadge status={a.status} />
           </div>
@@ -83,11 +83,12 @@ export function ApplicationInbox({ applications, onRefetch }: ApplicationInboxPr
 
           {a.status === "reserved" && (
             <details style={{ marginTop: 8 }}>
-              <summary style={{ cursor: "pointer", color: "#2563eb" }}>Verify Sui receipt</summary>
+              <summary data-testid="verify-receipt-summary">Verify Sui receipt</summary>
               <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
                 <input
                   type="text"
                   placeholder="tx digest"
+                  data-testid="tx-digest-input"
                   value={verifyInputs[a.id]?.txDigest ?? ""}
                   onChange={(e) =>
                     setVerifyInputs((v) => ({ ...v, [a.id]: { ...v[a.id], txDigest: e.target.value } }))
@@ -97,6 +98,7 @@ export function ApplicationInbox({ applications, onRefetch }: ApplicationInboxPr
                 <input
                   type="text"
                   placeholder="receipt object ID (0x...)"
+                  data-testid="receipt-id-input"
                   value={verifyInputs[a.id]?.receiptId ?? ""}
                   onChange={(e) =>
                     setVerifyInputs((v) => ({ ...v, [a.id]: { ...v[a.id], receiptId: e.target.value } }))
@@ -106,7 +108,7 @@ export function ApplicationInbox({ applications, onRefetch }: ApplicationInboxPr
                 {verifyErrors[a.id] && (
                   <p style={{ color: "#dc2626", margin: 0, fontSize: "0.85rem" }}>{verifyErrors[a.id]}</p>
                 )}
-                <button onClick={() => handleVerify(a.id)} disabled={verifying === a.id} style={buttonStyle}>
+                <button data-ui="button" onClick={() => handleVerify(a.id)} disabled={verifying === a.id} style={buttonStyle}>
                   {verifying === a.id ? "Verifying…" : "Verify"}
                 </button>
               </div>
@@ -139,13 +141,9 @@ function StatusBadge({ status }: { status: string }) {
   };
   return (
     <span
-      style={{
-        background: colors[status] ?? "#94a3b8",
-        color: "#fff",
-        padding: "2px 8px",
-        borderRadius: 99,
-        fontSize: "0.8rem",
-      }}
+      className={status === "accepted" ? "badge success" : status === "reserved" ? "badge warn" : "badge neutral"}
+      data-testid="application-status"
+      data-status={status}
     >
       {status}
     </span>

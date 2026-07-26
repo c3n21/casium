@@ -71,16 +71,17 @@ export default function ProviderPage() {
   const applications: ReservedApplication[] = applicationsResponse?.applications ?? [];
 
   return (
-    <main style={{ maxWidth: 720, margin: "2rem auto", padding: "0 1rem" }}>
-      <h1>Provider Dashboard</h1>
-      <p style={{ color: "#64748b" }}>
+    <main className="page">
+      <p className="eyebrow">Provider console</p>
+      <h1 className="page-title">Provider Dashboard</h1>
+      <p className="lede">
         Create listings, review applications with AgentKit uniqueness proof, and verify Sui receipts.
       </p>
 
-      <section style={{ marginBottom: "2rem" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <section className="card" style={{ marginBottom: "2rem" }}>
+        <div className="split">
           <h2 style={{ margin: 0 }}>Listings</h2>
-          <button onClick={() => setShowForm((v) => !v)} style={secondaryBtn}>
+          <button onClick={() => setShowForm((v) => !v)} data-ui="secondary" style={secondaryBtn}>
             {showForm ? "Close" : "+ New listing"}
           </button>
         </div>
@@ -98,17 +99,17 @@ export default function ProviderPage() {
         )}
 
         {createdTx && (
-          <p style={{ marginTop: 8 }}>
-            ✅ Listing created.{" "}
+          <p className="alert success" style={{ marginTop: 8 }}>
+            Listing created.{" "}
             <a href={EXPLORER_TX(createdTx)} target="_blank" rel="noreferrer">
               View tx
             </a>
           </p>
         )}
 
-        <div style={{ marginTop: "1rem", border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
-            <thead style={{ background: "#f8fafc" }}>
+        <div className="table-shell" style={{ marginTop: "1rem" }}>
+          <table style={{ fontSize: "0.9rem" }}>
+            <thead>
               <tr>
                 {["ID", "Object", "Municipality", "Rent", "Bedrooms", "Status"].map((h) => (
                   <th
@@ -138,7 +139,7 @@ export default function ProviderPage() {
               )}
               {!listingsLoading && !listingsError && listings.length === 0 && (
                 <tr>
-                  <td style={{ ...td, color: "#64748b" }} colSpan={6}>
+                  <td style={{ ...td, color: "#64748b" }} colSpan={6} data-testid="listings-empty">
                     No listings yet.
                   </td>
                 </tr>
@@ -146,7 +147,7 @@ export default function ProviderPage() {
               {listings.map((listing) => {
                 const ineligible = listing.municipalityCode === 6;
                 return (
-                  <tr key={listing.id}>
+                  <tr key={listing.id} data-testid={`listing-row-${listing.id}`}>
                     <td style={td}>{listing.id}</td>
                     <td style={td}>
                       <a href={EXPLORER_OBJECT(listing.listingObjectId)} target="_blank" rel="noreferrer">
@@ -162,11 +163,11 @@ export default function ProviderPage() {
                     <td style={td}>{listing.bedrooms}</td>
                     <td style={td}>
                       {!listing.active ? (
-                        <span style={{ color: "#94a3b8" }}>Inactive</span>
+                        <span className="badge neutral" data-testid="listing-status" data-status="inactive">Inactive</span>
                       ) : ineligible ? (
-                        <span style={{ color: "#f59e0b" }}>Ineligible</span>
+                        <span className="badge warn" data-testid="listing-status" data-status="ineligible">Ineligible</span>
                       ) : (
-                        <span style={{ color: "#16a34a" }}>Active</span>
+                        <span className="badge success" data-testid="listing-status" data-status="active">Active</span>
                       )}
                     </td>
                   </tr>
@@ -177,9 +178,9 @@ export default function ProviderPage() {
         </div>
       </section>
 
-      <section>
+      <section className="card">
         <h2>Applications</h2>
-        <p style={{ color: "#64748b", fontSize: "0.9rem", marginTop: 0 }}>
+        <p className="muted" style={{ fontSize: "0.9rem", marginTop: 0 }}>
           Each application shows World AgentKit human hash (uniqueness proof) and Sui receipt verification.
         </p>
 
@@ -193,7 +194,7 @@ export default function ProviderPage() {
           <ApplicationInbox applications={applications} onRefetch={() => void refetch()} />
         )}
 
-        <details style={{ marginTop: "2rem" }}>
+        <details className="evidence-panel" data-testid="developer-evidence" style={{ marginTop: "2rem" }}>
           <summary style={{ cursor: "pointer", color: "#64748b", fontSize: "0.85rem" }}>
             Demo evidence (known testnet receipts)
           </summary>

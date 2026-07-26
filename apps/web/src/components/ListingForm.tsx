@@ -37,7 +37,7 @@ export function ListingForm({ onCreated }: { onCreated?: (listingId: string, txD
 
   if (!account) {
     return (
-      <div>
+      <div className="card">
         <p>Connect your Sui wallet to create a listing.</p>
         <ConnectButton />
       </div>
@@ -97,7 +97,7 @@ export function ListingForm({ onCreated }: { onCreated?: (listingId: string, txD
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+    <form onSubmit={handleSubmit} className="stack">
       <h3 style={{ marginTop: 0 }}>Create Listing</h3>
 
       <label>
@@ -131,7 +131,7 @@ export function ListingForm({ onCreated }: { onCreated?: (listingId: string, txD
 
       {error && <p role="alert" style={{ color: "#dc2626", margin: 0 }}>{error}</p>}
 
-      <button type="submit" disabled={busy} style={buttonStyle}>
+      <button type="submit" disabled={busy} data-ui="button" style={buttonStyle}>
         {busy ? "Sending…" : "Create listing on testnet"}
       </button>
     </form>

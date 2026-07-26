@@ -5,31 +5,33 @@
 
 import { expect, test } from "../src/fixtures/test.js";
 
-test("landing page shows the product message and three role links", async ({ page }) => {
+test("landing page shows the product message and role entry points", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: "Casium" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Apply without handing over the keys." })).toBeVisible();
   await expect(
-    page.getByText("World limits who the agent represents. Sui limits what the agent can do."),
+    page.getByTestId("core-message"),
   ).toBeVisible();
-  await expect(page.getByRole("link")).toHaveCount(3);
+  await expect(page.getByTestId("role-renter-link")).toBeVisible();
+  await expect(page.getByTestId("role-provider-card")).toBeVisible();
+  await expect(page.getByTestId("role-landlord-card")).toBeVisible();
 });
 
 const ROUTES = [
-  { link: /^Renter —/, heading: "Renter Dashboard" },
-  { link: /^Provider —/, heading: "Provider Dashboard" },
-  { link: /^Landlord —/, heading: "Landlord — Access Panel" },
+  { testId: "nav-renter", heading: "Set limits. Keep custody." },
+  { testId: "nav-provider", heading: "Provider Dashboard" },
+  { testId: "nav-landlord", heading: "Landlord Access Panel" },
 ] as const;
 
-for (const { link, heading } of ROUTES) {
+for (const { testId, heading } of ROUTES) {
   test(`navigates to ${heading}`, async ({ page }) => {
     await page.goto("/");
-    await page.getByRole("link", { name: link }).click();
+    await page.getByTestId(testId).click();
     await expect(page.getByRole("heading", { name: heading, level: 1 })).toBeVisible();
   });
 }
 
 test("the agent operator page is reachable directly", async ({ page }) => {
   await page.goto("/agent");
-  await expect(page.getByRole("heading", { name: "Agent Operator", level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Agent Run", level: 1 })).toBeVisible();
 });

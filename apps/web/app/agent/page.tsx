@@ -69,7 +69,7 @@ type Stage = (typeof ALL_STAGES)[number];
 function StageList({ currentStage }: { currentStage: Stage | null }) {
   const currentIdx = currentStage ? ALL_STAGES.indexOf(currentStage) : -1;
   return (
-    <ol style={{ listStyle: "none", padding: 0, margin: "1rem 0" }}>
+    <ol className="pipeline">
       {ALL_STAGES.map((stage, i) => {
         const done = currentIdx > i;
         const active = currentIdx === i;
@@ -124,15 +124,11 @@ function ResultPanel({
 
   return (
     <div
-      style={{
-        marginTop: "1rem",
-        padding: "1rem",
-        background: result.status === "complete" ? "#f0fdf4" : result.status === "ineligible" ? "#fefce8" : "#fef2f2",
-        border: `1px solid ${result.status === "complete" ? "#86efac" : result.status === "ineligible" ? "#fde047" : "#fca5a5"}`,
-        borderRadius: 6,
-      }}
+      className={result.status === "complete" ? "alert success" : result.status === "ineligible" ? "alert warn" : "alert error"}
+      style={{ marginTop: "1rem" }}
+      data-testid="run-results"
     >
-      <p style={{ margin: "0 0 0.5rem", fontWeight: 600 }}>
+      <p style={{ margin: "0 0 0.5rem", fontWeight: 600 }} data-testid="run-status" data-status={result.status}>
         Status: {result.status}
       </p>
       {result.reason && !evmMismatch && (
@@ -384,27 +380,17 @@ function RunSection({
 
   return (
     <section
-      style={{
-        marginBottom: "2rem",
-        padding: "1rem",
-        border: "1px solid #e2e8f0",
-        borderRadius: 6,
-      }}
+      className="card"
+      data-testid={title.startsWith("Smoke") ? undefined : "active-run-section"}
+      style={{ marginBottom: "2rem" }}
     >
       <h3 style={{ marginTop: 0 }}>{title}</h3>
       {description && <p style={{ color: "#64748b", fontSize: "0.9rem" }}>{description}</p>}
 
       {smokeWarning && (
         <div
-          style={{
-            padding: "0.5rem 0.75rem",
-            background: "#fef3c7",
-            border: "1px solid #f0c040",
-            borderRadius: 4,
-            fontSize: "0.8rem",
-            color: "#92400e",
-            marginBottom: "0.75rem",
-          }}
+          className="alert warn"
+          style={{ fontSize: "0.8rem", marginBottom: "0.75rem" }}
         >
           Archived smoke mandate — <code>agent_evm</code> is <code>null</code> and will fail{" "}
           <code>MANDATE_EVM_MISMATCH</code> on the live provider. Use for on-chain inspection only.
@@ -456,7 +442,7 @@ function RunSection({
       )}
 
       {noMandate ? (
-        <p style={{ color: "#64748b", fontSize: "0.9rem", margin: "0 0 0.5rem" }}>
+        <p className="muted" data-testid="no-mandate-empty" style={{ fontSize: "0.9rem", margin: "0 0 0.5rem" }}>
           No active mandate.{" "}
           <a href="/renter">Create a mandate on the Renter page</a> and upload a packet, then
           return here — the mandate will be auto-filled.
@@ -465,22 +451,16 @@ function RunSection({
         <button
           onClick={startRun}
           disabled={busy || agentIdentityLoading}
-          style={{
-            padding: "0.5rem 1rem",
-            background: busy || agentIdentityLoading ? "#94a3b8" : "#2563eb",
-            color: "#fff",
-            border: "none",
-            borderRadius: 4,
-            cursor: busy || agentIdentityLoading ? "default" : "pointer",
-            fontSize: "inherit",
-          }}
+            data-testid="agent-start-run-button"
+            data-ui="button"
+            style={{ background: busy || agentIdentityLoading ? "#94a3b8" : undefined }}
         >
           {busy ? "Running…" : agentIdentityLoading ? "Connecting agent…" : "Start run"}
         </button>
       )}
 
       {error && !evmMismatchError && (
-        <p role="alert" style={{ color: "#dc2626", marginTop: 8 }}>
+        <p role="alert" className="alert error" data-testid="run-error-alert" style={{ marginTop: 8 }}>
           {error}
           {packetMissing && (
             <>
@@ -495,7 +475,7 @@ function RunSection({
       )}
 
       {evmMismatchError && (
-        <p role="alert" style={{ color: "#dc2626", marginTop: 8 }}>
+        <p role="alert" className="alert error" data-testid="run-error-alert" data-error-code="MANDATE_EVM_MISMATCH" style={{ marginTop: 8 }}>
           <strong>Mandate EVM mismatch.</strong> This mandate was not created for the current
           agent EVM signer. Create a fresh mandate on the{" "}
           <a href="/renter">Renter page</a> after confirming the agent identity, upload a packet,
@@ -568,9 +548,10 @@ export default function AgentPage() {
   }, []);
 
   return (
-    <main style={{ maxWidth: 700, margin: "2rem auto", padding: "0 1rem" }}>
-      <h1>Agent Operator</h1>
-      <p style={{ color: "#64748b" }}>
+    <main className="page narrow">
+      <p className="eyebrow">Autonomous execution</p>
+      <h1 className="page-title">Agent Run</h1>
+      <p className="lede">
         Trigger the Casium agent from the browser. The agent loads the mandate on-chain,
         evaluates listing eligibility, encrypts and uploads the packet, reserves and submits the
         application on Sui, and verifies the receipt with the provider.
@@ -578,19 +559,14 @@ export default function AgentPage() {
 
       {/* Health status */}
       <div
-        style={{
-          marginBottom: "1.5rem",
-          padding: "0.75rem 1rem",
-          background: health ? "#f0fdf4" : healthError ? "#fef2f2" : "#f8fafc",
-          border: `1px solid ${health ? "#86efac" : healthError ? "#fca5a5" : "#e2e8f0"}`,
-          borderRadius: 6,
-          fontSize: "0.9rem",
-        }}
+        className={health ? "alert success" : healthError ? "alert error" : "alert"}
+        data-testid="agent-health-status"
+        style={{ marginBottom: "1.5rem", fontSize: "0.9rem" }}
       >
         {health ? (
           <>
             <strong>Agent online</strong> — {health.agentSuiAddress.slice(0, 16)}…{" "}
-            <span style={{ color: "#64748b" }}>agentkit: {health.agentkitMode}</span>
+            <span className="muted" data-testid="agentkit-mode">agentkit: {health.agentkitMode}</span>
           </>
         ) : healthError ? (
           <span style={{ color: "#dc2626" }}>Agent offline: {healthError}</span>
@@ -601,20 +577,7 @@ export default function AgentPage() {
 
       {/* Selected listings display (from renter page handoff) */}
       {selectedListings.length > 0 && (
-        <div
-          style={{
-            marginBottom: "1rem",
-            padding: "0.5rem 0.75rem",
-            background: "#f8fafc",
-            border: "1px solid #e2e8f0",
-            borderRadius: 4,
-            fontSize: "0.9rem",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.5rem",
-            flexWrap: "wrap",
-          }}
-        >
+        <div className="alert cluster" style={{ marginBottom: "1rem", fontSize: "0.9rem" }}>
           <strong>Targets:</strong>{" "}
           <span>{selectedListings.map(listingLabel).join(", ")}</span>
           <button
@@ -652,7 +615,7 @@ export default function AgentPage() {
       />
 
       {/* ── Archived evidence ── */}
-      <details style={{ marginTop: "1rem" }}>
+      <details className="evidence-panel" data-testid="developer-evidence" style={{ marginTop: "1rem" }}>
         <summary
           style={{ cursor: "pointer", color: "#64748b", fontSize: "0.9rem", fontWeight: 600 }}
         >

@@ -48,7 +48,7 @@ test("the web app reaches both real services from the browser", async ({ page })
   await page.goto("/agent");
   expect((await health).status()).toBe(200);
 
-  await expect(page.getByText("Agent online")).toBeVisible();
-  await expect(page.getByText("agentkit: mock")).toBeVisible();
+  await expect(page.getByTestId("agent-health-status")).toContainText("Agent online");
+  await expect(page.getByTestId("agentkit-mode")).toContainText("mock");
   await expect(page.getByText(PUBLISHER_ADDRESS.slice(0, 16))).toBeVisible();
 });

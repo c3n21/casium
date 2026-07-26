@@ -15,12 +15,12 @@ test.describe("listings table", () => {
   test("renders the eligible Lisbon row and the ineligible Porto row", async ({ page }) => {
     await page.goto("/provider");
 
-    const lisbon = page.getByRole("row", { name: /listing_lisbon_eligible/ });
+    const lisbon = page.getByTestId("listing-row-listing_lisbon_eligible");
     await expect(lisbon).toContainText("Lisbon");
     await expect(lisbon).toContainText("€1700");
     await expect(lisbon).toContainText("Active");
 
-    const porto = page.getByRole("row", { name: /listing_porto_ineligible/ });
+    const porto = page.getByTestId("listing-row-listing_porto_ineligible");
     await expect(porto).toContainText("Porto (ineligible demo)");
     await expect(porto).toContainText("Ineligible");
   });
@@ -32,7 +32,7 @@ test.describe("listings table", () => {
     providerApi.setListings([]);
     await page.goto("/provider");
 
-    await expect(page.getByText("No listings yet.")).toBeVisible();
+    await expect(page.getByTestId("listings-empty")).toBeVisible();
   });
 
   test("surfaces a provider API failure instead of rendering an empty table", async ({
@@ -62,7 +62,7 @@ test.describe("application inbox", () => {
     providerApi.setApplications([RESERVED_APPLICATION]);
     await page.goto("/provider");
 
-    const card = page.locator("div").filter({ hasText: /^app_1/ }).first();
+    const card = page.getByTestId("application-card-app_1");
     await expect(page.getByText("reserved")).toBeVisible();
     await expect(page.getByText(/Human:/)).toBeVisible();
 

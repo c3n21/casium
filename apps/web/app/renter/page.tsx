@@ -258,45 +258,34 @@ export default function RenterPage() {
     });
   }
 
+  const nextPacketListing = selectedListings.find((listing) => !packetResults.has(listing.id));
+
   return (
-    <main style={{ maxWidth: 680, margin: "2rem auto", padding: "0 1rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <h1 style={{ margin: 0 }}>Renter Dashboard</h1>
+    <main className="page narrow">
+      <div className="split">
+        <div>
+          <p className="eyebrow">Renter flow</p>
+          <h1 className="page-title">Set limits. Keep custody.</h1>
+        </div>
         {mandate && !revoked && (
           <button
             onClick={handleStartOver}
-            style={{
-              padding: "0.3rem 0.75rem",
-              background: "transparent",
-              border: "1px solid #cbd5e1",
-              borderRadius: 4,
-              cursor: "pointer",
-              fontSize: "0.85rem",
-              color: "#64748b",
-            }}
+            data-ui="secondary"
           >
             Start over
           </button>
         )}
       </div>
-      <p style={{ color: "#64748b" }}>
+      <p className="lede">
         Create a mandate scoped to your requirements. Your agent will only be able to apply within these limits.
       </p>
 
       {!mandate ? (
-        <div>
+        <section className="step-card">
+          <span className="step-num">1</span>
+          <div>
           {revoked && (
-            <div
-              style={{
-                marginBottom: "1rem",
-                padding: "0.75rem 1rem",
-                border: "1px solid #bbf7d0",
-                borderRadius: 6,
-                background: "#f0fdf4",
-                color: "#166534",
-                fontSize: "0.9rem",
-              }}
-            >
+            <div className="alert success" style={{ marginBottom: "1rem" }}>
               Mandate revoked.{" "}
               {revokeTxDigest && (
                 <>
@@ -309,13 +298,17 @@ export default function RenterPage() {
               Create a new mandate to continue.
             </div>
           )}
-          {!revoked && (
-            <p style={{ color: "#64748b" }}>No mandate created yet. Create one below to get started.</p>
-          )}
+          {!revoked && <p className="muted">No mandate created yet. Create one below to get started.</p>}
           <MandateForm onCreated={handleMandateCreated} />
-        </div>
+          </div>
+        </section>
       ) : (
-        <>
+        <div className="stack">
+          <section className="step-card">
+            <span className="step-num">1</span>
+            <div>
+              <h2>Mandate is active</h2>
+              <p className="muted">These limits are enforced by the Sui package before the agent can act.</p>
           <MandateStatus
             mandateId={mandate.mandateId}
             ownerCapId={mandate.ownerCapId}
@@ -330,43 +323,46 @@ export default function RenterPage() {
               onRevoked={handleRevoked}
             />
           )}
+            </div>
+          </section>
 
-          <hr style={{ margin: "1.5rem 0", borderColor: "#e2e8f0" }} />
-
-          <h2 style={{ marginBottom: "0.75rem" }}>Your submitted applications</h2>
-          <ApplicationsSection
-            mandateId={mandate.mandateId}
-            ownerCapId={mandate.ownerCapId}
-          />
+          <section className="step-card">
+            <span className="step-num">2</span>
+            <div>
+              <h2>Your submitted applications</h2>
+              <ApplicationsSection mandateId={mandate.mandateId} ownerCapId={mandate.ownerCapId} />
+            </div>
+          </section>
 
           {!revoked && packetMandateId && (
-            <>
-              <hr style={{ margin: "1.5rem 0", borderColor: "#e2e8f0" }} />
-
-              <h2 style={{ marginBottom: "0.5rem" }}>Select target listings</h2>
-              <p style={{ color: "#64748b", fontSize: "0.9rem", marginTop: 0 }}>
-                Agent will evaluate each selected listing and apply only where eligible.
-              </p>
+            <section className="step-card" data-testid="renter-step-listings">
+              <span className="step-num">3</span>
+              <div>
+                <h2 style={{ marginBottom: "0.5rem" }}>Select target listings</h2>
+                <p className="muted" style={{ fontSize: "0.9rem", marginTop: 0 }}>
+                  Agent will evaluate each selected listing and apply only where eligible.
+                </p>
 
               {listings.length === 0 ? (
-                <p style={{ color: "#94a3b8" }}>Loading listings…</p>
+                <p className="faint">Loading listings…</p>
               ) : (
-                <div style={{ marginBottom: "1rem" }}>
+                <div className="listing-grid" style={{ marginBottom: "1rem" }}>
                   {listings
                     .filter((l) => l.active)
                     .map((listing) => (
-                      <div key={listing.id} style={{ marginBottom: "0.4rem" }}>
+                      <div key={listing.id}>
                         <label
-                          style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}
+                          className="listing-option"
                         >
                           <input
                             type="checkbox"
+                            data-testid={`target-checkbox-${listing.id}`}
                             checked={selectedListings.some((s) => s.id === listing.id)}
                             onChange={(e) => toggleListing(listing, e.target.checked)}
                           />
                           <span>
-                            {listing.externalListingId}
-                            {" — "}
+                            <strong>{listing.externalListingId}</strong>
+                            <br />
                             {MUNICIPALITY_LABELS[listing.municipalityCode] ??
                               `Code ${listing.municipalityCode}`}
                             {" — "}
@@ -382,36 +378,41 @@ export default function RenterPage() {
 
               {selectedListings.length > 0 && (
                 <div style={{ marginTop: "0.5rem" }}>
-                  {selectedListings.map((listing) => {
-                    const uploaded = packetResults.has(listing.id);
-                    return (
-                      <div
-                        key={listing.id}
-                        style={{
-                          marginBottom: "1.5rem",
-                          padding: "0.75rem",
-                          border: "1px solid #e2e8f0",
-                          borderRadius: 6,
-                        }}
-                      >
-                        <p style={{ margin: "0 0 0.5rem", fontWeight: 600 }}>
-                          {listing.externalListingId}{" "}
-                          {uploaded ? (
-                            <span style={{ color: "#16a34a", fontWeight: 400 }}>
-                              — packet uploaded ✓
-                            </span>
-                          ) : (
-                            <span style={{ color: "#94a3b8", fontWeight: 400 }}>
-                              — no packet yet
-                            </span>
-                          )}
+                  <div className="alert" style={{ marginBottom: "1rem" }}>
+                    <strong>Batch run setup.</strong> Create one encrypted packet per selected listing.
+                    The agent run will evaluate the selected batch and apply only where the mandate allows.
+                  </div>
+
+                  <div className="card" data-testid="packet-batch-card" style={{ marginBottom: "1.5rem", boxShadow: "none" }}>
+                    <div className="cluster" style={{ marginBottom: "1rem" }}>
+                      {selectedListings.map((listing) => {
+                        const uploaded = packetResults.has(listing.id);
+                        const active = nextPacketListing?.id === listing.id;
+                        return (
+                          <span
+                            key={listing.id}
+                            className={uploaded ? "badge success" : active ? "badge info" : "badge neutral"}
+                            data-testid={`packet-upload-status-${listing.id}`}
+                          >
+                            {listing.externalListingId}: {uploaded ? "packet uploaded" : active ? "ready to upload" : "waiting"}
+                          </span>
+                        );
+                      })}
+                    </div>
+
+                    {nextPacketListing ? (
+                      <div data-testid={`packet-card-${nextPacketListing.id}`}>
+                        <h3 style={{ marginTop: 0 }}>Packet for {nextPacketListing.externalListingId}</h3>
+                        <p className="muted" style={{ marginTop: 0 }}>
+                          This single form is reused for each selected listing so the page stays focused.
                         </p>
                         <PacketBuilder
                           mandateId={packetMandateId}
-                          listingObjectId={listing.listingObjectId}
-                          providerListingId={listing.id}
+                          listingObjectId={nextPacketListing.listingObjectId}
+                          providerListingId={nextPacketListing.id}
+                          showAgentRunLink={false}
                           onComplete={(result) => {
-                            setPacketResults((prev) => new Map(prev).set(listing.id, result));
+                            setPacketResults((prev) => new Map(prev).set(nextPacketListing.id, result));
                             // Keep backward-compat lastPacketMandateId so agent page
                             // still resolves the mandate via priority-2 source.
                             demoSession.savePacket(
@@ -424,28 +425,54 @@ export default function RenterPage() {
                           }}
                         />
                       </div>
-                    );
-                  })}
+                    ) : (
+                      <div className="alert success" data-testid="all-packets-uploaded">
+                        <strong>All selected listings have encrypted packets.</strong> You can start the batch agent run.
+                        <div className="stack" style={{ marginTop: "1rem", gap: 8 }}>
+                          {selectedListings.map((listing) => {
+                            const result = packetResults.get(listing.id);
+                            if (!result) return null;
+                            return (
+                              <div key={listing.id} data-testid={`packet-uploaded-${listing.id}`}>
+                                <strong>{listing.externalListingId}</strong>: <code>{result.walrusBlobId}</code>
+                                <br />
+                                <span className="muted">Hash: <code>{result.packetHash}</code></span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <p data-testid="privacy-confirmation" style={{ marginBottom: 0, marginTop: 8 }}>
+                          Only ciphertext was uploaded. Plaintext never sent to provider API.
+                        </p>
+                      </div>
+                    )}
+                  </div>
 
-                  {packetResults.size > 0 && (
+                  {packetResults.size === selectedListings.length ? (
                     <p style={{ marginTop: "0.5rem" }}>
-                      <a
-                        href={`/agent?mandateId=${encodeURIComponent(packetMandateId)}`}
-                        style={{ fontWeight: 600, fontSize: "1rem" }}
-                      >
-                        Start agent run →
-                      </a>
+                        <a
+                          href={`/agent?mandateId=${encodeURIComponent(packetMandateId)}`}
+                          data-testid="start-agent-run-link"
+                          className="btn"
+                        >
+                          Run agent on selected listings →
+                        </a>
                     </p>
-                  )}
+                  ) : packetResults.size > 0 ? (
+                    <p className="muted" data-testid="batch-run-disabled" style={{ marginTop: "0.5rem" }}>
+                      Upload packets for all selected listings to continue.
+                    </p>
+                  ) : null}
                 </div>
               )}
-            </>
+              </div>
+            </section>
           )}
-        </>
+        </div>
       )}
 
       {/* ── Archived evidence ── */}
-      <details style={{ marginTop: "2.5rem" }}>
+      <details className="evidence-panel" data-testid="developer-evidence" style={{ marginTop: "2.5rem" }}>
         <summary style={{ cursor: "pointer", color: "#64748b", fontSize: "0.85rem" }}>
           Archived evidence (known testnet objects)
         </summary>

@@ -21,7 +21,7 @@ import { readReceipt } from "../../src/live/chain.js";
 test("the landlord inbox is wallet-gated", async ({ page }) => {
   await page.goto("/landlord");
 
-  await expect(page.getByRole("heading", { name: "Landlord — Access Panel", level: 1 })).toBeVisible();
+  await expect(page.getByTestId("landlord-page-title")).toBeVisible();
   await expect(
     page.getByText("Connect your wallet to see applications for your listings."),
   ).toBeVisible();
@@ -34,14 +34,10 @@ test("both demo receipts render live from testnet", async ({ page }) => {
   ]);
 
   await page.goto("/landlord");
-  await page.locator("summary", { hasText: "Demo evidence (known testnet receipts)" }).click();
+  await page.getByTestId("demo-evidence-summary").click();
 
-  const smokePanel = page.locator("section").filter({
-    has: page.getByRole("heading", { name: "Smoke receipt (testnet)" }),
-  });
-  const livePanel = page.locator("section").filter({
-    has: page.getByRole("heading", { name: /^Live agent receipt/ }),
-  });
+  const smokePanel = page.getByTestId("receipt-panel-smoke");
+  const livePanel = page.getByTestId("receipt-panel-live");
 
   for (const [panel, receipt] of [
     [smokePanel, smoke],
@@ -50,7 +46,7 @@ test("both demo receipts render live from testnet", async ({ page }) => {
     // Status 1 is STATUS_SUBMITTED. A withdrawn receipt would read "Withdrawn"
     // and Seal would refuse the packet — the same bit gates both.
     expect(receipt.status).toBe(1);
-    await expect(panel.getByText("✅ Submitted")).toBeVisible();
+    await expect(panel.getByTestId("receipt-status")).toHaveAttribute("data-status", "submitted");
     // `.first()` throughout: the agent and provider are the same address on
     // these demo objects, and the access expiry is repeated by the packet
     // panel below the table. Both would otherwise be strict-mode violations.
@@ -69,17 +65,15 @@ test("both demo receipts render live from testnet", async ({ page }) => {
 
 test("the packet panel labels the mock blob and the missing Seal path", async ({ page }) => {
   await page.goto("/landlord");
-  await page.locator("summary", { hasText: "Demo evidence (known testnet receipts)" }).click();
+  await page.getByTestId("demo-evidence-summary").click();
 
-  const livePanel = page.locator("section").filter({
-    has: page.getByRole("heading", { name: /^Live agent receipt/ }),
-  });
+  const livePanel = page.getByTestId("receipt-panel-live");
 
-  await expect(livePanel.getByText("Encrypted application packet")).toBeVisible();
-  await expect(livePanel.getByText("Mock blob — no real storage")).toBeVisible();
+  await expect(livePanel.getByTestId("packet-panel")).toBeVisible();
+  await expect(livePanel.getByTestId("blob-mode-badge").last()).toHaveAttribute("data-mode", "mock");
   // NEXT_PUBLIC_ENCRYPTION_MODE is pinned to mock for this tier, so the panel
   // must say so rather than offering a Seal flow it cannot complete.
-  await expect(livePanel.getByRole("alert")).toContainText("Seal fallback mode");
+  await expect(livePanel.getByTestId("seal-mode-alert")).toContainText("Seal fallback mode");
   await expect(
     livePanel.getByRole("button", { name: "Request access (sign session key)" }),
   ).toHaveCount(0);

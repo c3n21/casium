@@ -35,7 +35,7 @@ test("the mandate panel is filled from the live testnet object", async ({ page }
     has: page.getByRole("heading", { name: "Mandate", exact: true }),
   });
 
-  await expect(mandatePanel.getByText("✅ Active")).toBeVisible();
+  await expect(mandatePanel.getByTestId("mandate-status")).toContainText("Active");
   await expect(mandatePanel.getByText("Remaining applications")).toBeVisible();
   // Mandate scope as published on chain: max €1800/month, Lisbon-area only.
   await expect(mandatePanel.getByText("€1800 / month")).toBeVisible();
@@ -55,14 +55,14 @@ test("a packet uploaded in the browser is stored listing-scoped by the real prov
   await page.goto("/renter");
   await page.getByRole("checkbox", { name: new RegExp(listing.externalListingId) }).check();
 
-  await expect(page.getByText("Synthetic data only.")).toBeVisible();
+  await expect(page.getByTestId("synthetic-data-badge")).toBeVisible();
   await expect(page.getByText("[MOCK encryption — AES-GCM, key in browser only]")).toBeVisible();
 
   await fillPacketForm(page);
   await page.getByRole("button", { name: "Encrypt and upload packet" }).click();
 
-  await expect(page.getByText("Packet uploaded", { exact: true })).toBeVisible();
-  await expect(page.getByText(`${listing.externalListingId} — packet uploaded ✓`)).toBeVisible();
+  await expect(page.getByTestId(`packet-uploaded-${listing.id}`)).toBeVisible();
+  await expect(page.getByTestId(`packet-upload-status-${listing.id}`)).toContainText("packet uploaded");
 
   const [stored, ...rest] = await packetsForMandate(request, mandateId);
   expect(rest).toHaveLength(0);
@@ -96,11 +96,15 @@ test("each selected listing gets its own packet and its own agent target", async
   await page.getByRole("checkbox", { name: new RegExp(first.externalListingId) }).check();
   await page.getByRole("checkbox", { name: new RegExp(second.externalListingId) }).check();
 
-  const uploadButtons = page.getByRole("button", { name: "Encrypt and upload packet" });
-  await uploadButtons.nth(0).click();
-  await expect(page.getByText(`${first.externalListingId} — packet uploaded ✓`)).toBeVisible();
-  await uploadButtons.nth(1).click();
-  await expect(page.getByText(`${second.externalListingId} — packet uploaded ✓`)).toBeVisible();
+  await page.getByRole("button", { name: "Encrypt and upload packet" }).click();
+  await expect(page.getByTestId(`packet-upload-status-${first.id}`)).toContainText("packet uploaded");
+  await expect(page.getByTestId(`packet-upload-status-${second.id}`)).toContainText("ready to upload");
+  await expect(page.getByTestId("batch-run-disabled")).toContainText(
+    "Upload packets for all selected listings to continue.",
+  );
+  await expect(page.getByTestId("start-agent-run-link")).toHaveCount(0);
+  await page.getByRole("button", { name: "Encrypt and upload packet" }).click();
+  await expect(page.getByTestId(`packet-upload-status-${second.id}`)).toContainText("packet uploaded");
 
   const stored = await packetsForMandate(request, mandateId);
   expect(stored.map((packet) => packet.providerListingId).sort()).toEqual(
@@ -110,7 +114,7 @@ test("each selected listing gets its own packet and its own agent target", async
   // registered twice under two keys.
   expect(new Set(stored.map((packet) => packet.walrusBlobId)).size).toBe(2);
 
-  await expect(page.getByRole("link", { name: "Start agent run →" })).toHaveAttribute(
+  await expect(page.getByTestId("start-agent-run-link")).toHaveAttribute(
     "href",
     `/agent?mandateId=${encodeURIComponent(mandateId)}`,
   );

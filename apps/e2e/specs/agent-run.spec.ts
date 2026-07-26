@@ -18,9 +18,7 @@ import type { Page } from "@playwright/test";
  * archived "Smoke run: …" sections.
  */
 function runSection(page: Page) {
-  return page.locator("section").filter({
-    has: page.getByRole("heading", { name: /^Run: / }),
-  });
+  return page.getByTestId("active-run-section");
 }
 
 function packet(providerListingId: string, walrusBlobId: string) {
@@ -38,14 +36,14 @@ test.describe("agent operator", () => {
   test("reports the agent as online with its address and agentkit mode", async ({ page }) => {
     await page.goto("/agent");
 
-    await expect(page.getByText("Agent online")).toBeVisible();
-    await expect(page.getByText("agentkit: mock")).toBeVisible();
+    await expect(page.getByTestId("agent-health-status")).toContainText("Agent online");
+    await expect(page.getByTestId("agentkit-mode")).toContainText("mock");
   });
 
   test("shows no-run guidance when no mandate has been handed off", async ({ page }) => {
     await page.goto("/agent");
 
-    await expect(page.getByText("No active mandate.")).toBeVisible();
+    await expect(page.getByTestId("no-mandate-empty")).toContainText("No active mandate.");
     await expect(page.getByRole("button", { name: "Start run" })).toHaveCount(0);
   });
 
@@ -84,7 +82,7 @@ test.describe("agent operator", () => {
     await section.getByRole("button", { name: "Start run" }).click();
     await expect(section.getByRole("button", { name: "Running…" })).toBeDisabled();
 
-    await expect(section.getByText("Status: complete", { exact: true })).toBeVisible({
+    await expect(section.getByTestId("run-status")).toHaveAttribute("data-status", "complete", {
       timeout: 20_000,
     });
     await expect(section.getByText("Per-listing results:")).toBeVisible();
@@ -145,7 +143,7 @@ test.describe("agent operator", () => {
     ).toHaveCount(0);
 
     await section.getByRole("button", { name: "Start run" }).click();
-    await expect(section.getByText("Status: ineligible", { exact: true })).toBeVisible({
+    await expect(section.getByTestId("run-status")).toHaveAttribute("data-status", "ineligible", {
       timeout: 20_000,
     });
 

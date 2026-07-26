@@ -31,19 +31,30 @@ export function MandateStatus({ mandateId, ownerCapId, agentCapId, createTxDiges
   if (!mandateId) return null;
 
   return (
-    <section style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "1rem", marginTop: "1.5rem" }}>
-      <h3 style={{ marginTop: 0 }}>Mandate</h3>
+    <section className="card" data-testid="mandate-panel" style={{ marginTop: "1.5rem" }}>
+      <div className="split">
+        <div>
+          <p className="eyebrow">On-chain permission rail</p>
+          <h3 style={{ marginTop: 0 }}>Mandate</h3>
+        </div>
+        {mandate && (
+          <span className={mandate.revoked ? "badge danger" : "badge success"} data-testid="mandate-status">
+            {mandate.revoked ? "Revoked" : "Active"}
+          </span>
+        )}
+      </div>
 
       {isLoading && <p style={{ color: "#64748b" }}>Loading mandate from testnet…</p>}
       {error && <p style={{ color: "#dc2626" }}>Error reading mandate: {error instanceof Error ? error.message : "unknown"}</p>}
 
       {mandate && (
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
+        <div className="table-shell">
+        <table style={{ fontSize: "0.9rem" }}>
           <tbody>
             <Row label="Object ID" value={<ObjectLink id={mandateId} />} />
-            <Row label="Status" value={mandate.revoked ? "⛔ Revoked" : "✅ Active"} />
-            <Row label="Remaining applications" value={String(mandate.remainingApplications)} />
-            <Row label="Max rent" value={`€${mandate.maxMonthlyRentEur} / month`} />
+            <Row label="Status" value={mandate.revoked ? "Revoked" : "Active"} />
+            <Row label="Remaining applications" value={<span data-testid="mandate-remaining-apps">{mandate.remainingApplications}</span>} />
+            <Row label="Max rent" value={<span data-testid="mandate-max-rent">€{mandate.maxMonthlyRentEur} / month</span>} />
             <Row label="Min bedrooms" value={String(mandate.minBedrooms)} />
             <Row label="Agent Sui address" value={<code style={{ wordBreak: "break-all" }}>{mandate.agentSui}</code>} />
             {ownerCapId && <Row label="OwnerCap" value={<ObjectLink id={ownerCapId} />} />}
@@ -51,6 +62,7 @@ export function MandateStatus({ mandateId, ownerCapId, agentCapId, createTxDiges
             {createTxDigest && <Row label="Create tx" value={<TxLink digest={createTxDigest} />} />}
           </tbody>
         </table>
+        </div>
       )}
     </section>
   );

@@ -73,6 +73,7 @@ type PacketBuilderProps = {
   listingObjectId?: string; // needed for Seal identity (RD-135)
   providerListingId?: string; // needed for multi-listing packet scoping
   providerApiBase?: string; // defaults to NEXT_PUBLIC_PROVIDER_API_URL or localhost:4021
+  showAgentRunLink?: boolean;
   onComplete?: (result: UploadResult) => void;
 };
 
@@ -81,6 +82,7 @@ export function PacketBuilder({
   listingObjectId,
   providerListingId,
   providerApiBase,
+  showAgentRunLink = true,
   onComplete,
 }: PacketBuilderProps) {
   const suiClient = useCurrentClient();
@@ -226,38 +228,38 @@ export function PacketBuilder({
       : "[MOCK encryption — AES-GCM, key in browser only]";
 
   return (
-    <section style={{ fontFamily: "system-ui", maxWidth: 640, margin: "1rem 0" }}>
-      <div role="alert" style={{ background: "#fef3cd", border: "1px solid #f0c040", borderRadius: 4, padding: "0.75rem 1rem", marginBottom: "1.5rem" }}>
+    <section className="stack" style={{ maxWidth: 640, margin: "1rem 0" }}>
+      <div role="alert" className="alert warn" data-testid="synthetic-data-badge">
         <strong>Synthetic data only.</strong> No real identity, financial, or tenant-screening data.
       </div>
 
-      <p style={{ color: "#555", marginTop: 0 }}>
+      <p className="muted" style={{ marginTop: 0 }} data-testid="encryption-mode-badge">
         Encryption: <code>{encryptionBadge}</code>
       </p>
 
       <label>
         Renter name (synthetic)
-        <input type="text" value={form.renterName ?? "Alice Demo"} onChange={(e) => setForm((f) => ({ ...f, renterName: e.target.value }))} style={inputStyle} />
+        <input data-testid="renter-name-input" type="text" value={form.renterName ?? "Alice Demo"} onChange={(e) => setForm((f) => ({ ...f, renterName: e.target.value }))} style={inputStyle} />
       </label>
 
       <label style={{ display: "block", marginTop: 12 }}>
         Monthly net salary (EUR)
-        <input type="number" value={form.payslipMonthlyNetEur ?? 3200} onChange={(e) => setForm((f) => ({ ...f, payslipMonthlyNetEur: Number(e.target.value) }))} style={inputStyle} />
+        <input data-testid="salary-input" type="number" value={form.payslipMonthlyNetEur ?? 3200} onChange={(e) => setForm((f) => ({ ...f, payslipMonthlyNetEur: Number(e.target.value) }))} style={inputStyle} />
       </label>
 
       <label style={{ display: "block", marginTop: 12 }}>
         Cover letter
-        <textarea value={form.coverLetter ?? "I am a reliable tenant…"} onChange={(e) => setForm((f) => ({ ...f, coverLetter: e.target.value }))} rows={3} style={{ ...inputStyle, fontFamily: "inherit" }} />
+        <textarea data-testid="cover-letter-input" value={form.coverLetter ?? "I am a reliable tenant…"} onChange={(e) => setForm((f) => ({ ...f, coverLetter: e.target.value }))} rows={3} style={{ ...inputStyle, fontFamily: "inherit" }} />
       </label>
 
-      <button onClick={handleBuild} disabled={stage.type === "encrypting" || stage.type === "uploading"} style={{ ...buttonStyle, marginTop: 12 }}>
+      <button data-testid={providerListingId ? `upload-packet-button-${providerListingId}` : "packet-upload-button"} data-ui="button" onClick={handleBuild} disabled={stage.type === "encrypting" || stage.type === "uploading"} style={{ marginTop: 12 }}>
         {stage.type === "encrypting" ? "Encrypting…" : stage.type === "uploading" ? "Uploading…" : "Encrypt and upload packet"}
       </button>
 
       {stage.type === "error" && <p role="alert" style={{ color: "red", marginTop: 12 }}>Error: {stage.message}</p>}
 
       {stage.type === "done" && (
-        <div style={{ marginTop: 24, background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 4, padding: "1rem" }}>
+        <div className="alert success" style={{ marginTop: 24 }} data-testid={providerListingId ? `packet-uploaded-${providerListingId}` : "packet-uploaded"}>
           <strong>Packet uploaded</strong>
           <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 8 }}>
             <tbody>
@@ -266,17 +268,19 @@ export function PacketBuilder({
               <tr><td style={{ fontWeight: 600, paddingRight: 12 }}>Size</td><td>{stage.result.sizeBytes} bytes</td></tr>
             </tbody>
           </table>
-          <p style={{ color: "#166534", marginBottom: 0, marginTop: 8 }}>Only ciphertext was uploaded. Plaintext never sent to provider API.</p>
+          <p data-testid="privacy-confirmation" style={{ marginBottom: 0, marginTop: 8 }}>Only ciphertext was uploaded. Plaintext never sent to provider API.</p>
           {/* Hand off to the agent with this packet's mandate already filled in — the two
               pages must name the same mandate, and copying a 66-char ID by hand is where
               that goes wrong. */}
-          <p style={{ marginBottom: 0, marginTop: 12 }}>
-            <a href={`/agent?mandateId=${encodeURIComponent(mandateId)}`} style={{ fontWeight: 600 }}>
-              Start the agent run on this packet →
-            </a>
-          </p>
+          {showAgentRunLink && (
+            <p style={{ marginBottom: 0, marginTop: 12 }}>
+              <a href={`/agent?mandateId=${encodeURIComponent(mandateId)}`} data-testid="start-agent-run-link" style={{ fontWeight: 600 }}>
+                Start the agent run on this packet →
+              </a>
+            </p>
+          )}
           {stage.encrypted && stage.key && (
-            <button onClick={handleVerifyDecrypt} style={{ ...buttonStyle, marginTop: 12, background: "#16a34a" }}>Verify decryption round-trip</button>
+            <button data-ui="button" onClick={handleVerifyDecrypt} style={{ marginTop: 12, background: "#16a34a" }}>Verify decryption round-trip</button>
           )}
         </div>
       )}

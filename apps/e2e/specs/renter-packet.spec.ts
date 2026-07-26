@@ -32,7 +32,7 @@ test("uploads an encrypted packet and shows the blob ID, hash and mock badge", a
   await page.goto("/renter");
   await page.getByRole("checkbox", { name: /lisbon-demo-1/ }).check();
 
-  await expect(page.getByText("Synthetic data only.")).toBeVisible();
+  await expect(page.getByTestId("synthetic-data-badge")).toBeVisible();
   await expect(
     page.getByText("[MOCK encryption — AES-GCM, key in browser only]"),
   ).toBeVisible();
@@ -40,7 +40,7 @@ test("uploads an encrypted packet and shows the blob ID, hash and mock badge", a
   await fillPacketForm(page);
   await page.getByRole("button", { name: "Encrypt and upload packet" }).click();
 
-  await expect(page.getByText("Packet uploaded", { exact: true })).toBeVisible();
+  await expect(page.getByTestId(`packet-uploaded-${LISBON_LISTING.id}`)).toBeVisible();
   await expect(page.getByText(/^mock:/)).toBeVisible();
   await expect(
     page.getByText("Only ciphertext was uploaded. Plaintext never sent to provider API."),
@@ -64,7 +64,7 @@ test("the provider registration carries no plaintext from the form", async ({
   await page.getByRole("checkbox", { name: /lisbon-demo-1/ }).check();
   await fillPacketForm(page);
   await page.getByRole("button", { name: "Encrypt and upload packet" }).click();
-  await expect(page.getByText("Packet uploaded", { exact: true })).toBeVisible();
+  await expect(page.getByTestId(`packet-uploaded-${LISBON_LISTING.id}`)).toBeVisible();
 
   const [registration] = providerApi.packetRegistrations();
   expect(registration).toBeDefined();
@@ -113,14 +113,18 @@ test("uploads separate packets for each selected listing and saves the target ha
   await page.getByRole("checkbox", { name: /lisbon-demo-1/ }).check();
   await page.getByRole("checkbox", { name: /lisbon-demo-2/ }).check();
 
-  await expect(page.getByText("lisbon-demo-1 — no packet yet")).toBeVisible();
-  await expect(page.getByText("lisbon-demo-2 — no packet yet")).toBeVisible();
+  await expect(page.getByTestId(`packet-upload-status-${LISBON_LISTING.id}`)).toContainText("ready to upload");
+  await expect(page.getByTestId(`packet-upload-status-${LISBON_SECOND_LISTING.id}`)).toContainText("waiting");
 
-  const uploadButtons = page.getByRole("button", { name: "Encrypt and upload packet" });
-  await uploadButtons.nth(0).click();
-  await expect(page.getByText("lisbon-demo-1 — packet uploaded ✓")).toBeVisible();
-  await uploadButtons.nth(1).click();
-  await expect(page.getByText("lisbon-demo-2 — packet uploaded ✓")).toBeVisible();
+  await page.getByRole("button", { name: "Encrypt and upload packet" }).click();
+  await expect(page.getByTestId(`packet-upload-status-${LISBON_LISTING.id}`)).toContainText("packet uploaded");
+  await expect(page.getByTestId(`packet-upload-status-${LISBON_SECOND_LISTING.id}`)).toContainText("ready to upload");
+  await expect(page.getByTestId("batch-run-disabled")).toContainText(
+    "Upload packets for all selected listings to continue.",
+  );
+  await expect(page.getByTestId("start-agent-run-link")).toHaveCount(0);
+  await page.getByRole("button", { name: "Encrypt and upload packet" }).click();
+  await expect(page.getByTestId(`packet-upload-status-${LISBON_SECOND_LISTING.id}`)).toContainText("packet uploaded");
 
   const registrations = providerApi.packetRegistrations();
   expect(registrations.map((packet) => packet.providerListingId)).toEqual([
@@ -128,7 +132,7 @@ test("uploads separate packets for each selected listing and saves the target ha
     LISBON_SECOND_LISTING.id,
   ]);
 
-  await expect(page.getByRole("link", { name: "Start agent run →" })).toHaveAttribute(
+  await expect(page.getByTestId("start-agent-run-link")).toHaveAttribute(
     "href",
     `/agent?mandateId=${encodeURIComponent(LIVE_AGENT_RUN.mandateId)}`,
   );

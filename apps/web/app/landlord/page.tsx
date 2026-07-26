@@ -71,14 +71,15 @@ export default function LandlordPage() {
   );
 
   return (
-    <main style={{ maxWidth: 720, margin: "2rem auto", padding: "0 1rem" }}>
-      <h1>Landlord — Access Panel</h1>
-      <p style={{ color: "#64748b" }}>
+    <main className="page">
+      <p className="eyebrow">Landlord review</p>
+      <h1 className="page-title" data-testid="landlord-page-title">Landlord Access Panel</h1>
+      <p className="lede">
         Review verified Sui application receipts. The receipt proves the agent acted within mandate scope.
       </p>
 
       {/* Live-data section: wallet-connected landlord view */}
-      <section style={{ marginBottom: "2rem" }}>
+      <section className="card" style={{ marginBottom: "2rem" }}>
         <h2>Your Applications</h2>
         {!connectedAddress ? (
           <p style={{ color: "#64748b" }}>Connect your wallet to see applications for your listings.</p>
@@ -102,14 +103,14 @@ export default function LandlordPage() {
       </section>
 
       {/* Demo evidence panel — explicitly labeled known testnet objects */}
-      <details style={{ marginTop: "1rem" }}>
-        <summary style={{ cursor: "pointer", color: "#64748b", fontSize: "0.9rem", fontWeight: 600 }}>
+      <details className="evidence-panel" data-testid="developer-evidence" style={{ marginTop: "1rem" }}>
+        <summary data-testid="demo-evidence-summary" style={{ fontSize: "0.9rem" }}>
           Demo evidence (known testnet receipts)
         </summary>
 
         <div style={{ marginTop: "1rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
           {/* Smoke receipt */}
-          <section style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "1rem" }}>
+          <section className="card" data-testid="receipt-panel-smoke" style={{ boxShadow: "none" }}>
             <h3 style={{ marginTop: 0, fontSize: "1rem" }}>Smoke receipt (testnet)</h3>
             <p style={{ fontSize: "0.85rem", color: "#64748b", margin: "0 0 0.5rem" }}>
               Object:{" "}
@@ -131,7 +132,7 @@ export default function LandlordPage() {
           </section>
 
           {/* Live agent receipt */}
-          <section style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "1rem" }}>
+          <section className="card" data-testid="receipt-panel-live" style={{ boxShadow: "none" }}>
             <h3 style={{ marginTop: 0, fontSize: "1rem" }}>Live agent receipt (RD-108, testnet)</h3>
             <p style={{ fontSize: "0.85rem", color: "#64748b", margin: "0 0 0.5rem" }}>
               Object:{" "}
@@ -194,12 +195,15 @@ function ReceiptTable({ receipt }: { receipt: ReceiptData }) {
     blobExpiryEstimate < accessExpiry;
 
   return (
-    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
+    <div className="table-shell">
+    <table style={{ fontSize: "0.9rem" }}>
       <tbody>
         <Row
           label="Status"
           value={
-            receipt.status === 1 ? "✅ Submitted" : receipt.status === 2 ? "Withdrawn" : String(receipt.status)
+            <span className={receipt.status === 1 ? "badge success" : "badge neutral"} data-testid="receipt-status" data-status={receipt.status === 1 ? "submitted" : receipt.status === 2 ? "withdrawn" : String(receipt.status)}>
+              {receipt.status === 1 ? "Submitted" : receipt.status === 2 ? "Withdrawn" : String(receipt.status)}
+            </span>
           }
         />
         <Row
@@ -225,7 +229,7 @@ function ReceiptTable({ receipt }: { receipt: ReceiptData }) {
         />
         <Row label="Submitted" value={new Date(receipt.submittedAtMs).toISOString()} />
         <Row label="Access expires" value={accessExpiry.toISOString()} />
-        <Row label="Storage mode" value={storageLabel} />
+        <Row label="Storage mode" value={<span data-testid="blob-mode-badge" data-mode={isMock ? "mock" : "live"}>{storageLabel}</span>} />
         {blobExpiryEstimate && (
           <Row
             label="Blob expiry (est.)"
@@ -240,6 +244,7 @@ function ReceiptTable({ receipt }: { receipt: ReceiptData }) {
         )}
       </tbody>
     </table>
+    </div>
   );
 }
 

@@ -41,8 +41,8 @@ test("the provider dashboard renders the seeded listings from the live API", asy
   await expect(page.getByRole("heading", { name: "Provider Dashboard", level: 1 })).toBeVisible();
   // The table's first column is the provider's internal ID, so rows are named
   // by that — not by the external listing ID shown elsewhere in the app.
-  await expect(page.getByRole("row", { name: /listing_lisbon_eligible/ })).toContainText("Active");
-  await expect(page.getByRole("row", { name: /listing_porto_ineligible/ })).toContainText(
+  await expect(page.getByTestId("listing-row-listing_lisbon_eligible")).toContainText("Active");
+  await expect(page.getByTestId("listing-row-listing_porto_ineligible")).toContainText(
     "Ineligible",
   );
 });
@@ -55,7 +55,7 @@ test("a newly created listing appears in the dashboard and keeps its Sui object 
 
   await page.goto("/provider");
 
-  const row = page.getByRole("row", { name: new RegExp(created.id) });
+  const row = page.getByTestId(`listing-row-${created.id}`);
   await expect(row).toBeVisible();
   await expect(row).toContainText("Lisbon");
   await expect(row).toContainText("€1650");
