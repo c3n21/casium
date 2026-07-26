@@ -16,7 +16,7 @@ Ticket detail lives in the epic files. `spec/development-spec.md` is the impleme
 | `plan/backlog-e2e.md` | RD-141 … RD-152 | **Epic E — Playwright E2E Tests.** Active. Not front-to-back: start with Phase 1 (RD-141 → RD-144 → RD-147, RD-145, RD-146, RD-149), which needs no wallet. See that file's *Recommended Order*. |
 | `plan/backlog-identity.md` | RD-161 … RD-167 | **Epic I — Agent Identity Binding.** Active. Closes the gap where the renter hand-types the agent's Sui and EVM addresses and nothing ever reads `agent_evm`; RD-167 removes the legacy smoke mandate as the live-demo default. Start with RD-167 if rehearsing the real testnet flow. |
 | `plan/backlog-deploy.md` | RD-171 … RD-179 | **Epic D — Demo Deployment.** Active. Hosting the three services on the NixOS VPS so a judge can open a URL. Everything runs on `localhost` today and there is no Dockerfile in the repo. Start with RD-171 (a decision the user must make) ‖ RD-172. |
-| `plan/backlog-landlord.md` | RD-181 … RD-188 | **Epic L — The Landlord Is A Real Party.** Active. Epic S shipped the Seal policy; the app never exercises it. The decrypt UI is wired only to two hardcoded receipts, provider and landlord are the same address everywhere, and the receipt ID never survives a Postgres read. Start with RD-181 ‖ RD-183 ‖ RD-188 → RD-182. Nothing in it is blocked on the user: RD-182's owner creates the landlord Sui wallet itself under a standing grant — see that file's *Wallet Provisioning* section. |
+| `plan/backlog-landlord.md` | RD-181 … RD-188 | **Epic L — The Landlord Is A Real Party.** Active. RD-181, RD-183, and RD-184 are DONE (2026-07-26): the landlord decrypts real applications in-browser and the wrong wallet is denied by name. Remaining: RD-182 (a distinct landlord wallet exists and owns the seeded Lisbon listing, but it is still the same browser wallet the renter uses), RD-185 server-side scoping, RD-186 access grants, RD-187 E2E + docs, RD-188 address validation. Start with RD-188 ‖ RD-185. |
 | `plan/backlog-stretch.md` | RD-202, RD-203 | Optional. RD-201 superseded by Epic S. |
 
 ## ⚠️ Open Thread — RD-180 AgentKit Mode Mismatch (deferred to last)
@@ -81,7 +81,7 @@ environment variables and hardcoded fixtures rather than by code.
 | Agent | Deterministic rules, real signing, receipt parsing | Service mode and cap discovery — mandate and cap come from env (RD-112, RD-113) |
 | Web | Wallet connect, mandate/listing PTBs, packet encryption UI | Live data — pages read hardcoded fixtures (RD-114); `/agent` route does not exist (RD-116) |
 | Walrus | Adapter interface, mock, CLI adapter | Any byte ever reaching the network; a browser-usable adapter (Epic W) |
-| Seal | `seal_approve_packet` deployed and tested, client wrapper, renter encryption, landlord decrypt UI (Epic S) | The app never exercises the policy: the decrypt UI is mounted only on two hardcoded receipts, and provider == landlord in every fixture (Epic L) |
+| Seal | `seal_approve_packet` deployed and tested; renter encryption; landlord decrypts real applications in-browser, wrong wallet denied by name (RD-184, 2026-07-26) | Renter and landlord are still one browser wallet, so the denial half is proven with a wrong *receipt* rather than a second signer; no automated coverage of the decrypt path (RD-187) |
 
 ## Coordination Rules
 

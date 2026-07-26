@@ -60,6 +60,51 @@ const WALRUS_CONFIGURED_EPOCHS = Number(process.env["NEXT_PUBLIC_WALRUS_EPOCHS"]
 // Clock object ID on Sui
 const CLOCK_OBJECT_ID = "0x0000000000000000000000000000000000000000000000000000000000000006";
 
+/**
+ * `seal_approve_packet` abort codes (packages/move/sources/rental.move:31-36).
+ * A bare number tells the landlord nothing; the name says which of the six
+ * policy checks refused them.
+ */
+const SEAL_ABORT_NAMES: Record<string, string> = {
+  "17": "ESEAL_WRONG_SENDER — you are not the landlord named on this receipt",
+  "18": "ESEAL_WRONG_IDENTITY — the Seal identity does not match this receipt",
+  "19": "ESEAL_WRONG_STATUS — the application was withdrawn",
+  "20": "ESEAL_EXPIRED_ACCESS — the on-chain access window has closed",
+  "21": "ESEAL_WRONG_MANDATE — the supplied mandate is not the receipt's mandate",
+  "22": "ESEAL_MANDATE_REVOKED — the renter revoked the mandate",
+};
+
+/**
+ * Explain a key-server refusal from on-chain facts.
+ *
+ * Key servers return a generic "does not have access" error — they dry-run
+ * `seal_approve_packet` themselves and never report which assert aborted. But
+ * three of the six checks read fields of the receipt we already hold, so when
+ * one of those is false we can name the abort as fact rather than as a guess.
+ *
+ * Returns null when every locally checkable condition passes — the refusal then
+ * came from a check we cannot see (identity, mandate mismatch, or a revoked
+ * mandate, which lives on a different object), and we must not invent a reason.
+ */
+function diagnosePolicyDenial(
+  receipt: ApplicationReceipt,
+  connectedAddress: string | null,
+): { code: string; name: string } | null {
+  if (
+    connectedAddress !== null &&
+    receipt.landlord.toLowerCase() !== connectedAddress.toLowerCase()
+  ) {
+    return { code: "17", name: SEAL_ABORT_NAMES["17"] as string };
+  }
+  if (receipt.status !== 1) {
+    return { code: "19", name: SEAL_ABORT_NAMES["19"] as string };
+  }
+  if (Date.now() > receipt.accessExpiresAtMs) {
+    return { code: "20", name: SEAL_ABORT_NAMES["20"] as string };
+  }
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -344,11 +389,25 @@ export function PacketViewer({ receipt }: PacketViewerProps) {
       {stage.type === "error" && (
         <div role="alert" style={{ marginTop: 10, color: "#dc2626", fontSize: "0.85rem" }}>
           <strong>Decryption failed:</strong> {stage.message}
-          {stage.abortCode && (
-            <span style={{ marginLeft: 6, fontFamily: "monospace" }}>
-              (Move abort code: {stage.abortCode})
-            </span>
-          )}
+          {(() => {
+            // Prefer an abort code if one ever reaches us; otherwise fall back to
+            // the locally verifiable diagnosis.
+            const named =
+              stage.abortCode && SEAL_ABORT_NAMES[stage.abortCode]
+                ? { code: stage.abortCode, name: SEAL_ABORT_NAMES[stage.abortCode] as string }
+                : diagnosePolicyDenial(receipt, account?.address ?? null);
+            if (!named) return null;
+            return (
+              <div
+                data-testid="seal-abort-name"
+                data-abort-code={named.code}
+                style={{ marginTop: 6 }}
+              >
+                Denied by the on-chain policy: <strong>{named.name}</strong> (Move abort code{" "}
+                {named.code}).
+              </div>
+            );
+          })()}
           <br />
           <button
             onClick={handleRequestAccess}

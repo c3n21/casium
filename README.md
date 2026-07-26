@@ -27,7 +27,7 @@ Walrus                  → Encrypted document packet (mock/http/cli modes; live
 | Sui | Live testnet Move package, on-chain mandate/listing/receipt objects | `packages/contracts-config/testnet.json`, `docs/sui-deployment.md` |
 | World | Live AgentKit verification on World Chain (`eip155:480`) | `docs/world-agentkit.md` |
 | Walrus | Live testnet HTTP upload verified; mock and CLI modes remain labeled | `docs/walrus-adapter.md`, blob `84g0OLjpe_P0nZYUqz2Vwy82C4EtTec0dNCXliXZCDc` |
-| Seal | Policy-controlled access path implemented; `seal_approve_packet` deployed in upgraded testnet package | `docs/seal.md`, upgrade tx `BLqv4XRxg5MEGAt4jDr1v2eeNzuauQ7MhixH5971HgyS` |
+| Seal | Policy-controlled access exercised end to end: landlord decrypted a live application in-browser, wrong wallet denied with `ESEAL_WRONG_SENDER` | `docs/seal.md` → *Live Browser Evidence*, receipt `0x80122d30…`, upgrade tx `BLqv4XRxg5MEGAt4jDr1v2eeNzuauQ7MhixH5971HgyS` |
 
 ## Packages
 

@@ -118,7 +118,7 @@ withhold the decryption key.
 
 | Case | Trigger | Abort code | Abort name | Proof type |
 |---|---|---|---|---|
-| 1 | Wallet is not `receipt.landlord` | 17 | `ESEAL_WRONG_SENDER` | Move test |
+| 1 | Wallet is not `receipt.landlord` | 17 | `ESEAL_WRONG_SENDER` | Move test **+ live browser** (see below) |
 | 2 | `id` bytes do not match `mandate_id ‖ listing_id` | 18 | `ESEAL_WRONG_IDENTITY` | Move test |
 | 3 | `receipt.status == STATUS_WITHDRAWN` | 19 | `ESEAL_WRONG_STATUS` | Move test |
 | 4 | `clock.timestamp_ms() > receipt.access_expires_at_ms` | 20 | `ESEAL_EXPIRED_ACCESS` | Move test |
@@ -135,6 +135,46 @@ Cases 1–6 are proven by Move unit tests in `packages/move/tests/seal_tests.mov
 28 tests pass (including 7 `seal_tests`). Case 7 requires a live browser session with a Slush
 wallet — see `docs/browser-testing.md`. `scripts/seal-denial-demo.mjs` documents all seven cases
 and can be run with `node scripts/seal-denial-demo.mjs`.
+
+---
+
+## Live Browser Evidence (RD-184, 2026-07-26)
+
+The landlord inbox on `/landlord` now mounts `PacketViewer` against every application that carries
+a verified receipt, so the policy is exercised by the demo path rather than only by unit tests.
+Both halves were run in a real browser against testnet with `NEXT_PUBLIC_ENCRYPTION_MODE=seal` and
+`NEXT_PUBLIC_WALRUS_MODE=http`.
+
+**Authorized decrypt (allow path).**
+
+| What | Value |
+|---|---|
+| Application | `app_108c8f608f3f` |
+| Mandate | `0x8e79ebdec457fd11f402943e617b1caa50395b5e043ff233c1a62b8383d4e371` |
+| Listing | `0xa22bfc75b52681f53b762d85120076f9c45b268f2232fc275c66822368f53dcf` |
+| Receipt | `0x80122d304d4e75743a4ee39ec6d6d29c98fdb86fa7ce3d3dfb720a785522e60d` |
+| Submit tx | `HzFhcNeLf83kmrLz2tNFXpyi4k8YXcjFyNFf3QWEiNXV` |
+| Walrus blob | `ZjKENP5vQbR9iqg0WB5bRhmzpxb8OLMSobAKbN6buag` (861 bytes, live testnet) |
+| Signer | landlord `0x4541d030e1c71bc107aebb930d573c49127551cf458f69e721686acf91efc5e0` |
+| Result | One `SessionKey` signature, then the synthetic packet rendered in-browser |
+
+The ciphertext was independently downloaded from the public aggregator: 861 bytes, beginning with
+the v1 package namespace followed by the mandate ID, and containing none of the plaintext field
+values. Ciphertext is public; only the key is gated.
+
+**Denied decrypt (case 1, live).** The same wallet against the smoke receipt
+`0xc46d42744b7381447851f9f2adb6cf32322ab4bd6aba243e925597418899ad20`, whose `landlord` is the
+publisher address, was refused by the key servers after a valid `SessionKey` signature. The UI names
+it: *"Denied by the on-chain policy: ESEAL_WRONG_SENDER — you are not the landlord named on this
+receipt (Move abort code 17)."*
+
+**How the abort is named — read this before trusting the label.** Key servers return a generic
+`User does not have access to one or more of the requested keys`; they dry-run
+`seal_approve_packet` themselves and **never report which assert aborted**. `PacketViewer`
+therefore names an abort only when the corresponding condition is independently false in the
+on-chain receipt it already holds — sender (17), status (19), and expiry (20). The remaining three
+checks (18, 21, 22) cannot be distinguished client-side, and in that case the raw key-server
+message is shown with no code attached rather than a guess.
 
 ---
 
@@ -204,7 +244,7 @@ by both the original and the upgraded package — no object-model change was req
 
 | Case | Trigger | Expected Move abort | Proof type |
 |---|---|---|---|
-| Wrong landlord wallet | Wallet != `receipt.landlord` | `ESEAL_WRONG_SENDER` (17) | Move test |
+| Wrong landlord wallet | Wallet != `receipt.landlord` | `ESEAL_WRONG_SENDER` (17) | Move test + live browser (RD-184) |
 | Identity mismatch | Wrong `mandate_id` or `listing_id` in `id` | `ESEAL_WRONG_IDENTITY` (18) | Move test |
 | Withdrawn receipt | `receipt.status == STATUS_WITHDRAWN` | `ESEAL_WRONG_STATUS` (19) | Move test |
 | Expired access | `clock.timestamp_ms() > receipt.access_expires_at_ms` | `ESEAL_EXPIRED_ACCESS` (20) | Move test |

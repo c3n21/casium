@@ -274,12 +274,33 @@ by hand.
 
 ---
 
-## Step 9 — Landlord: Verify Receipt (Tab D)
+## Step 9 — Landlord: Verify Receipt And Decrypt The Packet (Tab D)
+
+Connect the **landlord** wallet for this step — the one named on the listing
+(`0x4541d030…` for the seeded Lisbon listing). *Your Applications* filters on the connected address,
+and `seal_approve_packet` compares it against `receipt.landlord`.
 
 1. Open `http://localhost:3000/landlord`.
-2. The smoke receipt loads from testnet.
-3. Observe mandate ID, listing ID, agent address, submission timestamp, access expiry.
-4. Click the object ID and tx links to verify on SuiVision.
+2. Under **Your Applications**, find the application the agent just submitted. Observe the status
+   badge, the human hash, and the ✅ receipt line linking to the object and tx.
+3. Each row with a verified receipt carries an **Encrypted application packet** panel showing the
+   session TTL, the on-chain access expiry, the Walrus blob lifetime, and the blob ID. The receipt
+   behind it is read from chain, not from the provider's JSON — the key servers evaluate the same
+   bytes.
+4. Click **Request access (sign session key)** and approve the personal-message signature. The
+   `SessionKey` is good for 10 minutes; the TTL counts down in the panel.
+5. Click **Decrypt packet**. The synthetic document renders in the browser. Say the line out loud:
+   the provider never held this plaintext, and the landlord got it only because the Move policy
+   approved their wallet.
+6. Click the object ID and tx links to verify on SuiVision.
+
+**Denial half (optional, ~20 seconds).** Expand *Demo evidence* and click **Request access** on the
+smoke receipt — it names the publisher as landlord, so the key servers refuse and the panel reads
+`ESEAL_WRONG_SENDER — you are not the landlord named on this receipt (Move abort code 17)`. Same
+wallet, same signature, different receipt: the difference is entirely on chain.
+
+If the connected wallet is not the receipt's landlord, the row warns before you spend a signature.
+Both outcomes are recorded in `docs/seal.md` → *Live Browser Evidence*.
 
 **Explorer links:**
 - Package: https://testnet.suivision.xyz/package/0x7e0130cdc105d06707f1f3abd4c76aac8211a09a5502692ba454d1b4b758af3d
@@ -321,8 +342,13 @@ This path uses the completion epics added after the original core demo.
 2. The packet is encrypted in the browser and uploaded through the active Walrus adapter.
 3. The browser registers only `{ mandateId, walrusBlobId, packetHash, sizeBytes, encryptionMode }` with the provider API.
 4. Open `/agent`, start a run, and watch the staged pipeline: load mandate, evaluate listing, read packet, reserve, submit, verify.
-5. Open `/landlord`, request Seal access, sign the `SessionKey` message, and decrypt the packet in-browser.
-6. For denial evidence, run `node scripts/seal-denial-demo.mjs`; Move tests prove wrong sender, wrong identity, withdrawn receipt, expired access, wrong mandate, and revoked mandate aborts.
+5. Open `/landlord` **as the listing's landlord wallet**, request Seal access on that application's
+   row, sign the `SessionKey` message, and decrypt the packet in-browser. The decrypt panel hangs
+   off the real application now, not off a fixture receipt.
+6. For denial evidence, click *Request access* on a receipt naming a different landlord — the key
+   servers refuse and the panel names `ESEAL_WRONG_SENDER` (17). Run
+   `node scripts/seal-denial-demo.mjs` for the full annotated matrix; Move tests prove wrong sender,
+   wrong identity, withdrawn receipt, expired access, wrong mandate, and revoked mandate aborts.
 
 **Modes:** `NEXT_PUBLIC_ENCRYPTION_MODE=mock` keeps the AES-GCM fallback clearly labeled. `NEXT_PUBLIC_ENCRYPTION_MODE=seal` uses the upgraded package's `seal_approve_packet` policy. `NEXT_PUBLIC_WALRUS_MODE=mock|http` controls storage in the browser; the live HTTP smoke is recorded in `packages/contracts-config/testnet.json`.
 

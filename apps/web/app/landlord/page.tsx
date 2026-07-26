@@ -13,6 +13,7 @@ import {
   PUBLISHER_ADDRESS,
 } from "@casium/contracts-config";
 import { ApplicationInbox, type ReservedApplication } from "@/components/ApplicationInbox";
+import { ApplicationPacketAccess } from "@/components/ApplicationPacketAccess";
 import { PacketViewer } from "@/components/PacketViewer";
 
 const PROVIDER_API = process.env.NEXT_PUBLIC_PROVIDER_API_URL ?? "http://localhost:4021";
@@ -98,7 +99,14 @@ export default function LandlordPage() {
               </p>
             )}
             {!appsLoading && !appsError && (
-              <ApplicationInbox role="landlord" applications={landlordApplications} onRefetch={() => void refetch()} />
+              <ApplicationInbox
+                role="landlord"
+                applications={landlordApplications}
+                onRefetch={() => void refetch()}
+                renderPacketAccess={(application) => (
+                  <ApplicationPacketAccess key={application.id} application={application} />
+                )}
+              />
             )}
           </>
         )}

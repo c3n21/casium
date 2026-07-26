@@ -33,9 +33,21 @@ type ApplicationInboxProps = {
   role: "provider" | "landlord";
   applications: ReservedApplication[];
   onRefetch?: () => void;
+  /**
+   * Optional per-row slot rendered under the receipt line (RD-184). The landlord
+   * page passes `ApplicationPacketAccess` here. Kept as a render prop so this
+   * component stays free of Sui, Seal, and Walrus imports — `/provider` renders
+   * the same rows without pulling the decrypt path into its bundle.
+   */
+  renderPacketAccess?: (application: ReservedApplication) => React.ReactNode;
 };
 
-export function ApplicationInbox({ role, applications, onRefetch }: ApplicationInboxProps) {
+export function ApplicationInbox({
+  role,
+  applications,
+  onRefetch,
+  renderPacketAccess,
+}: ApplicationInboxProps) {
   const [verifyInputs, setVerifyInputs] = useState<Record<string, { txDigest: string; receiptId: string }>>({});
   const [verifying, setVerifying] = useState<string | null>(null);
   const [verifyErrors, setVerifyErrors] = useState<Record<string, string>>({});
@@ -141,6 +153,8 @@ export function ApplicationInbox({ role, applications, onRefetch }: ApplicationI
               </a>
             </p>
           )}
+
+          {renderPacketAccess?.(a)}
         </div>
       ))}
     </div>
