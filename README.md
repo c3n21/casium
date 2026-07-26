@@ -26,7 +26,7 @@ Walrus                  → Encrypted document packet (mock/http/cli modes; live
 |---|---|---|
 | Sui | Live testnet Move package, on-chain mandate/listing/receipt objects | `packages/contracts-config/testnet.json`, `docs/sui-deployment.md` |
 | World | Live AgentKit verification on World Chain (`eip155:480`) | `docs/world-agentkit.md` |
-| Walrus | Live testnet HTTP upload verified; mock and CLI modes remain labeled | `docs/walrus-adapter.md`, blob `84g0OLjpe_P0nZYUqz2Vwy82C4EtTec0dNCXliXZCDc` |
+| Walrus | Live testnet storage on the demo path: browser uploads ciphertext, the provider re-downloads it and matches the packet hash before accepting; mock and CLI modes remain labeled | `docs/walrus-adapter.md`, demo blob `ZjKENP5vQbR9iqg0WB5bRhmzpxb8OLMSobAKbN6buag` (861 B, hash-verified), first smoke blob `84g0OLjpe_P0nZYUqz2Vwy82C4EtTec0dNCXliXZCDc` |
 | Seal | Policy-controlled access exercised end to end: landlord decrypted a live application in-browser, wrong wallet denied with `ESEAL_WRONG_SENDER` | `docs/seal.md` → *Live Browser Evidence*, receipt `0x80122d30…`, upgrade tx `BLqv4XRxg5MEGAt4jDr1v2eeNzuauQ7MhixH5971HgyS` |
 
 ## Packages
@@ -108,10 +108,17 @@ PROVIDER_STORE=memory
 NEXT_PUBLIC_PROVIDER_API_URL=https://api.zhifan.me
 NEXT_PUBLIC_AGENT_API_URL=https://agent.zhifan.me
 
-# Storage / encryption
-WALRUS_MODE=mock
-NEXT_PUBLIC_WALRUS_MODE=mock
-NEXT_PUBLIC_ENCRYPTION_MODE=mock
+# Storage / encryption — these are the live-demo values, matching the shipped
+# .env.example and apps/web/.env.example. Set all three to `mock` for an
+# offline run; see "Web app: mock vs live packet upload" below.
+# Server side accepts `real` and `http` as the same thing (both select the HTTP
+# adapter). The browser does NOT: apps/web/src/components/PacketBuilder.tsx
+# treats anything other than `http` or `cli` as mock, so writing `real` into
+# NEXT_PUBLIC_WALRUS_MODE silently downgrades uploads to an in-memory Map while
+# the server still reports live. Use `http` for the browser variable.
+WALRUS_MODE=real
+NEXT_PUBLIC_WALRUS_MODE=http
+NEXT_PUBLIC_ENCRYPTION_MODE=seal
 
 # Agent
 AGENT_SERVER_PORT=4022
@@ -156,7 +163,7 @@ after editing, restart `next dev`; a hot reload will not pick them up. Put them 
 | Variable | `mock` (default when unset) | Live |
 |---|---|---|
 | `NEXT_PUBLIC_ENCRYPTION_MODE` | AES-GCM in-browser, key held in page state | `seal` — policy-gated, keys in Seal key servers |
-| `NEXT_PUBLIC_WALRUS_MODE` | in-memory `Map`, blob IDs prefixed `mock:` | `http` — real Walrus testnet publisher/aggregator |
+| `NEXT_PUBLIC_WALRUS_MODE` | in-memory `Map`, blob IDs prefixed `mock:` | `http` — real Walrus testnet publisher/aggregator. **`real` is not accepted here** — only `http` or `cli`; anything else falls through to mock (`PacketBuilder.tsx:18`). The server-side `WALRUS_MODE` does accept `real` as an alias for `http`, so the two variables are not interchangeable. |
 
 With no `.env.local` present, **both default to `mock`** and the Upload Application Packet panel shows
 `[MOCK encryption — AES-GCM, key in browser only]`. The upload still succeeds and still registers with

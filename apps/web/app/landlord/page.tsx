@@ -118,6 +118,24 @@ export default function LandlordPage() {
           Demo evidence (known testnet receipts)
         </summary>
 
+        {/*
+          These two receipts were submitted on 2026-07-25, before the browser
+          uploaded through the live Walrus HTTP adapter, so their blob IDs are
+          `mock:` and say so below. A receipt's walrusBlobId is written on chain
+          at submit time and cannot be changed — this is history, not the
+          current storage mode. Every application in "Your Applications" above
+          carries a real testnet blob.
+        */}
+        <p
+          data-testid="demo-evidence-storage-note"
+          style={{ fontSize: "0.8rem", color: "#64748b", margin: "0.75rem 0 0" }}
+        >
+          Archived receipts from 2026-07-25, kept as fixed evidence. They predate live Walrus
+          storage, so their blob IDs are <code>mock:</code> and cannot be decrypted — the blob ID is
+          written on chain at submit time and is immutable. Applications above use real testnet
+          blobs.
+        </p>
+
         <div style={{ marginTop: "1rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
           {/* Smoke receipt */}
           <section className="card" data-testid="receipt-panel-smoke" style={{ boxShadow: "none" }}>
