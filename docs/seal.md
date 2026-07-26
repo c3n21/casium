@@ -79,7 +79,7 @@ application code outside that package.
 
 ## Policy Function
 
-`seal_approve_packet` is a non-`public` `entry fun` in `rentdelegate::rental` (deployed in the
+`seal_approve_packet` is a non-`public` `entry fun` in `casium::rental` (deployed in the
 upgraded package `0xbab0d70134d065a2f48ad8d18f2d8681de0464b7417485cbda8446eff31e8937`). It is the
 only function Seal key servers dry-run when a landlord requests decryption.
 

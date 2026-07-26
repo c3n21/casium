@@ -1,7 +1,7 @@
 "use client";
 
 import { useCurrentAccount, useCurrentClient } from "@mysten/dapp-kit-react";
-import { createRentDelegateClient } from "@rentdelegate/sui-client";
+import { createCasiumClient } from "@casium/sui-client";
 import { useQuery } from "@tanstack/react-query";
 import {
   EXPLORER_OBJECT,
@@ -10,7 +10,7 @@ import {
   RPC_URL as RPC_URL_TESTNET,
   SMOKE,
   LIVE_AGENT_RUN,
-} from "@rentdelegate/contracts-config";
+} from "@casium/contracts-config";
 import { ApplicationInbox, type ReservedApplication } from "@/components/ApplicationInbox";
 import { PacketViewer } from "@/components/PacketViewer";
 
@@ -27,7 +27,7 @@ export default function LandlordPage() {
   const { data: smokeReceipt, isLoading: smokeLoading, error: smokeError } = useQuery({
     queryKey: ["receipt", SMOKE_RECEIPT_ID],
     queryFn: async () => {
-      const client = createRentDelegateClient(
+      const client = createCasiumClient(
         { network: "testnet", rpcUrl: RPC_URL_TESTNET, packageId: PACKAGE_ID },
         suiClient,
       );
@@ -40,7 +40,7 @@ export default function LandlordPage() {
   const { data: liveReceipt } = useQuery({
     queryKey: ["receipt", LIVE_RECEIPT_ID],
     queryFn: async () => {
-      const client = createRentDelegateClient(
+      const client = createCasiumClient(
         { network: "testnet", rpcUrl: RPC_URL_TESTNET, packageId: PACKAGE_ID },
         suiClient,
       );

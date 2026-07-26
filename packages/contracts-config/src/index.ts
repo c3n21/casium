@@ -1,5 +1,5 @@
 /**
- * Canonical RentDelegate testnet contract IDs and configuration.
+ * Canonical Casium testnet contract IDs and configuration.
  *
  * This is the single source of truth for every object ID, package ID, and
  * explorer URL used by the application. No other package or app may contain

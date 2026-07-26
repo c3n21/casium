@@ -70,7 +70,7 @@ export function createAgentkitSigner(
         info: {
           domain: parsed.hostname,
           uri: url,
-          statement: "Verify a World human-backed agent request for RentDelegate.",
+          statement: "Verify a World human-backed agent request for Casium.",
           version: "1",
           nonce: randomHex(16),
           issuedAt: new Date().toISOString(),

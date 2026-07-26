@@ -1,4 +1,4 @@
-import { makeSyntheticPacket, PacketDocumentSchema, SYNTHETIC_PACKET_DEFAULTS } from "@rentdelegate/shared";
+import { makeSyntheticPacket, PacketDocumentSchema, SYNTHETIC_PACKET_DEFAULTS } from "@casium/shared";
 import { describe, expect, it } from "vitest";
 
 describe("PacketDocument schema", () => {

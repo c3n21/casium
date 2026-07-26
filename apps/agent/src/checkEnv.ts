@@ -20,7 +20,7 @@ async function main() {
     throw new Error("Could not determine agent Sui address.");
   }
 
-  console.log("=== RentDelegate Agent Env Check ===");
+  console.log("=== Casium Agent Env Check ===");
   console.log(`RPC URL:              ${rpcUrl}`);
   console.log(`AGENT_SUI_ADDRESS:    ${configuredAddress ?? "(not set)"}`);
   console.log(`Derived key address:  ${derivedAddress ?? "(private key not set)"}`);

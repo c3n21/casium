@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { createRentDelegateClient } from "./client.js";
-import type { RentDelegateConfig } from "./types.js";
+import { createCasiumClient } from "./client.js";
+import type { CasiumConfig } from "./types.js";
 
-const config: RentDelegateConfig = {
+const config: CasiumConfig = {
   network: "testnet",
   rpcUrl: "https://fullnode.testnet.sui.io:443",
   packageId: "0xpackage",
@@ -37,7 +37,7 @@ function makeMockSuiClient(listOwnedResult: ReturnType<typeof makeListOwnedRespo
 describe("findAgentCapForMandate", () => {
   it("returns null when agent owns no AgentCap for the mandate", async () => {
     const mockClient = makeMockSuiClient(makeListOwnedResponse([]));
-    const client = createRentDelegateClient(config, mockClient);
+    const client = createCasiumClient(config, mockClient);
 
     const result = await client.findAgentCapForMandate(MANDATE_ID, AGENT_ADDRESS);
     expect(result).toBeNull();
@@ -47,7 +47,7 @@ describe("findAgentCapForMandate", () => {
     const mockClient = makeMockSuiClient(
       makeListOwnedResponse([{ objectId: CAP_ID, mandateId: MANDATE_ID }]),
     );
-    const client = createRentDelegateClient(config, mockClient);
+    const client = createCasiumClient(config, mockClient);
 
     const result = await client.findAgentCapForMandate(MANDATE_ID, AGENT_ADDRESS);
     expect(result).toBe(CAP_ID);
@@ -60,7 +60,7 @@ describe("findAgentCapForMandate", () => {
         { objectId: CAP_ID, mandateId: MANDATE_ID },
       ]),
     );
-    const client = createRentDelegateClient(config, mockClient);
+    const client = createCasiumClient(config, mockClient);
 
     const result = await client.findAgentCapForMandate(MANDATE_ID, AGENT_ADDRESS);
     expect(result).toBe(CAP_ID);
@@ -73,7 +73,7 @@ describe("findAgentCapForMandate", () => {
         { objectId: "0xcap2", mandateId: MANDATE_ID },
       ]),
     );
-    const client = createRentDelegateClient(config, mockClient);
+    const client = createCasiumClient(config, mockClient);
 
     await expect(client.findAgentCapForMandate(MANDATE_ID, AGENT_ADDRESS)).rejects.toThrow(
       /Ambiguous AgentCap/,
@@ -95,7 +95,7 @@ describe("findAgentCapForMandate", () => {
         })),
       },
     } as never;
-    const client = createRentDelegateClient(config, mockClient);
+    const client = createCasiumClient(config, mockClient);
 
     const result = await client.findAgentCapForMandate(MANDATE_ID, AGENT_ADDRESS);
     expect(result).toBe(CAP_ID);
@@ -108,7 +108,7 @@ describe("findAgentCapForMandate", () => {
       hasNextPage: false,
     }));
     const mockClient = { core: { listOwnedObjects } } as never;
-    const client = createRentDelegateClient(config, mockClient);
+    const client = createCasiumClient(config, mockClient);
 
     await client.findAgentCapForMandate(MANDATE_ID, AGENT_ADDRESS);
 

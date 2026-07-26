@@ -1,4 +1,4 @@
-import { deriveSealIdentity, identityToHex } from "@rentdelegate/shared";
+import { deriveSealIdentity, identityToHex } from "@casium/shared";
 import { describe, expect, it } from "vitest";
 
 const MANDATE_A = "0x835478969ce38a0a1d0f981aa1a278a8862f9283de735ebba81c6169d388dbee";

@@ -2,7 +2,7 @@
 
 import { useCurrentAccount, useCurrentClient, useDAppKit } from "@mysten/dapp-kit-react";
 import { ConnectButton } from "@mysten/dapp-kit-react/ui";
-import { createRentDelegateClient } from "@rentdelegate/sui-client";
+import { createCasiumClient } from "@casium/sui-client";
 import { useState } from "react";
 import { EXPLORER_TX, PACKAGE_ID } from "@/lib/constants";
 import { signAndExecuteWithExplicitGas } from "@/lib/walletTransaction";
@@ -52,7 +52,7 @@ export function ListingForm({ onCreated }: { onCreated?: (listingId: string, txD
     setBusy(true);
 
     try {
-      const client = createRentDelegateClient({
+      const client = createCasiumClient({
         network: "testnet",
         rpcUrl: "https://fullnode.testnet.sui.io:443",
         packageId: PACKAGE_ID,

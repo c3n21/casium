@@ -1,4 +1,4 @@
-module rentdelegate::rental;
+module casium::rental;
 
 use sui::clock::{Self, Clock};
 use sui::event;

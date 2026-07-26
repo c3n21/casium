@@ -1,6 +1,6 @@
 import { SealClient, SessionKey } from "@mysten/seal";
 import type { SealCompatibleClient } from "@mysten/seal";
-import { deriveSealIdentity, identityToHex } from "@rentdelegate/shared";
+import { deriveSealIdentity, identityToHex } from "@casium/shared";
 import { DEFAULT_THRESHOLD, getKeyServerConfigs } from "./config.js";
 
 export { SessionKey };
@@ -44,7 +44,7 @@ export type SealClientOptions = {
 
 /**
  * Typed wrapper around `@mysten/seal`'s `SealClient` scoped to the
- * RentDelegate packet encryption use-case.
+ * Casium packet encryption use-case.
  *
  * Key design decisions (see docs/seal.md for full rationale):
  * - The Seal `id` (inner identity) is always derived via `deriveSealIdentity`
@@ -132,4 +132,4 @@ export function createSealClient(options: SealClientOptions) {
   };
 }
 
-export type RentDelegateSealClient = ReturnType<typeof createSealClient>;
+export type CasiumSealClient = ReturnType<typeof createSealClient>;

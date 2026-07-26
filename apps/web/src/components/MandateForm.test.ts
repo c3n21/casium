@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CreateMandateSchema } from "@rentdelegate/shared";
+import { CreateMandateSchema } from "@casium/shared";
 
 describe("MandateForm validation", () => {
   it("rejects empty agent addresses", () => {

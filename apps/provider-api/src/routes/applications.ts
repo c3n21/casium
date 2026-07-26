@@ -1,4 +1,4 @@
-import { ERROR_HTTP_STATUS } from "@rentdelegate/shared";
+import { ERROR_HTTP_STATUS } from "@casium/shared";
 import { Hono } from "hono";
 import type { AgentKitVariables } from "../middleware/agentkit.js";
 import type { ApplicationService } from "../services/applications.js";

@@ -3,7 +3,7 @@ import { Providers } from "./providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "RentDelegate",
+  title: "Casium",
   description: "World limits who the agent represents. Sui limits what the agent can do.",
 };
 

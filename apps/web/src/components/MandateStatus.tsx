@@ -1,7 +1,7 @@
 "use client";
 
 import { useCurrentClient } from "@mysten/dapp-kit-react";
-import { createRentDelegateClient } from "@rentdelegate/sui-client";
+import { createCasiumClient } from "@casium/sui-client";
 import { useQuery } from "@tanstack/react-query";
 import { EXPLORER_OBJECT, EXPLORER_TX, PACKAGE_ID } from "@/lib/constants";
 
@@ -18,7 +18,7 @@ export function MandateStatus({ mandateId, ownerCapId, agentCapId, createTxDiges
   const { data: mandate, isLoading, error } = useQuery({
     queryKey: ["mandate", "testnet", mandateId],
     queryFn: async () => {
-      const client = createRentDelegateClient(
+      const client = createCasiumClient(
         { network: "testnet", rpcUrl: "https://fullnode.testnet.sui.io:443", packageId: PACKAGE_ID },
         suiClient,
       );

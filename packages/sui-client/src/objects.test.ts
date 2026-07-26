@@ -15,7 +15,7 @@ const mandateBase = {
   permitted_actions: "1",
 };
 
-describe("RentDelegate Sui object parsers", () => {
+describe("Casium Sui object parsers", () => {
   it("parses mandate/listing/receipt JSON fields", () => {
     expect(
       parseMandate(mandateBase),

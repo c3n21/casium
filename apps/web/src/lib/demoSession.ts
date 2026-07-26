@@ -2,11 +2,11 @@
  * demoSession — typed localStorage wrappers for the live-demo mandate handoff.
  *
  * All reads/writes guard against SSR by checking `typeof window !== "undefined"`.
- * Keys are scoped with the `rentdelegate:` prefix so they don't collide with
+ * Keys are scoped with the `casium:` prefix so they don't collide with
  * other apps running on the same origin.
  */
 
-import { SMOKE } from "@rentdelegate/contracts-config";
+import { SMOKE } from "@casium/contracts-config";
 
 /**
  * Mandate IDs that must never be used as the live-demo default.
@@ -20,14 +20,14 @@ function isLegacySmoke(id: string | null): boolean {
 }
 
 const K = {
-  lastMandateId: "rentdelegate:lastMandateId",
-  lastOwnerCapId: "rentdelegate:lastOwnerCapId",
-  lastAgentCapId: "rentdelegate:lastAgentCapId",
-  lastMandateTxDigest: "rentdelegate:lastMandateTxDigest",
-  lastPacketMandateId: "rentdelegate:lastPacketMandateId",
-  lastPacketBlobId: "rentdelegate:lastPacketBlobId",
-  lastPacketHash: "rentdelegate:lastPacketHash",
-  lastSelectedListings: "rentdelegate:lastSelectedListings",
+  lastMandateId: "casium:lastMandateId",
+  lastOwnerCapId: "casium:lastOwnerCapId",
+  lastAgentCapId: "casium:lastAgentCapId",
+  lastMandateTxDigest: "casium:lastMandateTxDigest",
+  lastPacketMandateId: "casium:lastPacketMandateId",
+  lastPacketBlobId: "casium:lastPacketBlobId",
+  lastPacketHash: "casium:lastPacketHash",
+  lastSelectedListings: "casium:lastSelectedListings",
 } as const;
 
 function isClient(): boolean {
@@ -71,6 +71,12 @@ export type StoredMandate = {
 export type StoredListing = {
   providerListingId: string;
   listingObjectId: string;
+  /**
+   * Human-facing listing ID (e.g. `porto-demo-1`), carried across the handoff so
+   * `/agent` can name the selection instead of showing internal provider keys.
+   * Optional: entries written before the field existed only carry the internal ID.
+   */
+  externalListingId?: string;
 };
 
 export const demoSession = {

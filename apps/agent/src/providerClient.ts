@@ -1,5 +1,5 @@
-import { ReserveApplicationSchema } from "@rentdelegate/shared";
-import type { VerifyReceiptInput } from "@rentdelegate/shared";
+import { ReserveApplicationSchema } from "@casium/shared";
+import type { VerifyReceiptInput } from "@casium/shared";
 import type { ReservedApplication } from "./types.js";
 
 export type PacketRecord = {

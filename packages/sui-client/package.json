@@ -1,5 +1,5 @@
 {
-  "name": "@rentdelegate/sui-client",
+  "name": "@casium/sui-client",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@mysten/sui": "^2.22.1",
-    "@rentdelegate/shared": "workspace:*"
+    "@casium/shared": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",

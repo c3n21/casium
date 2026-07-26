@@ -2,12 +2,12 @@
 
 import { useCurrentAccount, useCurrentClient, useDAppKit } from "@mysten/dapp-kit-react";
 import { ConnectButton } from "@mysten/dapp-kit-react/ui";
-import { CreateMandateSchema } from "@rentdelegate/shared";
-import { createRentDelegateClient } from "@rentdelegate/sui-client";
+import { CreateMandateSchema } from "@casium/shared";
+import { createCasiumClient } from "@casium/sui-client";
 import { useState, useEffect } from "react";
 import { EXPLORER_TX, PACKAGE_ID } from "@/lib/constants";
 import { signAndExecuteWithExplicitGas } from "@/lib/walletTransaction";
-import type { CreateMandateInput } from "@rentdelegate/sui-client";
+import type { CreateMandateInput } from "@casium/sui-client";
 import { AGENT_API, fetchAgentIdentity } from "@/lib/agentApi";
 import type { AgentIdentity } from "@/lib/agentApi";
 
@@ -133,7 +133,7 @@ export function MandateForm({ onCreated }: MandateFormProps) {
         permittedActions: parsed.data.permittedActions,
       };
 
-      const client = createRentDelegateClient({ network: "testnet", rpcUrl: "https://fullnode.testnet.sui.io:443", packageId: PACKAGE_ID });
+      const client = createCasiumClient({ network: "testnet", rpcUrl: "https://fullnode.testnet.sui.io:443", packageId: PACKAGE_ID });
       const tx = client.buildCreateMandateTx(input);
 
       const result = await signAndExecuteWithExplicitGas(dAppKit, currentClient, tx, account.address);

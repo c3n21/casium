@@ -1,9 +1,9 @@
-import { createRentDelegateClient } from "@rentdelegate/sui-client";
-import type { RentDelegateClient } from "@rentdelegate/sui-client";
+import { createCasiumClient } from "@casium/sui-client";
+import type { CasiumClient } from "@casium/sui-client";
 import {
   PACKAGE_ID as DEFAULT_PACKAGE_ID,
   RPC_URL as DEFAULT_RPC_URL,
-} from "@rentdelegate/contracts-config";
+} from "@casium/contracts-config";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { createDb } from "./db/client.js";
@@ -19,7 +19,7 @@ import { createSuiReceiptVerifier, type ReceiptVerificationService } from "./ser
 
 export function createApp(
   receiptVerifier?: ReceiptVerificationService,
-  mandateReader?: Pick<RentDelegateClient, "getMandate">,
+  mandateReader?: Pick<CasiumClient, "getMandate">,
 ) {
   const app = new Hono();
 
@@ -89,8 +89,8 @@ export function createApp(
 export type ProviderApiApp = ReturnType<typeof createApp>;
 
 /** Build the shared Sui client used for both receipt verification and mandate reading. */
-export function createDefaultSuiClient(): RentDelegateClient {
-  return createRentDelegateClient({
+export function createDefaultSuiClient(): CasiumClient {
+  return createCasiumClient({
     network: "testnet",
     rpcUrl: process.env.SUI_RPC_URL ?? DEFAULT_RPC_URL,
     packageId: process.env.SUI_PACKAGE_ID ?? DEFAULT_PACKAGE_ID,

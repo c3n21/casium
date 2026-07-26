@@ -1,5 +1,5 @@
 {
-  "name": "@rentdelegate/agent",
+  "name": "@casium/agent",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -14,11 +14,11 @@
   "dependencies": {
     "@hono/node-server": "^2.0.11",
     "@mysten/sui": "^2.22.1",
-    "@rentdelegate/agentkit": "workspace:*",
-    "@rentdelegate/contracts-config": "workspace:*",
-    "@rentdelegate/shared": "workspace:*",
-    "@rentdelegate/sui-client": "workspace:*",
-    "@rentdelegate/walrus": "workspace:*",
+    "@casium/agentkit": "workspace:*",
+    "@casium/contracts-config": "workspace:*",
+    "@casium/shared": "workspace:*",
+    "@casium/sui-client": "workspace:*",
+    "@casium/walrus": "workspace:*",
     "@worldcoin/agentkit": "^0.2.0",
     "ethers": "^6.17.0",
     "hono": "^4.12.31"

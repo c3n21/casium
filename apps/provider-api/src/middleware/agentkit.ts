@@ -1,7 +1,7 @@
-import { createAgentKitVerifier } from "@rentdelegate/agentkit";
-import { ERROR_CODES, ERROR_HTTP_STATUS } from "@rentdelegate/shared";
+import { createAgentKitVerifier } from "@casium/agentkit";
+import { ERROR_CODES, ERROR_HTTP_STATUS } from "@casium/shared";
 import { createMiddleware } from "hono/factory";
-import type { AgentKitContext, AgentKitVerifier } from "@rentdelegate/agentkit";
+import type { AgentKitContext, AgentKitVerifier } from "@casium/agentkit";
 
 type Variables = {
   agentContext: AgentKitContext;

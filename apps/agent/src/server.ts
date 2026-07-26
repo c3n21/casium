@@ -1,5 +1,5 @@
 /**
- * RentDelegate Agent HTTP server (RD-113, RD-161).
+ * Casium Agent HTTP server (RD-113, RD-161).
  *
  * Wraps the runAgent pipeline in a Hono HTTP server so the UI can trigger agent runs
  * without editing .env or using the CLI directly.
@@ -20,7 +20,7 @@ import {
   PUBLISHER_ADDRESS,
   RPC_URL as DEFAULT_RPC_URL,
   SMOKE as SMOKE_OBJECTS,
-} from "@rentdelegate/contracts-config";
+} from "@casium/contracts-config";
 import { runAgent } from "./run.js";
 import type { RunResult, RunInput } from "./run.js";
 import type { DemoAgentKitHeaders } from "./providerClient.js";
@@ -90,7 +90,7 @@ app.use("*", cors({ allowHeaders: ["content-type"] }));
 app.get("/health", (c) =>
   c.json({
     ok: true,
-    service: "rentdelegate-agent",
+    service: "casium-agent",
     agentSuiAddress: SMOKE_AGENT_SUI_ADDRESS,
     agentkitMode,
     // null when neither a live EVM key nor AGENTKIT_DEMO_AGENT_EVM_ADDRESS is set.
@@ -170,7 +170,7 @@ export { app };
 if (process.env.NODE_ENV !== "test") {
   const PORT = Number(process.env.AGENT_SERVER_PORT ?? 4022);
   serve({ fetch: app.fetch, port: PORT }, () => {
-    console.log(`[rentdelegate-agent] server listening on http://localhost:${PORT}`);
+    console.log(`[casium-agent] server listening on http://localhost:${PORT}`);
     console.log(`  agentSuiAddress: ${SMOKE_AGENT_SUI_ADDRESS}`);
     console.log(`  agentkitMode:    ${agentkitMode}`);
   });

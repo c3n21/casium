@@ -8,7 +8,7 @@
  * No wallet is needed — the AES-GCM path never touches a connected account.
  */
 
-import { LIVE_AGENT_RUN } from "@rentdelegate/contracts-config";
+import { LIVE_AGENT_RUN } from "@casium/contracts-config";
 import { expect, test } from "../src/fixtures/test.js";
 import { LISBON_LISTING, LISBON_SECOND_LISTING } from "../src/fixtures/data.js";
 import { seedMandateSession } from "../src/fixtures/session.js";
@@ -134,13 +134,18 @@ test("uploads separate packets for each selected listing and saves the target ha
   );
   await expect
     .poll(() =>
-      page.evaluate(() => JSON.parse(localStorage.getItem("rentdelegate:lastSelectedListings") ?? "[]")),
+      page.evaluate(() => JSON.parse(localStorage.getItem("casium:lastSelectedListings") ?? "[]")),
     )
     .toEqual([
-      { providerListingId: LISBON_LISTING.id, listingObjectId: LISBON_LISTING.listingObjectId },
+      {
+        providerListingId: LISBON_LISTING.id,
+        listingObjectId: LISBON_LISTING.listingObjectId,
+        externalListingId: LISBON_LISTING.externalListingId,
+      },
       {
         providerListingId: LISBON_SECOND_LISTING.id,
         listingObjectId: LISBON_SECOND_LISTING.listingObjectId,
+        externalListingId: LISBON_SECOND_LISTING.externalListingId,
       },
     ]);
 });

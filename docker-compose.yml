@@ -2,9 +2,9 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: rentdelegate
-      POSTGRES_PASSWORD: rentdelegate
-      POSTGRES_DB: rentdelegate
+      POSTGRES_USER: casium
+      POSTGRES_PASSWORD: casium
+      POSTGRES_DB: casium
     ports:
       - "5432:5432"
     volumes:

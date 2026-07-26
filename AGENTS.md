@@ -112,10 +112,10 @@ pnpm -r --if-present build
 pnpm -r --if-present test
 
 # Per-package (examples)
-pnpm --filter @rentdelegate/web build
-pnpm --filter @rentdelegate/web typecheck   # run after wallet/tx-result parsing changes
-pnpm --filter @rentdelegate/provider-api build
-pnpm --filter @rentdelegate/agent build
+pnpm --filter @casium/web build
+pnpm --filter @casium/web typecheck   # run after wallet/tx-result parsing changes
+pnpm --filter @casium/provider-api build
+pnpm --filter @casium/agent build
 
 # Move build/test
 ~/.local/bin/sui move build --path packages/move
@@ -125,16 +125,16 @@ pnpm --filter @rentdelegate/agent build
 pnpm demo:duplicate-human
 
 # Agent env/signer check
-pnpm --filter @rentdelegate/agent check:env
+pnpm --filter @casium/agent check:env
 ```
 
 If `sui`/`walrus` are not on `PATH`, use `~/.local/bin/sui ...` / `~/.local/bin/walrus ...` instead. See `README.md` for the full run-the-demo sequence (provider API, frontend, agent) and required env vars.
 
 ## Local Web Server During Browser Testing
 
-- For short browser smoke tests, it is acceptable to keep the web app running in the background with `nohup`, for example `nohup pnpm --filter @rentdelegate/web start > /tmp/rentdelegate-web.log 2>&1 &`.
-- Use `pnpm --filter @rentdelegate/web start` only after a successful production build; it serves the built app and does not hot-reload.
-- For active UI development, prefer `pnpm --filter @rentdelegate/web dev`; if it must run in the background, use `nohup pnpm --filter @rentdelegate/web dev > /tmp/rentdelegate-web.log 2>&1 &`.
+- For short browser smoke tests, it is acceptable to keep the web app running in the background with `nohup`, for example `nohup pnpm --filter @casium/web start > /tmp/casium-web.log 2>&1 &`.
+- Use `pnpm --filter @casium/web start` only after a successful production build; it serves the built app and does not hot-reload.
+- For active UI development, prefer `pnpm --filter @casium/web dev`; if it must run in the background, use `nohup pnpm --filter @casium/web dev > /tmp/casium-web.log 2>&1 &`.
 - Before starting a background web server, check whether port `3000` is already in use and avoid leaving stale processes running.
 - Treat `nohup` as a pragmatic local testing helper, not as project infrastructure. For repeated demo workflows, prefer a documented script, `tmux`, or another explicit process manager that makes logs and cleanup clear.
 
@@ -158,7 +158,7 @@ If `sui`/`walrus` are not on `PATH`, use `~/.local/bin/sui ...` / `~/.local/bin/
 
 ## Frontend Verification Notes
 
-- Run `pnpm --filter @rentdelegate/web typecheck` after frontend wallet or transaction-result parsing changes; `next build` can succeed while skipping type validation.
+- Run `pnpm --filter @casium/web typecheck` after frontend wallet or transaction-result parsing changes; `next build` can succeed while skipping type validation.
 - BigInt gas budgets require the web TypeScript target to be `ES2020` or newer.
 - `next build` may mutate `apps/web/tsconfig.json` and re-add `.next/dev/types/**/*.ts` to `include`.
 - If stale `.next/dev` validator files break typecheck while source routes are valid, explicitly exclude `.next/dev` rather than treating generated dev artifacts as application source.

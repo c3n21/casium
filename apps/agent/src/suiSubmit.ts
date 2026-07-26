@@ -1,4 +1,4 @@
-import type { RentDelegateClient } from "@rentdelegate/sui-client";
+import type { CasiumClient } from "@casium/sui-client";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import type { ClientWithCoreApi, SuiClientTypes } from "@mysten/sui/client";
 
@@ -21,7 +21,7 @@ export type SuiSubmitResult = {
 };
 
 export type ExecuteSubmitApplicationOptions = {
-  suiClient: RentDelegateClient;
+  suiClient: CasiumClient;
   executionClient: ClientWithCoreApi;
   packageId: string;
   expectedAgentSuiAddress: string;
@@ -36,7 +36,7 @@ export type ExecuteSubmitApplicationOptions = {
  * This remains useful for dry runs and for the no-private-key CLI fallback.
  */
 export async function buildSubmitApplicationTx(
-  suiClient: RentDelegateClient,
+  suiClient: CasiumClient,
   input: SuiSubmitInput,
 ) {
   return suiClient.buildSubmitApplicationTx({

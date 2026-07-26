@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { createRentDelegateClient } from "./client.js";
+import { createCasiumClient } from "./client.js";
 
 describe.skipIf(process.env.RUN_SUI_TESTNET !== "1")("testnet config smoke", () => {
-  const client = createRentDelegateClient({
+  const client = createCasiumClient({
     network: "testnet",
     rpcUrl: "https://fullnode.testnet.sui.io:443",
     packageId: "0x7e0130cdc105d06707f1f3abd4c76aac8211a09a5502692ba454d1b4b758af3d",

@@ -8,9 +8,9 @@ import {
 } from "./transactions.js";
 import { parseListing, parseMandate, parseReceipt } from "./objects.js";
 import type { ClientWithCoreApi } from "@mysten/sui/client";
-import type { RentDelegateClient, RentDelegateConfig } from "./types.js";
+import type { CasiumClient, CasiumConfig } from "./types.js";
 
-export function createRentDelegateClient(config: RentDelegateConfig, suiClient?: ClientWithCoreApi): RentDelegateClient {
+export function createCasiumClient(config: CasiumConfig, suiClient?: ClientWithCoreApi): CasiumClient {
   const client = suiClient ?? new SuiGrpcClient({ network: config.network, baseUrl: config.rpcUrl });
 
   async function getJsonObject(id: string): Promise<unknown> {

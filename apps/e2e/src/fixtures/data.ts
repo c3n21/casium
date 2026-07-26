@@ -6,7 +6,7 @@
  *   ReservedApplication    apps/web/src/components/ApplicationInbox.tsx
  *   RunResult              apps/web/app/agent/page.tsx
  *
- * Every Sui object ID comes from @rentdelegate/contracts-config — never a
+ * Every Sui object ID comes from @casium/contracts-config — never a
  * literal, or `pnpm lint:object-ids` fails (it scans *.spec.ts and *.ts here).
  */
 
@@ -15,7 +15,7 @@ import {
   LIVE_AGENT_RUN,
   PUBLISHER_ADDRESS,
   SMOKE,
-} from "@rentdelegate/contracts-config";
+} from "@casium/contracts-config";
 
 export type ProviderListing = {
   id: string;
@@ -139,7 +139,7 @@ export const VERIFY_INPUT = {
 
 export const AGENT_HEALTH = {
   ok: true,
-  service: "rentdelegate-agent",
+  service: "casium-agent",
   agentSuiAddress: PUBLISHER_ADDRESS,
   agentEvmAddress: AGENT_EVM_ADDRESS,
   agentkitMode: "mock",

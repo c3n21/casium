@@ -1,4 +1,4 @@
-# RentDelegate Development Spec
+# Casium Development Spec
 
 This spec converts the backlog (`plan/backlog.md` and its epic files) into an implementation contract for parallel agents. If this file conflicts with executable config added later, trust the executable config and update this spec.
 
@@ -6,7 +6,7 @@ This spec converts the backlog (`plan/backlog.md` and its epic files) into an im
 
 | Item | Requirement |
 |---|---|
-| Working title | RentDelegate |
+| Working title | Casium |
 | Core message | “World limits who the agent represents. Sui limits what the agent can do.” |
 | Demo goal | A renter authorizes an AI agent to submit rental applications under a scoped, inspectable, revocable Sui mandate. |
 | World role | Verify a human-backed EVM agent and prevent the same World human from applying twice to the same listing. |
@@ -197,7 +197,7 @@ Trust boundaries:
 | Item | Value |
 |---|---|
 | Package path | `packages/move` |
-| Module path | `rentdelegate::rental` unless implementation finds a better name before RD-004 consumers exist |
+| Module path | `casium::rental` unless implementation finds a better name before RD-004 consumers exist |
 | Build command after RD-003 | `sui move build --path packages/move` |
 | Test command after RD-003 | `sui move test --path packages/move` |
 
@@ -503,15 +503,15 @@ Required demo cases:
 `packages/sui-client` must provide these exports after RD-008:
 
 ```ts
-export type RentDelegateConfig = {
+export type CasiumConfig = {
   network: "testnet" | "localnet";
   rpcUrl: string;
   packageId: string;
 };
 
-export function createRentDelegateClient(config: RentDelegateConfig): RentDelegateClient;
+export function createCasiumClient(config: CasiumConfig): CasiumClient;
 
-export type RentDelegateClient = {
+export type CasiumClient = {
   getMandate(id: string): Promise<RentalMandate>;
   getListing(id: string): Promise<RentalListing>;
   getReceipt(id: string): Promise<ApplicationReceipt>;
@@ -539,7 +539,7 @@ export type RentDelegateClient = {
 
 The client must not hide signer custody. Frontend signs renter/provider actions through wallet adapter. Agent signs agent actions with its own testnet key. RD-008 only requires PTB construction; RD-108 completes private-key-backed agent submission and receipt verification.
 
-After the RD-133 upgrade, `RentDelegateConfig` must carry both `packageId` (latest, for transaction
+After the RD-133 upgrade, `CasiumConfig` must carry both `packageId` (latest, for transaction
 targets) and `sealNamespacePackageId` (pinned by RD-131, for Seal identity). Conflating them silently
 breaks either transactions or decryption.
 
@@ -736,8 +736,8 @@ Mandate selection priority on `/agent`:
 | Priority | Source | Meaning |
 |---:|---|---|
 | 1 | URL `?mandateId=0x...` | Explicit handoff, usually from packet upload. |
-| 2 | `localStorage.rentdelegate:lastPacketMandateId` | Last mandate with a registered packet. |
-| 3 | `localStorage.rentdelegate:lastMandateId` | Last mandate created in the renter flow. |
+| 2 | `localStorage.casium:lastPacketMandateId` | Last mandate with a registered packet. |
+| 3 | `localStorage.casium:lastMandateId` | Last mandate created in the renter flow. |
 | 4 | none | No active mandate; disable Start and explain that a mandate + packet are required. |
 
 `SMOKE.mandateId` must not be used as priority 4. Smoke IDs may appear only inside a clearly labeled
@@ -748,13 +748,13 @@ Browser storage keys for demo handoff:
 
 | Key | Value | Written when |
 |---|---|---|
-| `rentdelegate:lastMandateId` | `RentalMandate` object ID | Mandate creation succeeds. |
-| `rentdelegate:lastOwnerCapId` | `OwnerCap` object ID | Mandate creation succeeds. |
-| `rentdelegate:lastAgentCapId` | `AgentCap` object ID | Mandate creation succeeds. |
-| `rentdelegate:lastMandateTxDigest` | Create mandate tx digest | Mandate creation succeeds. |
-| `rentdelegate:lastPacketMandateId` | Mandate ID used for packet registration | Packet registration succeeds. |
-| `rentdelegate:lastPacketBlobId` | Walrus blob ID | Packet registration succeeds. |
-| `rentdelegate:lastPacketHash` | Packet hash | Packet registration succeeds. |
+| `casium:lastMandateId` | `RentalMandate` object ID | Mandate creation succeeds. |
+| `casium:lastOwnerCapId` | `OwnerCap` object ID | Mandate creation succeeds. |
+| `casium:lastAgentCapId` | `AgentCap` object ID | Mandate creation succeeds. |
+| `casium:lastMandateTxDigest` | Create mandate tx digest | Mandate creation succeeds. |
+| `casium:lastPacketMandateId` | Mandate ID used for packet registration | Packet registration succeeds. |
+| `casium:lastPacketBlobId` | Walrus blob ID | Packet registration succeeds. |
+| `casium:lastPacketHash` | Packet hash | Packet registration succeeds. |
 
 Renter page requirements:
 
@@ -796,7 +796,7 @@ Remaining requirements:
 | Service mode | `POST /runs {mandateId, listingObjectId?}` starts a run; `GET /runs/:id` reports staged progress; `GET /health` reports signer address and AgentKit mode. The CLI entrypoint stays, over the same pipeline — the logic must not be forked. | RD-113 |
 | Cap discovery | Given a `mandateId`, find the `AgentCap` owned by `AGENT_SUI_ADDRESS` whose `agent_cap_mandate_id` matches. Abort on zero or multiple matches. `AGENT_CAP_ID` becomes an optional override, not a requirement. | RD-112 |
 | Renter's packet | Submit the packet registered by the renter for that mandate. Refuse to submit when none is registered — never generate a substitute packet. | RD-111 |
-| Real listing IDs | Read every object ID from `@rentdelegate/contracts-config`. The ineligible listing must be the real one, so refusal is proven by a rule, not by a read failure. | RD-115 |
+| Real listing IDs | Read every object ID from `@casium/contracts-config`. The ineligible listing must be the real one, so refusal is proven by a rule, not by a read failure. | RD-115 |
 | Blob lifetime check | Refuse to submit when the intended access window exceeds the stored blob lifetime. | RD-124 |
 | Secret hygiene | The signing key never appears in a response body, a log line, or a run record. | RD-113 |
 
@@ -909,12 +909,12 @@ Commands are only authoritative after the corresponding manifests/scripts exist.
 | Workspace tests after RD-001 | `pnpm -r --if-present test` |
 | Move build after RD-003 | `sui move build --path packages/move` |
 | Move tests after RD-003 | `sui move test --path packages/move` |
-| Agent run after RD-105 | `pnpm --filter @rentdelegate/agent start` builds/reports the PTB path unless RD-108 execution env is configured |
-| Agent signer check | `pnpm --filter @rentdelegate/agent check:env` |
+| Agent run after RD-105 | `pnpm --filter @casium/agent start` builds/reports the PTB path unless RD-108 execution env is configured |
+| Agent signer check | `pnpm --filter @casium/agent check:env` |
 | Duplicate-human demo | `pnpm demo:duplicate-human` |
-| Provider migrations after RD-109 | `pnpm --filter @rentdelegate/provider-api db:migrate` |
-| Agent service after RD-113 | `pnpm --filter @rentdelegate/agent serve` |
-| Walrus funding preflight after RD-121 | `pnpm --filter @rentdelegate/walrus check:env` |
+| Provider migrations after RD-109 | `pnpm --filter @casium/provider-api db:migrate` |
+| Agent service after RD-113 | `pnpm --filter @casium/agent serve` |
+| Walrus funding preflight after RD-121 | `pnpm --filter @casium/walrus check:env` |
 | Walrus live smoke after RD-123 | `node scripts/walrus-live-smoke.mjs` — **spends live WAL and SUI; requires explicit go-ahead** |
 | Seal denial matrix after RD-137 | `node scripts/seal-denial-demo.mjs` |
 

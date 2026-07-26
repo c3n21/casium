@@ -25,7 +25,7 @@ const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
   console.error(
     "DATABASE_URL is not set.\n" +
-      "  Local default: postgres://rentdelegate:rentdelegate@localhost:5432/rentdelegate\n" +
+      "  Local default: postgres://casium:casium@localhost:5432/casium\n" +
       "  Start Postgres first with: pnpm db:up",
   );
   process.exit(1);

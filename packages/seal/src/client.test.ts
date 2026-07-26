@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { Mock } from "vitest";
-import { identityToHex, deriveSealIdentity } from "@rentdelegate/shared";
+import { identityToHex, deriveSealIdentity } from "@casium/shared";
 
 // ---------------------------------------------------------------------------
 // Mock @mysten/seal before importing the module under test.

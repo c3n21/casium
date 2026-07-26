@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function Home() {
   return (
     <main style={{ maxWidth: 640, margin: "4rem auto", padding: "0 1rem" }}>
-      <h1>RentDelegate</h1>
+      <h1>Casium</h1>
       <p style={{ color: "#64748b", marginBottom: "2rem" }}>
         <em>World limits who the agent represents. Sui limits what the agent can do.</em>
       </p>

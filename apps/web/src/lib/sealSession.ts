@@ -1,5 +1,5 @@
-import { SessionKey } from "@rentdelegate/seal";
-import type { SealCompatibleClient } from "@rentdelegate/seal";
+import { SessionKey } from "@casium/seal";
+import type { SealCompatibleClient } from "@casium/seal";
 
 export type SealSessionOptions = {
   /** Sui address of the user creating the session (landlord). */

@@ -1,4 +1,4 @@
-# RentDelegate Backlog — Index
+# Casium Backlog — Index
 
 Core product message: **World limits who the agent represents. Sui limits what the agent can do.**
 

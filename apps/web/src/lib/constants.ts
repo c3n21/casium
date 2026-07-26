@@ -5,4 +5,4 @@ export {
   PACKAGE_ID,
   RPC_URL as RPC_URL_TESTNET,
   SMOKE_RECEIPT_ID,
-} from "@rentdelegate/contracts-config";
+} from "@casium/contracts-config";

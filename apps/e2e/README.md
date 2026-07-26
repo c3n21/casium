@@ -1,4 +1,4 @@
-# @rentdelegate/e2e
+# @casium/e2e
 
 Playwright end-to-end tests for the demo flows. Plan and tickets: `plan/backlog-e2e.md`.
 
@@ -6,8 +6,8 @@ Playwright end-to-end tests for the demo flows. Plan and tickets: `plan/backlog-
 
 ```bash
 pnpm test:e2e                 # from the repo root — the stubbed tier
-pnpm --filter @rentdelegate/e2e e2e:stubbed
-pnpm --filter @rentdelegate/e2e e2e:ui        # Playwright UI mode
+pnpm --filter @casium/e2e e2e:stubbed
+pnpm --filter @casium/e2e e2e:ui        # Playwright UI mode
 ```
 
 The stubbed tier needs **no servers, no wallet, and no network**. Playwright builds and starts the web
@@ -81,5 +81,5 @@ src/fixtures/
 ```
 
 Never write a `0x…64-hex` literal in this package — `pnpm lint:object-ids` scans `*.ts` here (it only
-excludes `*.test.ts`). Import from `@rentdelegate/contracts-config`, or build the string at runtime if
+excludes `*.test.ts`). Import from `@casium/contracts-config`, or build the string at runtime if
 it is not a real object ID.

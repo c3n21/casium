@@ -1,8 +1,8 @@
 {
-  "name": "rentdelegate",
+  "name": "casium",
   "version": "0.0.0",
   "private": true,
-  "description": "RentDelegate monorepo for scoped rental application agents on Sui and World.",
+  "description": "Casium monorepo for scoped rental application agents on Sui and World.",
   "packageManager": "pnpm@11.3.0",
   "engines": {
     "node": ">=22"
@@ -10,14 +10,14 @@
   "scripts": {
     "build": "pnpm -r --if-present build",
     "demo:up": "bash scripts/demo-up.sh",
-    "demo:duplicate-human": "pnpm --filter @rentdelegate/provider-api build && node scripts/demo-agentkit-duplicate.mjs",
+    "demo:duplicate-human": "pnpm --filter @casium/provider-api build && node scripts/demo-agentkit-duplicate.mjs",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
-    "db:migrate": "pnpm --filter @rentdelegate/provider-api db:migrate",
+    "db:migrate": "pnpm --filter @casium/provider-api db:migrate",
     "db:reset": "docker compose down -v && docker compose up -d postgres && sleep 3 && pnpm db:migrate",
     "test": "pnpm -r --if-present test",
-    "test:e2e": "pnpm --filter @rentdelegate/e2e e2e:stubbed",
-    "test:e2e:ui": "pnpm --filter @rentdelegate/e2e e2e:ui",
+    "test:e2e": "pnpm --filter @casium/e2e e2e:stubbed",
+    "test:e2e:ui": "pnpm --filter @casium/e2e e2e:ui",
     "lint:object-ids": "node scripts/check-object-ids.mjs"
   }
 }

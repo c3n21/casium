@@ -1,4 +1,4 @@
-# RentDelegate Demo Script
+# Casium Demo Script
 
 This script covers the full end-to-end demo in 3–4 minutes. Every step has a fallback
 using pre-verified testnet objects and tx digests if the live path fails.
@@ -57,7 +57,7 @@ Verify:
 
 ```bash
 curl http://localhost:4021/health   # {"ok":true,"service":"provider-api","store":"memory"}
-curl http://localhost:4022/health   # {"ok":true,"service":"rentdelegate-agent",...}
+curl http://localhost:4022/health   # {"ok":true,"service":"casium-agent",...}
 curl http://localhost:4022/identity # {"agentSuiAddress":"0x...","agentEvmAddress":"0x...","agentkitMode":"mock","packageId":"0x..."}
 ```
 
@@ -65,9 +65,9 @@ curl http://localhost:4022/identity # {"agentSuiAddress":"0x...","agentEvmAddres
 <summary>Starting services individually (Tabs A/B/C)</summary>
 
 ```bash
-pnpm --filter @rentdelegate/provider-api build && pnpm --filter @rentdelegate/provider-api start
-pnpm --filter @rentdelegate/agent build && pnpm --filter @rentdelegate/agent start:server
-pnpm --filter @rentdelegate/web build && pnpm --filter @rentdelegate/web start
+pnpm --filter @casium/provider-api build && pnpm --filter @casium/provider-api start
+pnpm --filter @casium/agent build && pnpm --filter @casium/agent start:server
+pnpm --filter @casium/web build && pnpm --filter @casium/web start
 ```
 
 </details>
@@ -161,8 +161,8 @@ Requires a registered MetaMask address on World Chain (see `docs/world-agentkit.
 First verify that the agent signer address is known and has SUI gas on testnet:
 
 ```bash
-pnpm --filter @rentdelegate/agent build
-pnpm --filter @rentdelegate/agent check:env
+pnpm --filter @casium/agent build
+pnpm --filter @casium/agent check:env
 ```
 
 If the check reports no gas, fund the printed agent address with the Sui testnet faucet before
@@ -189,7 +189,7 @@ agent service. `AGENT_CAP_ID` is not stable globally; it is the capability objec
 Expected output:
 
 ```
-=== RentDelegate Agent ===
+=== Casium Agent ===
 [1] Loading mandate from testnet...
     Remaining: 1
     Revoked: false

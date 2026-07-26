@@ -14,7 +14,7 @@ const DENIAL_MATRIX = [
     name: 'Wrong sender (not the receipt landlord)',
     abortCode: 17,
     abortName: 'ESEAL_WRONG_SENDER',
-    proof: 'Move test: rentdelegate::seal_tests::test_seal_approve_wrong_sender',
+    proof: 'Move test: casium::seal_tests::test_seal_approve_wrong_sender',
     proofType: 'move-test',
   },
   {
@@ -22,7 +22,7 @@ const DENIAL_MATRIX = [
     name: 'Wrong identity (id does not match mandate+listing)',
     abortCode: 18,
     abortName: 'ESEAL_WRONG_IDENTITY',
-    proof: 'Move test: rentdelegate::seal_tests::test_seal_approve_wrong_identity',
+    proof: 'Move test: casium::seal_tests::test_seal_approve_wrong_identity',
     proofType: 'move-test',
   },
   {
@@ -30,7 +30,7 @@ const DENIAL_MATRIX = [
     name: 'Withdrawn receipt (status != STATUS_SUBMITTED)',
     abortCode: 19,
     abortName: 'ESEAL_WRONG_STATUS',
-    proof: 'Move test: rentdelegate::seal_tests::test_seal_approve_withdrawn_status',
+    proof: 'Move test: casium::seal_tests::test_seal_approve_withdrawn_status',
     proofType: 'move-test',
   },
   {
@@ -38,7 +38,7 @@ const DENIAL_MATRIX = [
     name: 'Expired access window (clock > access_expires_at_ms)',
     abortCode: 20,
     abortName: 'ESEAL_EXPIRED_ACCESS',
-    proof: 'Move test: rentdelegate::seal_tests::test_seal_approve_expired_access',
+    proof: 'Move test: casium::seal_tests::test_seal_approve_expired_access',
     proofType: 'move-test',
   },
   {
@@ -46,7 +46,7 @@ const DENIAL_MATRIX = [
     name: 'Wrong mandate object (mandate ID does not match receipt)',
     abortCode: 21,
     abortName: 'ESEAL_WRONG_MANDATE',
-    proof: 'Move test: rentdelegate::seal_tests::test_seal_approve_wrong_mandate',
+    proof: 'Move test: casium::seal_tests::test_seal_approve_wrong_mandate',
     proofType: 'move-test',
   },
   {
@@ -54,7 +54,7 @@ const DENIAL_MATRIX = [
     name: 'Revoked mandate',
     abortCode: 22,
     abortName: 'ESEAL_MANDATE_REVOKED',
-    proof: 'Move test: rentdelegate::seal_tests::test_seal_approve_revoked_mandate',
+    proof: 'Move test: casium::seal_tests::test_seal_approve_revoked_mandate',
     proofType: 'move-test',
   },
   {

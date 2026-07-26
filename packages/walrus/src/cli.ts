@@ -18,7 +18,7 @@ export function createWalrusCliAdapter(options: WalrusCliAdapterOptions = {}): W
 
   return {
     async upload(bytes) {
-      const dir = await mkdtemp(join(tmpdir(), "rentdelegate-walrus-"));
+      const dir = await mkdtemp(join(tmpdir(), "casium-walrus-"));
       const file = join(dir, "packet.bin");
 
       try {
@@ -33,7 +33,7 @@ export function createWalrusCliAdapter(options: WalrusCliAdapterOptions = {}): W
       }
     },
     async download(blobId) {
-      const dir = await mkdtemp(join(tmpdir(), "rentdelegate-walrus-"));
+      const dir = await mkdtemp(join(tmpdir(), "casium-walrus-"));
       const file = join(dir, "packet.bin");
 
       try {

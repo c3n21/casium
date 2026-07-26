@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const { createApp } = await import("../apps/provider-api/dist/app.js").catch((error) => {
-  console.error("Build provider API first: pnpm --filter @rentdelegate/provider-api build");
+  console.error("Build provider API first: pnpm --filter @casium/provider-api build");
   throw error;
 });
 

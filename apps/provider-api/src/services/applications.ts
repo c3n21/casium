@@ -1,7 +1,7 @@
-import { ERROR_CODES, ReserveApplicationSchema, VerifyReceiptSchema } from "@rentdelegate/shared";
-import type { ErrorCode } from "@rentdelegate/shared";
-import type { AgentKitContext } from "@rentdelegate/agentkit";
-import type { RentDelegateClient } from "@rentdelegate/sui-client";
+import { ERROR_CODES, ReserveApplicationSchema, VerifyReceiptSchema } from "@casium/shared";
+import type { ErrorCode } from "@casium/shared";
+import type { AgentKitContext } from "@casium/agentkit";
+import type { CasiumClient } from "@casium/sui-client";
 import { and, eq } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import {
@@ -87,7 +87,7 @@ export function createApplicationService(
   listingService: ListingService,
   receiptVerifier?: ReceiptVerificationService,
   db?: Db,
-  mandateReader?: Pick<RentDelegateClient, "getMandate">,
+  mandateReader?: Pick<CasiumClient, "getMandate">,
 ) {
   // In-memory state (used when db is absent)
   const applicationsMap = new Map<string, ReservedApplication>();

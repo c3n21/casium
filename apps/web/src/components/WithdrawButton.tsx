@@ -1,7 +1,7 @@
 "use client";
 
 import { useCurrentAccount, useCurrentClient, useDAppKit } from "@mysten/dapp-kit-react";
-import { createRentDelegateClient } from "@rentdelegate/sui-client";
+import { createCasiumClient } from "@casium/sui-client";
 import { useState } from "react";
 import { EXPLORER_TX, LATEST_PACKAGE_ID } from "@/lib/constants";
 import { signAndExecuteWithExplicitGas } from "@/lib/walletTransaction";
@@ -39,7 +39,7 @@ export function WithdrawButton({
     setBusy(true);
 
     try {
-      const client = createRentDelegateClient({
+      const client = createCasiumClient({
         network: "testnet",
         rpcUrl: "https://fullnode.testnet.sui.io:443",
         packageId: LATEST_PACKAGE_ID,

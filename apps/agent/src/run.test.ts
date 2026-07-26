@@ -50,8 +50,8 @@ const reservedApplication = {
 };
 
 // Set up module mocks before importing runAgent
-vi.mock("@rentdelegate/sui-client", () => ({
-  createRentDelegateClient: vi.fn(),
+vi.mock("@casium/sui-client", () => ({
+  createCasiumClient: vi.fn(),
 }));
 vi.mock("@mysten/sui/grpc", () => ({
   SuiGrpcClient: vi.fn(),
@@ -64,12 +64,12 @@ vi.mock("./suiSubmit.js", () => ({
 }));
 
 // Import after mocking
-import { createRentDelegateClient } from "@rentdelegate/sui-client";
+import { createCasiumClient } from "@casium/sui-client";
 import { createProviderClient } from "./providerClient.js";
 import { executeSubmitApplication } from "./suiSubmit.js";
 import { runAgent } from "./run.js";
 
-const mockCreateClient = vi.mocked(createRentDelegateClient);
+const mockCreateClient = vi.mocked(createCasiumClient);
 const mockCreateProvider = vi.mocked(createProviderClient);
 const mockExecute = vi.mocked(executeSubmitApplication);
 

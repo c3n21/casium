@@ -1,4 +1,4 @@
-import type { PacketDocument } from "@rentdelegate/shared";
+import type { PacketDocument } from "@casium/shared";
 
 export type EncryptedPacket = {
   ciphertextBase64: string;

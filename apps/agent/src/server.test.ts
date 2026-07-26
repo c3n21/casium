@@ -34,7 +34,7 @@ describe("GET /health", () => {
     expect(res.status).toBe(200);
     const body = await res.json() as Record<string, unknown>;
     expect(body.ok).toBe(true);
-    expect(body.service).toBe("rentdelegate-agent");
+    expect(body.service).toBe("casium-agent");
     expect(typeof body.agentSuiAddress).toBe("string");
     expect(typeof body.agentkitMode).toBe("string");
     // agentEvmAddress is null when AGENTKIT_DEMO_AGENT_EVM_ADDRESS is not set in test env

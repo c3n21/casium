@@ -1,5 +1,5 @@
-import { ERROR_CODES } from "@rentdelegate/shared";
-import type { RentalMandate } from "@rentdelegate/sui-client";
+import { ERROR_CODES } from "@casium/shared";
+import type { RentalMandate } from "@casium/sui-client";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../app.js";
 import type { ReceiptVerificationService } from "../services/suiVerifier.js";

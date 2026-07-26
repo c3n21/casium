@@ -14,12 +14,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useCurrentAccount, useCurrentClient, useDAppKit } from "@mysten/dapp-kit-react";
-import { createSealClient, DEFAULT_THRESHOLD, SessionKey } from "@rentdelegate/seal";
-import { deriveSealIdentity, identityToHex } from "@rentdelegate/shared";
-import { LATEST_PACKAGE_ID, PACKAGE_ID } from "@rentdelegate/contracts-config";
-import { createWalrusHttpAdapter } from "@rentdelegate/walrus/http";
-import type { ApplicationReceipt } from "@rentdelegate/sui-client";
-import type { PacketDocument } from "@rentdelegate/shared";
+import { createSealClient, DEFAULT_THRESHOLD, SessionKey } from "@casium/seal";
+import { deriveSealIdentity, identityToHex } from "@casium/shared";
+import { LATEST_PACKAGE_ID, PACKAGE_ID } from "@casium/contracts-config";
+import { createWalrusHttpAdapter } from "@casium/walrus/http";
+import type { ApplicationReceipt } from "@casium/sui-client";
+import type { PacketDocument } from "@casium/shared";
 import { Transaction } from "@mysten/sui/transactions";
 
 // ---------------------------------------------------------------------------

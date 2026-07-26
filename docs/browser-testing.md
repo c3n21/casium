@@ -55,7 +55,7 @@ completely separate from the opencode path. A wallet connected in one is not con
 
 ### Neither harness available
 
-`playwright@^1.61.1` is a devDependency of `@rentdelegate/web`, so a throwaway script can drive a
+`playwright@^1.61.1` is a devDependency of `@casium/web`, so a throwaway script can drive a
 browser directly with `chromium.launchPersistentContext(...)` pointed at the same profile directory.
 Keep such scripts in `/tmp`, not in the repo — they are debugging aids, not project infrastructure.
 
@@ -80,10 +80,10 @@ delete it to "clean up".
 
 | Service | Port | Start | Notes |
 |---|---:|---|---|
-| Web | 3000 | `pnpm --filter @rentdelegate/web dev` | Next.js default. Use `dev` for active UI work. |
-| Web (built) | 3000 | `pnpm --filter @rentdelegate/web build` then `start` | `start` serves the build and does **not** hot-reload. Build first or you serve stale output. |
-| Provider API | 4021 | `pnpm --filter @rentdelegate/provider-api build` then `start` | Overridable via `PORT`. |
-| Agent service | 4022 | `pnpm --filter @rentdelegate/agent build` then `run start:server` | Required by the `/agent` page; without it the page shows "Agent offline". Use `run dev:server` for active agent work. Overridable via `AGENT_SERVER_PORT`. |
+| Web | 3000 | `pnpm --filter @casium/web dev` | Next.js default. Use `dev` for active UI work. |
+| Web (built) | 3000 | `pnpm --filter @casium/web build` then `start` | `start` serves the build and does **not** hot-reload. Build first or you serve stale output. |
+| Provider API | 4021 | `pnpm --filter @casium/provider-api build` then `start` | Overridable via `PORT`. |
+| Agent service | 4022 | `pnpm --filter @casium/agent build` then `run start:server` | Required by the `/agent` page; without it the page shows "Agent offline". Use `run dev:server` for active agent work. Overridable via `AGENT_SERVER_PORT`. |
 
 Check port 3000 is free before starting, and do not leave stale servers running:
 
@@ -94,7 +94,7 @@ ss -ltnp | grep -E ':(3000|4021|4022)'
 For a short smoke it is acceptable to background a server with `nohup`:
 
 ```bash
-nohup pnpm --filter @rentdelegate/web dev > /tmp/rentdelegate-web.log 2>&1 &
+nohup pnpm --filter @casium/web dev > /tmp/casium-web.log 2>&1 &
 ```
 
 Treat that as a local testing helper, not project infrastructure. For repeated demo workflows prefer

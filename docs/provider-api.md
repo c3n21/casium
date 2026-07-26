@@ -8,7 +8,7 @@ Set `PROVIDER_STORE=postgres` and `DATABASE_URL=postgres://...` to use Postgres 
 Omit `PROVIDER_STORE` or set it to `memory` to use the default in-memory Maps (required for tests).
 
 ```bash
-pnpm db:up        # start Postgres (port 5432, credentials rentdelegate/rentdelegate)
+pnpm db:up        # start Postgres (port 5432, credentials casium/casium)
 pnpm db:migrate   # apply every drizzle/*.sql exactly once
 ```
 
@@ -53,7 +53,7 @@ Returns one listing or `404 { "error": "LISTING_NOT_FOUND" }`.
 
 `POST /listings`
 
-Creates an in-process local listing record for route tests and early frontend/agent integration. Request fields match `@rentdelegate/shared` `ListingSchema` without `id` and `createdAt`; `id` is optional and defaults to `listing_${externalListingId}`.
+Creates an in-process local listing record for route tests and early frontend/agent integration. Request fields match `@casium/shared` `ListingSchema` without `id` and `createdAt`; `id` is optional and defaults to `listing_${externalListingId}`.
 
 This endpoint is demo scaffolding only and is not production provider authentication.
 

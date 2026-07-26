@@ -6,8 +6,8 @@ import { MandateStatus } from "@/components/MandateStatus";
 import { RevokeButton } from "@/components/RevokeButton";
 import { PacketBuilder } from "@/components/PacketBuilder";
 import { WithdrawButton } from "@/components/WithdrawButton";
-import { SMOKE, EXPLORER_OBJECT } from "@rentdelegate/contracts-config";
-import { demoSession } from "@/lib/demoSession";
+import { SMOKE, EXPLORER_OBJECT } from "@casium/contracts-config";
+import { demoSession, type StoredListing } from "@/lib/demoSession";
 import { EXPLORER_TX } from "@/lib/constants";
 
 const PROVIDER_API = process.env.NEXT_PUBLIC_PROVIDER_API_URL ?? "http://localhost:4021";
@@ -52,6 +52,15 @@ const MUNICIPALITY_LABELS: Record<number, string> = {
   5: "Almada",
   6: "Porto (ineligible)",
 };
+
+/** Handoff shape written to localStorage for the `/agent` page. */
+function toStoredListing(listing: ProviderListing): StoredListing {
+  return {
+    providerListingId: listing.id,
+    listingObjectId: listing.listingObjectId,
+    externalListingId: listing.externalListingId,
+  };
+}
 
 function ApplicationsSection({
   mandateId,
@@ -244,9 +253,7 @@ export default function RenterPage() {
   function toggleListing(listing: ProviderListing, checked: boolean) {
     setSelectedListings((prev) => {
       const next = checked ? [...prev, listing] : prev.filter((l) => l.id !== listing.id);
-      demoSession.saveListings(
-        next.map((l) => ({ providerListingId: l.id, listingObjectId: l.listingObjectId })),
-      );
+      demoSession.saveListings(next.map(toStoredListing));
       return next;
     });
   }
@@ -413,12 +420,7 @@ export default function RenterPage() {
                               result.packetHash,
                             );
                             // Persist the full listing selection so agent page picks it up.
-                            demoSession.saveListings(
-                              selectedListings.map((s) => ({
-                                providerListingId: s.id,
-                                listingObjectId: s.listingObjectId,
-                              })),
-                            );
+                            demoSession.saveListings(selectedListings.map(toStoredListing));
                           }}
                         />
                       </div>

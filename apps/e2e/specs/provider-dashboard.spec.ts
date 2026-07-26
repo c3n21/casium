@@ -3,7 +3,7 @@
  * verification (Step 8 of docs/demo-script.md).
  */
 
-import { SMOKE } from "@rentdelegate/contracts-config";
+import { SMOKE } from "@casium/contracts-config";
 import { expect, test } from "../src/fixtures/test.js";
 import {
   LISBON_SECOND_LISTING,

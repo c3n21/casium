@@ -1,9 +1,9 @@
 #[test_only]
-module rentdelegate::rental_tests;
+module casium::rental_tests;
 
 use sui::clock;
 use sui::test_scenario;
-use rentdelegate::rental;
+use casium::rental;
 
 const OWNER: address = @0xA;
 const AGENT: address = @0xB;

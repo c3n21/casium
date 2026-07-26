@@ -10,10 +10,10 @@ const nextConfig = {
     "@mysten/dapp-kit-core",
     "@mysten/seal",
     "@mysten/sui",
-    "@rentdelegate/seal",
-    "@rentdelegate/sui-client",
-    "@rentdelegate/shared",
-    "@rentdelegate/walrus",
+    "@casium/seal",
+    "@casium/sui-client",
+    "@casium/shared",
+    "@casium/walrus",
   ],
   typescript: {
     // Type checking is done separately via `typecheck` script (tsc --noEmit).

@@ -8,7 +8,7 @@ import { expect, test } from "../src/fixtures/test.js";
 test("landing page shows the product message and three role links", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: "RentDelegate" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Casium" })).toBeVisible();
   await expect(
     page.getByText("World limits who the agent represents. Sui limits what the agent can do."),
   ).toBeVisible();

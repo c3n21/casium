@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { evaluateEligibility } from "./rules.js";
-import type { RentalMandate, RentalListing } from "@rentdelegate/sui-client";
+import type { RentalMandate, RentalListing } from "@casium/sui-client";
 
 const BASE_MANDATE: RentalMandate = {
   id: "0xmandate",

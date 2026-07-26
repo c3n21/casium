@@ -6,8 +6,8 @@ import {
   INELIGIBLE_LISTING_OBJECT_ID,
   EXPLORER_TX,
   EXPLORER_OBJECT,
-} from "@rentdelegate/contracts-config";
-import { createRentDelegateClient } from "@rentdelegate/sui-client";
+} from "@casium/contracts-config";
+import { createCasiumClient } from "@casium/sui-client";
 import { AGENT_API } from "@/lib/agentApi";
 import { PACKAGE_ID, RPC_URL_TESTNET } from "@/lib/constants";
 import { demoSession, type StoredListing } from "@/lib/demoSession";
@@ -95,7 +95,30 @@ function isMandateEvmMismatch(text: string | null | undefined): boolean {
   return !!text?.includes("MANDATE_EVM_MISMATCH");
 }
 
-function ResultPanel({ result }: { result: RunResult }) {
+/** Human-facing name for a target, falling back to the internal provider key. */
+function listingLabel(listing: StoredListing): string {
+  return listing.externalListingId ?? listing.providerListingId;
+}
+
+/**
+ * Title for the live run section. Naming the actual selection matters: a run
+ * targeting `porto-demo-1` under a hardcoded "Eligible listing (Lisbon)" heading
+ * reads as if the wrong listing were about to be applied to.
+ */
+function runTitle(targets: StoredListing[]): string {
+  if (targets.length === 0) return "Run: Eligible listing (Lisbon)";
+  if (targets.length > 3) return `Run: ${targets.length} selected listings`;
+  return `Run: ${targets.map(listingLabel).join(", ")}`;
+}
+
+function ResultPanel({
+  result,
+  labels,
+}: {
+  result: RunResult;
+  /** providerListingId → human-facing listing ID, for per-target rows. */
+  labels: Map<string, string>;
+}) {
   const evmMismatch =
     isMandateEvmMismatch(result.error) || isMandateEvmMismatch(result.reason);
 
@@ -171,7 +194,7 @@ function ResultPanel({ result }: { result: RunResult }) {
                 fontSize: "0.875rem",
               }}
             >
-              <code>{t.providerListingId}</code> — {t.status}
+              <code>{labels.get(t.providerListingId) ?? t.providerListingId}</code> — {t.status}
               {t.txDigest && (
                 <> — Tx: <code>{t.txDigest.slice(0, 16)}…</code></>
               )}
@@ -244,7 +267,7 @@ function RunSection({
 
       const mandate = E2E_STUB_SUI
         ? { agentEvm: agentEvmAddress }
-        : await createRentDelegateClient({
+        : await createCasiumClient({
             network: "testnet",
             rpcUrl: RPC_URL_TESTNET,
             packageId: PACKAGE_ID,
@@ -277,7 +300,7 @@ function RunSection({
         const missingTarget = targets.find((target) => !packetListingIds.has(target.providerListingId));
         if (missingTarget) {
           setPacketMissing(true);
-          throw new Error(`No packet is registered for target ${missingTarget.providerListingId}.`);
+          throw new Error(`No packet is registered for target ${listingLabel(missingTarget)}.`);
         }
       } else {
         const packetRes = await fetch(
@@ -294,7 +317,11 @@ function RunSection({
       // or plain mandateId (agent chooses listing from provider default).
       const runBody: Record<string, unknown> = { mandateId: mandateInput };
       if (targets && targets.length > 0) {
-        runBody.targets = targets;
+        // Send only the wire shape — externalListingId is a display-side concern.
+        runBody.targets = targets.map(({ providerListingId, listingObjectId: objectId }) => ({
+          providerListingId,
+          listingObjectId: objectId,
+        }));
       } else if (listingObjectId) {
         runBody.listingObjectId = listingObjectId;
       }
@@ -350,6 +377,7 @@ function RunSection({
   useEffect(() => () => stopPolling(), []);
 
   const result = runRecord?.result;
+  const targetLabels = new Map((targets ?? []).map((t) => [t.providerListingId, listingLabel(t)]));
   const noMandate = mandateInput.trim() === "";
   const agentIdentityLoading = agentEvmAddress === undefined;
   const evmMismatchError = isMandateEvmMismatch(error) || isMandateEvmMismatch(runRecord?.error);
@@ -477,7 +505,7 @@ function RunSection({
 
       {stage && <StageList currentStage={stage} />}
 
-      {result && <ResultPanel result={result} />}
+      {result && <ResultPanel result={result} labels={targetLabels} />}
       {runRecord?.status === "failed" && !result && (
         <p style={{ color: "#dc2626", marginTop: "0.5rem" }}>
           Run failed: {runRecord.error}
@@ -513,8 +541,8 @@ export default function AgentPage() {
 
   // Resolve active mandate using the priority order specified in RD-167:
   //   1. URL ?mandateId
-  //   2. localStorage rentdelegate:lastPacketMandateId
-  //   3. localStorage rentdelegate:lastMandateId
+  //   2. localStorage casium:lastPacketMandateId
+  //   3. localStorage casium:lastMandateId
   //   4. none (Start disabled)
   useEffect(() => {
     const fromUrl = new URLSearchParams(window.location.search).get("mandateId");
@@ -543,7 +571,7 @@ export default function AgentPage() {
     <main style={{ maxWidth: 700, margin: "2rem auto", padding: "0 1rem" }}>
       <h1>Agent Operator</h1>
       <p style={{ color: "#64748b" }}>
-        Trigger the RentDelegate agent from the browser. The agent loads the mandate on-chain,
+        Trigger the Casium agent from the browser. The agent loads the mandate on-chain,
         evaluates listing eligibility, encrypts and uploads the packet, reserves and submits the
         application on Sui, and verifies the receipt with the provider.
       </p>
@@ -588,7 +616,7 @@ export default function AgentPage() {
           }}
         >
           <strong>Targets:</strong>{" "}
-          <span>{selectedListings.map((t) => t.providerListingId).join(", ")}</span>
+          <span>{selectedListings.map(listingLabel).join(", ")}</span>
           <button
             onClick={() => {
               demoSession.clearListings();
@@ -609,14 +637,18 @@ export default function AgentPage() {
         </div>
       )}
 
-      {/* Live eligible listing run — mandate from URL/localStorage, no smoke default */}
+      {/* Live run — mandate from URL/localStorage, listings from the renter handoff */}
       <RunSection
-        title="Run: Eligible listing (Lisbon)"
+        title={runTitle(selectedListings)}
         mandateId={activeMandateId}
         targets={selectedListings.length > 0 ? selectedListings : undefined}
         agentEvmAddress={health?.agentEvmAddress}
         mandateSource={mandateSource !== "none" ? SOURCE_LABELS[mandateSource] : undefined}
-        description="Evaluates listing eligibility, uploads packet, reserves and submits application on Sui."
+        description={
+          selectedListings.length > 0
+            ? "Evaluates each selected listing and applies only where eligible; uploads packet, reserves and submits on Sui."
+            : "Evaluates listing eligibility, uploads packet, reserves and submits application on Sui."
+        }
       />
 
       {/* ── Archived evidence ── */}

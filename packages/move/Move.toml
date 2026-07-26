@@ -1,9 +1,9 @@
 [package]
-name = "rentdelegate"
+name = "casium"
 edition = "2024"
 license = "MIT"
 
 [dependencies]
 
 [addresses]
-rentdelegate = "0x0"
+casium = "0x0"

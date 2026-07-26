@@ -59,11 +59,11 @@ done
 if [ "$PROVIDER_STORE" = "postgres" ]; then
   echo "==> Starting Postgres"
   docker compose up -d postgres
-  export DATABASE_URL="${DATABASE_URL:-postgres://rentdelegate:rentdelegate@localhost:5432/rentdelegate}"
+  export DATABASE_URL="${DATABASE_URL:-postgres://casium:casium@localhost:5432/casium}"
 
   echo "==> Waiting for Postgres"
   for _ in $(seq 1 30); do
-    if docker compose exec -T postgres pg_isready -U rentdelegate >/dev/null 2>&1; then break; fi
+    if docker compose exec -T postgres pg_isready -U casium >/dev/null 2>&1; then break; fi
     sleep 1
   done
 
@@ -93,17 +93,17 @@ wait_for_http() {
 }
 
 echo "==> Starting provider API (:4021)"
-pnpm --filter @rentdelegate/provider-api start >"$LOG_DIR/provider.log" 2>&1 &
+pnpm --filter @casium/provider-api start >"$LOG_DIR/provider.log" 2>&1 &
 pids+=($!)
 wait_for_http http://localhost:4021/health "Provider API"
 
 echo "==> Starting agent server (:4022)"
-pnpm --filter @rentdelegate/agent start:server >"$LOG_DIR/agent.log" 2>&1 &
+pnpm --filter @casium/agent start:server >"$LOG_DIR/agent.log" 2>&1 &
 pids+=($!)
 wait_for_http http://localhost:4022/health "Agent"
 
 echo "==> Starting web app (:3000)"
-pnpm --filter @rentdelegate/web start >"$LOG_DIR/web.log" 2>&1 &
+pnpm --filter @casium/web start >"$LOG_DIR/web.log" 2>&1 &
 pids+=($!)
 wait_for_http http://localhost:3000 "Web app"
 

@@ -1,9 +1,9 @@
-import { MUNICIPALITIES } from "@rentdelegate/shared";
+import { MUNICIPALITIES } from "@casium/shared";
 import {
   DEMO_LISTING_OBJECT_ID,
   INELIGIBLE_LISTING_OBJECT_ID,
   PUBLISHER_ADDRESS,
-} from "@rentdelegate/contracts-config";
+} from "@casium/contracts-config";
 
 export const DEMO_LISTINGS = [
   {

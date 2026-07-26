@@ -1,12 +1,12 @@
 #[test_only]
 #[allow(deprecated_usage)]
-module rentdelegate::seal_tests;
+module casium::seal_tests;
 
 use sui::clock;
 use sui::object;
 use sui::test_scenario;
 use sui::test_utils;
-use rentdelegate::rental;
+use casium::rental;
 
 const LANDLORD: address = @0xD;
 const OTHER: address = @0xE;
@@ -61,7 +61,7 @@ fun test_seal_approve_happy_path() {
     test_scenario::end(scenario);
 }
 
-#[test, expected_failure(abort_code = 17, location = rentdelegate::rental)]
+#[test, expected_failure(abort_code = 17, location = casium::rental)]
 fun test_seal_approve_wrong_sender() {
     // Scenario sender is OTHER, but receipt.landlord is LANDLORD → ESEAL_WRONG_SENDER
     let mut scenario = test_scenario::begin(OTHER);
@@ -84,7 +84,7 @@ fun test_seal_approve_wrong_sender() {
     test_scenario::end(scenario);
 }
 
-#[test, expected_failure(abort_code = 18, location = rentdelegate::rental)]
+#[test, expected_failure(abort_code = 18, location = casium::rental)]
 fun test_seal_approve_wrong_identity() {
     // Pass garbage bytes instead of the real seal id → ESEAL_WRONG_IDENTITY
     let mut scenario = test_scenario::begin(LANDLORD);
@@ -109,7 +109,7 @@ fun test_seal_approve_wrong_identity() {
     test_scenario::end(scenario);
 }
 
-#[test, expected_failure(abort_code = 19, location = rentdelegate::rental)]
+#[test, expected_failure(abort_code = 19, location = casium::rental)]
 fun test_seal_approve_withdrawn_status() {
     // Receipt status is STATUS_WITHDRAWN → ESEAL_WRONG_STATUS
     let mut scenario = test_scenario::begin(LANDLORD);
@@ -132,7 +132,7 @@ fun test_seal_approve_withdrawn_status() {
     test_scenario::end(scenario);
 }
 
-#[test, expected_failure(abort_code = 20, location = rentdelegate::rental)]
+#[test, expected_failure(abort_code = 20, location = casium::rental)]
 fun test_seal_approve_expired_access() {
     // Clock is past access_expires_at_ms → ESEAL_EXPIRED_ACCESS
     let mut scenario = test_scenario::begin(LANDLORD);
@@ -156,7 +156,7 @@ fun test_seal_approve_expired_access() {
     test_scenario::end(scenario);
 }
 
-#[test, expected_failure(abort_code = 21, location = rentdelegate::rental)]
+#[test, expected_failure(abort_code = 21, location = casium::rental)]
 fun test_seal_approve_wrong_mandate() {
     // Pass a different mandate whose object ID does not match receipt.mandate_id → ESEAL_WRONG_MANDATE
     let mut scenario = test_scenario::begin(LANDLORD);
@@ -184,7 +184,7 @@ fun test_seal_approve_wrong_mandate() {
     test_scenario::end(scenario);
 }
 
-#[test, expected_failure(abort_code = 22, location = rentdelegate::rental)]
+#[test, expected_failure(abort_code = 22, location = casium::rental)]
 fun test_seal_approve_revoked_mandate() {
     // Mandate is revoked → ESEAL_MANDATE_REVOKED
     let mut scenario = test_scenario::begin(LANDLORD);

@@ -1,5 +1,5 @@
 {
-  "name": "@rentdelegate/web",
+  "name": "@casium/web",
   "version": "0.0.0",
   "private": true,
   "scripts": {
@@ -12,11 +12,11 @@
   "dependencies": {
     "@mysten/dapp-kit-react": "^2.1.11",
     "@mysten/sui": "^2.22.1",
-    "@rentdelegate/contracts-config": "workspace:*",
-    "@rentdelegate/seal": "workspace:*",
-    "@rentdelegate/shared": "workspace:*",
-    "@rentdelegate/sui-client": "workspace:*",
-    "@rentdelegate/walrus": "workspace:*",
+    "@casium/contracts-config": "workspace:*",
+    "@casium/seal": "workspace:*",
+    "@casium/shared": "workspace:*",
+    "@casium/sui-client": "workspace:*",
+    "@casium/walrus": "workspace:*",
     "@tanstack/react-query": "^5.101.4",
     "next": "^16.2.11",
     "react": "^19.2.3",

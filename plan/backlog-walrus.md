@@ -28,7 +28,7 @@ standing repo rule.
 | Status | DONE — 2026-07-25 |
 | Lane | L5 Walrus/privacy |
 | Objective | Know, before spending anything, whether the environment can actually store a blob. |
-| Suggested implementation | Add `pnpm --filter @rentdelegate/walrus check:env`, mirroring the existing `@rentdelegate/agent check:env`. It should resolve the `walrus` binary (`~/.local/bin/walrus`, never by exporting `PATH`), print the client version and configured context, resolve the wallet address, report SUI and WAL balances, and estimate the cost of storing one packet for the configured epoch count. It must exit non-zero with a readable message when WAL is insufficient, and it must not perform any write. |
+| Suggested implementation | Add `pnpm --filter @casium/walrus check:env`, mirroring the existing `@casium/agent check:env`. It should resolve the `walrus` binary (`~/.local/bin/walrus`, never by exporting `PATH`), print the client version and configured context, resolve the wallet address, report SUI and WAL balances, and estimate the cost of storing one packet for the configured epoch count. It must exit non-zero with a readable message when WAL is insufficient, and it must not perform any write. |
 | Files/modules | `packages/walrus/src/checkEnv.ts` (new), `packages/walrus/package.json`, `docs/walrus-adapter.md`. |
 | Dependencies | None. |
 | Blocks | RD-123, RD-124. |

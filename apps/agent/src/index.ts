@@ -1,5 +1,5 @@
 /**
- * RentDelegate Agent — deterministic mandate-scoped rental application agent.
+ * Casium Agent — deterministic mandate-scoped rental application agent.
  *
  * Dependency order:
  *   1. Load mandate from Sui to know scope constraints.
@@ -18,8 +18,8 @@ import {
   PUBLISHER_ADDRESS,
   RPC_URL as DEFAULT_RPC_URL,
   SMOKE as SMOKE_OBJECTS,
-} from "@rentdelegate/contracts-config";
-import { createRentDelegateClient } from "@rentdelegate/sui-client";
+} from "@casium/contracts-config";
+import { createCasiumClient } from "@casium/sui-client";
 import { evaluateEligibility } from "./rules.js";
 import { createProviderClient } from "./providerClient.js";
 import type { DemoAgentKitHeaders } from "./providerClient.js";
@@ -57,7 +57,7 @@ function readDemoAgentKitHeaders(): DemoAgentKitHeaders | null {
 }
 
 async function main() {
-  console.log("=== RentDelegate Agent ===");
+  console.log("=== Casium Agent ===");
   console.log(`Package:   ${PACKAGE_ID}`);
   console.log(`Provider:  ${PROVIDER_API_BASE}`);
   console.log(`Mandate:   ${SMOKE_MANDATE_ID}`);
@@ -79,7 +79,7 @@ async function main() {
     agentCapId = process.env.AGENT_CAP_ID;
     console.log(`    AgentCap:  ${agentCapId} (from env override)`);
   } else {
-    const suiClient = createRentDelegateClient({
+    const suiClient = createCasiumClient({
       network: "testnet",
       rpcUrl: RPC_URL,
       packageId: PACKAGE_ID,
@@ -97,7 +97,7 @@ async function main() {
 
   // Show eligibility info for both demo listings before running the pipeline
   console.log("\n[2] Evaluating listings...");
-  const suiClient = createRentDelegateClient({
+  const suiClient = createCasiumClient({
     network: "testnet",
     rpcUrl: RPC_URL,
     packageId: PACKAGE_ID,

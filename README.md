@@ -1,8 +1,8 @@
-# RentDelegate
+# Casium
 
 > **World limits who the agent represents. Sui limits what the agent can do.**
 
-RentDelegate is a scoped rental application agent built for ETHGlobal Lisbon 2026.
+Casium is a scoped rental application agent built for ETHGlobal Lisbon 2026.
 A human renter creates a Sui `RentalMandate` that defines what the agent is allowed to do.
 World AgentKit proves the agent is backed by a verified human. The agent can only act within
 both constraints simultaneously — it cannot exceed mandate scope, and it cannot act on behalf
@@ -186,7 +186,7 @@ always stored for the adapter default of 5 epochs. That is what bounds the windo
 
 ## Single-Agent Model
 
-For the demo and current implementation, RentDelegate assumes one stable agent identity:
+For the demo and current implementation, Casium assumes one stable agent identity:
 
 - `AGENT_SUI_ADDRESS` is the deployed agent service's stable Sui address.
 - `AGENT_SUI_PRIVATE_KEY` or `AGENT_SUI_PRIVATE_KEY_BASE64` must derive exactly that address.
@@ -247,16 +247,16 @@ demo — but run `pnpm db:migrate` first, or writes fail against missing tables.
 
 ```bash
 # Provider API
-pnpm --filter @rentdelegate/provider-api build && pnpm --filter @rentdelegate/provider-api start
+pnpm --filter @casium/provider-api build && pnpm --filter @casium/provider-api start
 
 # Web app
-pnpm --filter @rentdelegate/web build && pnpm --filter @rentdelegate/web start
+pnpm --filter @casium/web build && pnpm --filter @casium/web start
 
 # Agent server, so /agent can trigger runs from the browser
-pnpm --filter @rentdelegate/agent build && pnpm --filter @rentdelegate/agent start:server
+pnpm --filter @casium/agent build && pnpm --filter @casium/agent start:server
 
 # Agent once from the CLI (executes only if an agent Sui private key is configured)
-pnpm --filter @rentdelegate/agent check:env
+pnpm --filter @casium/agent check:env
 node apps/agent/dist/index.js
 
 # Duplicate-human proof

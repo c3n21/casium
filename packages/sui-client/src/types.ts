@@ -1,6 +1,6 @@
 import type { Transaction } from "@mysten/sui/transactions";
 
-export type RentDelegateConfig = {
+export type CasiumConfig = {
   network: "testnet" | "localnet";
   rpcUrl: string;
   packageId: string;
@@ -90,7 +90,7 @@ export type ApplicationReceipt = {
   worldRefHashBytes: number[];
 };
 
-export type RentDelegateClient = {
+export type CasiumClient = {
   getMandate(id: string): Promise<RentalMandate>;
   getListing(id: string): Promise<RentalListing>;
   getReceipt(id: string): Promise<ApplicationReceipt>;

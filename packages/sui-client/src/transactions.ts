@@ -2,7 +2,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import type {
   CreateListingInput,
   CreateMandateInput,
-  RentDelegateConfig,
+  CasiumConfig,
   RevokeMandateInput,
   SubmitApplicationInput,
   WithdrawApplicationInput,
@@ -10,7 +10,7 @@ import type {
 
 const CLOCK_OBJECT_ID = "0x6";
 
-export function buildCreateMandateTx(config: RentDelegateConfig, input: CreateMandateInput): Transaction {
+export function buildCreateMandateTx(config: CasiumConfig, input: CreateMandateInput): Transaction {
   const tx = new Transaction();
   tx.moveCall({
     target: target(config, "create_mandate"),
@@ -29,7 +29,7 @@ export function buildCreateMandateTx(config: RentDelegateConfig, input: CreateMa
   return tx;
 }
 
-export function buildCreateListingTx(config: RentDelegateConfig, input: CreateListingInput): Transaction {
+export function buildCreateListingTx(config: CasiumConfig, input: CreateListingInput): Transaction {
   const tx = new Transaction();
   tx.moveCall({
     target: target(config, "create_listing"),
@@ -48,7 +48,7 @@ export function buildCreateListingTx(config: RentDelegateConfig, input: CreateLi
   return tx;
 }
 
-export function buildSubmitApplicationTx(config: RentDelegateConfig, input: SubmitApplicationInput): Transaction {
+export function buildSubmitApplicationTx(config: CasiumConfig, input: SubmitApplicationInput): Transaction {
   const tx = new Transaction();
   tx.moveCall({
     target: target(config, "submit_application"),
@@ -66,7 +66,7 @@ export function buildSubmitApplicationTx(config: RentDelegateConfig, input: Subm
   return tx;
 }
 
-export function buildRevokeMandateTx(config: RentDelegateConfig, input: RevokeMandateInput): Transaction {
+export function buildRevokeMandateTx(config: CasiumConfig, input: RevokeMandateInput): Transaction {
   const tx = new Transaction();
   tx.moveCall({
     target: target(config, "revoke_mandate"),
@@ -75,7 +75,7 @@ export function buildRevokeMandateTx(config: RentDelegateConfig, input: RevokeMa
   return tx;
 }
 
-export function buildWithdrawApplicationTx(config: RentDelegateConfig, input: WithdrawApplicationInput): Transaction {
+export function buildWithdrawApplicationTx(config: CasiumConfig, input: WithdrawApplicationInput): Transaction {
   const tx = new Transaction();
   tx.moveCall({
     target: target(config, "withdraw_application"),
@@ -84,6 +84,6 @@ export function buildWithdrawApplicationTx(config: RentDelegateConfig, input: Wi
   return tx;
 }
 
-function target(config: RentDelegateConfig, functionName: string): `${string}::rental::${string}` {
+function target(config: CasiumConfig, functionName: string): `${string}::rental::${string}` {
   return `${config.packageId}::rental::${functionName}`;
 }

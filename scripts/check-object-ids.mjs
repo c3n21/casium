@@ -5,7 +5,7 @@
  * A 0x-prefixed 64-lowercase-hex string in application source code is a
  * hardcoded object ID.  The only place these may live is
  * packages/contracts-config/src/index.ts (and testnet.json).  Every other
- * consumer must import from @rentdelegate/contracts-config.
+ * consumer must import from @casium/contracts-config.
  *
  * Exclusions (by path):
  *   packages/contracts-config/   the canonical home
@@ -75,7 +75,7 @@ try {
 if (found) {
   console.error("❌ Hardcoded Sui object ID literals found outside packages/contracts-config:\n");
   console.error(output);
-  console.error("Fix: import the ID from @rentdelegate/contracts-config instead of restating the literal.");
+  console.error("Fix: import the ID from @casium/contracts-config instead of restating the literal.");
   process.exit(1);
 } else {
   console.log("✓ No hardcoded Sui object ID literals found outside packages/contracts-config.");

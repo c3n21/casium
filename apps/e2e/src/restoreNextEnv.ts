@@ -4,7 +4,7 @@
  * `next build` rewrites the tracked apps/web/next-env.d.ts to reference the
  * active distDir. Because the E2E build sets NEXT_DIST_DIR=.next-e2e, every run
  * would otherwise leave that file pointing at a directory that does not exist
- * in a clean clone — which breaks `pnpm --filter @rentdelegate/web typecheck`
+ * in a clean clone — which breaks `pnpm --filter @casium/web typecheck`
  * if it is ever committed.
  *
  * Point it back at `.next` afterwards. Only rewrites when the file actually

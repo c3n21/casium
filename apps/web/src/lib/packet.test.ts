@@ -1,4 +1,4 @@
-import { makeSyntheticPacket } from "@rentdelegate/shared";
+import { makeSyntheticPacket } from "@casium/shared";
 import { describe, expect, it } from "vitest";
 import { ciphertextBytes, decryptPacket, encryptPacket } from "../lib/packet.js";
 

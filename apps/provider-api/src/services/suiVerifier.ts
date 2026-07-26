@@ -1,9 +1,9 @@
-import type { ApplicationReceipt, RentDelegateClient } from "@rentdelegate/sui-client";
-import type { VerifyReceiptInput } from "@rentdelegate/shared";
-import { ERROR_CODES } from "@rentdelegate/shared";
-import type { ErrorCode } from "@rentdelegate/shared";
-import type { WalrusAdapter } from "@rentdelegate/walrus";
-import { createWalrusAdapter } from "@rentdelegate/walrus";
+import type { ApplicationReceipt, CasiumClient } from "@casium/sui-client";
+import type { VerifyReceiptInput } from "@casium/shared";
+import { ERROR_CODES } from "@casium/shared";
+import type { ErrorCode } from "@casium/shared";
+import type { WalrusAdapter } from "@casium/walrus";
+import { createWalrusAdapter } from "@casium/walrus";
 import type { ReservedApplication } from "./applications.js";
 
 const STATUS_SUBMITTED = 1;
@@ -30,7 +30,7 @@ export type ReceiptVerificationService = {
 };
 
 export function createSuiReceiptVerifier(
-  suiClient: Pick<RentDelegateClient, "getReceipt">,
+  suiClient: Pick<CasiumClient, "getReceipt">,
   walrus: WalrusAdapter = createWalrusAdapter(),
 ): ReceiptVerificationService {
   return {

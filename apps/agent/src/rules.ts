@@ -1,4 +1,4 @@
-import type { RentalMandate, RentalListing } from "@rentdelegate/sui-client";
+import type { RentalMandate, RentalListing } from "@casium/sui-client";
 
 export type EligibilityResult =
   | { eligible: true; reason: string }

@@ -9,7 +9,7 @@ import {
   EXPLORER_TX,
   SMOKE,
   LIVE_AGENT_RUN,
-} from "@rentdelegate/contracts-config";
+} from "@casium/contracts-config";
 
 const PROVIDER_API = process.env.NEXT_PUBLIC_PROVIDER_API_URL ?? "http://localhost:4021";
 

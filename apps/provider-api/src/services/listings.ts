@@ -1,9 +1,9 @@
-import { ListingSchema, MUNICIPALITIES } from "@rentdelegate/shared";
+import { ListingSchema, MUNICIPALITIES } from "@casium/shared";
 import {
   DEMO_LISTING_OBJECT_ID,
   INELIGIBLE_LISTING_OBJECT_ID,
   PUBLISHER_ADDRESS,
-} from "@rentdelegate/contracts-config";
+} from "@casium/contracts-config";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import type { Db } from "../db/client.js";

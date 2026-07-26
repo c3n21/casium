@@ -5,9 +5,9 @@
  * (server.ts) without duplicating logic.
  */
 
-import { createRentDelegateClient } from "@rentdelegate/sui-client";
+import { createCasiumClient } from "@casium/sui-client";
 import { SuiGrpcClient } from "@mysten/sui/grpc";
-import { DEMO_LISTING_OBJECT_ID } from "@rentdelegate/contracts-config";
+import { DEMO_LISTING_OBJECT_ID } from "@casium/contracts-config";
 import { evaluateEligibility } from "./rules.js";
 import { createProviderClient } from "./providerClient.js";
 import type { DemoAgentKitHeaders } from "./providerClient.js";
@@ -16,7 +16,7 @@ import {
   blobCoversAccessWindow,
   epochsForAccessWindow,
   WALRUS_EPOCH_DURATION_MS,
-} from "@rentdelegate/walrus";
+} from "@casium/walrus";
 
 // Provider-side listing ID used for the demo listing. The provider API stores listings
 // under its own internal keys; this one maps to DEMO_LISTING_OBJECT_ID.
@@ -150,7 +150,7 @@ export async function runAgent(
 
   const isMultiTarget = Boolean(input.targets);
 
-  const suiClient = createRentDelegateClient({
+  const suiClient = createCasiumClient({
     network: "testnet",
     rpcUrl,
     packageId,

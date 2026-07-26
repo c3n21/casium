@@ -117,8 +117,8 @@ After registering and verifying a MetaMask EVM address, use `scripts/agentkit-li
 1. Start provider API in real mode:
 
 ```bash
-pnpm --filter @rentdelegate/provider-api build
-AGENTKIT_MODE=real AGENTKIT_EVM_RPC_URL=https://worldchain-mainnet.g.alchemy.com/public pnpm --filter @rentdelegate/provider-api start
+pnpm --filter @casium/provider-api build
+AGENTKIT_MODE=real AGENTKIT_EVM_RPC_URL=https://worldchain-mainnet.g.alchemy.com/public pnpm --filter @casium/provider-api start
 ```
 
 2. Serve this repo locally so the browser can open the helper:

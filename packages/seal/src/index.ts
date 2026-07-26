@@ -1,6 +1,6 @@
 export { createSealClient, SessionKey } from "./client.js";
 export type {
-  RentDelegateSealClient,
+  CasiumSealClient,
   SealClientOptions,
   EncryptOptions,
   DecryptOptions,

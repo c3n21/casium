@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { ERROR_CODES } from "@rentdelegate/shared";
+import { ERROR_CODES } from "@casium/shared";
 import { createSuiReceiptVerifier } from "./suiVerifier.js";
 import type { ReservedApplication } from "./applications.js";
-import type { WalrusAdapter } from "@rentdelegate/walrus";
-import type { ApplicationReceipt } from "@rentdelegate/sui-client";
+import type { WalrusAdapter } from "@casium/walrus";
+import type { ApplicationReceipt } from "@casium/sui-client";
 
 // ---------------------------------------------------------------------------
 // Helpers

@@ -1,6 +1,6 @@
 # Walrus Adapter
 
-`@rentdelegate/walrus` exposes a stable adapter interface:
+`@casium/walrus` exposes a stable adapter interface:
 
 - `upload(bytes)` returns a blob ID and size.
 - `download(blobId)` returns bytes.

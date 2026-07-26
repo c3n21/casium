@@ -123,7 +123,7 @@ describe("executeSubmitApplication", () => {
     const keypair = Ed25519Keypair.generate();
     await expect(
       executeSubmitApplication({
-        suiClient: fakeRentDelegateClient(),
+        suiClient: fakeCasiumClient(),
         executionClient: fakeExecutionClient(),
         packageId: PACKAGE_ID,
         expectedAgentSuiAddress: Ed25519Keypair.generate().toSuiAddress(),
@@ -155,7 +155,7 @@ describe("executeSubmitApplication", () => {
     }));
 
     const result = await executeSubmitApplication({
-      suiClient: fakeRentDelegateClient(tx),
+      suiClient: fakeCasiumClient(tx),
       executionClient: { core: { listCoins, signAndExecuteTransaction } } as never,
       packageId: PACKAGE_ID,
       expectedAgentSuiAddress: keypair.toSuiAddress(),
@@ -181,7 +181,7 @@ describe("executeSubmitApplication", () => {
 
     await expect(
       executeSubmitApplication({
-        suiClient: fakeRentDelegateClient(),
+        suiClient: fakeCasiumClient(),
         executionClient: {
           core: { listCoins: vi.fn(async () => ({ objects: [] })), signAndExecuteTransaction },
         } as never,
@@ -306,7 +306,7 @@ describe("provider reservation AgentKit headers", () => {
   });
 });
 
-function fakeRentDelegateClient(tx = fakeTransaction()) {
+function fakeCasiumClient(tx = fakeTransaction()) {
   return {
     buildSubmitApplicationTx: vi.fn(() => tx),
   } as never;

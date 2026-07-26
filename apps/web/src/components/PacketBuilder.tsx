@@ -1,15 +1,15 @@
 "use client";
 
-import type { PacketDocument } from "@rentdelegate/shared";
-import { makeSyntheticPacket } from "@rentdelegate/shared";
+import type { PacketDocument } from "@casium/shared";
+import { makeSyntheticPacket } from "@casium/shared";
 import { useState } from "react";
 import { useCurrentClient } from "@mysten/dapp-kit-react";
 import { ciphertextBytes, decryptPacket, encryptPacket } from "../lib/packet";
 import type { EncryptedPacket } from "../lib/packet";
-import { createWalrusHttpAdapter } from "@rentdelegate/walrus/http";
-import type { WalrusAdapter } from "@rentdelegate/walrus";
-import { createSealClient } from "@rentdelegate/seal";
-import { PACKAGE_ID } from "@rentdelegate/contracts-config";
+import { createWalrusHttpAdapter } from "@casium/walrus/http";
+import type { WalrusAdapter } from "@casium/walrus";
+import { createSealClient } from "@casium/seal";
+import { PACKAGE_ID } from "@casium/contracts-config";
 
 // Determine the active Walrus mode from the Next.js public env var.
 // This mirrors what getWalrusMode() returns server-side.

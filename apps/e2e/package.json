@@ -1,9 +1,9 @@
 {
-  "name": "@rentdelegate/e2e",
+  "name": "@casium/e2e",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Playwright end-to-end tests for the RentDelegate demo flows (Epic E).",
+  "description": "Playwright end-to-end tests for the Casium demo flows (Epic E).",
   "scripts": {
     "e2e:stubbed": "playwright test --project=stubbed",
     "e2e:live": "playwright test --project=live-services",
@@ -12,8 +12,8 @@
   },
   "devDependencies": {
     "@playwright/test": "1.61.1",
-    "@rentdelegate/contracts-config": "workspace:*",
-    "@rentdelegate/shared": "workspace:*",
+    "@casium/contracts-config": "workspace:*",
+    "@casium/shared": "workspace:*",
     "@types/node": "^24.10.1",
     "typescript": "^7.0.2"
   }

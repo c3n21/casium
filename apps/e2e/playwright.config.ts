@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * RentDelegate E2E configuration (Epic E, RD-141).
+ * Casium E2E configuration (Epic E, RD-141).
  *
  * Three tiers, see plan/backlog-e2e.md:
  *   stubbed        no servers, no chain — provider/agent APIs intercepted by page.route
@@ -24,8 +24,8 @@ const BASE_URL = `http://localhost:${PORT}`;
 //  2. NEXT_DIST_DIR keeps that build out of `.next`, so running the tests never
 //     replaces the build the developer is about to demo.
 const webServerCommand = process.env.E2E_WEB_DEV
-  ? "pnpm --filter @rentdelegate/web dev"
-  : "pnpm --filter @rentdelegate/web build && pnpm --filter @rentdelegate/web start";
+  ? "pnpm --filter @casium/web dev"
+  : "pnpm --filter @casium/web build && pnpm --filter @casium/web start";
 
 const webServerEnv = {
   NEXT_DIST_DIR: ".next-e2e",
