@@ -10,7 +10,7 @@ import {
 import { createRentDelegateClient } from "@rentdelegate/sui-client";
 import { AGENT_API } from "@/lib/agentApi";
 import { PACKAGE_ID, RPC_URL_TESTNET } from "@/lib/constants";
-import { demoSession } from "@/lib/demoSession";
+import { demoSession, type StoredListing } from "@/lib/demoSession";
 
 const PROVIDER_API = process.env.NEXT_PUBLIC_PROVIDER_API_URL ?? "http://localhost:4021";
 
@@ -20,6 +20,17 @@ type HealthResponse = {
   agentSuiAddress: string;
   agentEvmAddress: string | null;
   agentkitMode: string;
+};
+
+type TargetResult = {
+  providerListingId: string;
+  listingObjectId: string;
+  status: "complete" | "ineligible" | "failed";
+  reason?: string;
+  applicationId?: string;
+  txDigest?: string;
+  receiptId?: string;
+  blobId?: string;
 };
 
 type RunResult = {
@@ -32,6 +43,7 @@ type RunResult = {
   status: "complete" | "ineligible" | "failed";
   reason?: string;
   error?: string;
+  targets?: TargetResult[];
 };
 
 type RunRecord = {
@@ -140,9 +152,35 @@ function ResultPanel({ result }: { result: RunResult }) {
         </p>
       )}
       {result.blobId && (
-        <p style={{ margin: 0 }}>
+        <p style={{ margin: result.targets && result.targets.length > 0 ? "0 0 0.5rem" : 0 }}>
           Blob ID: <code>{result.blobId}</code>
         </p>
+      )}
+      {result.targets && result.targets.length > 0 && (
+        <div style={{ marginTop: "0.5rem" }}>
+          <p style={{ margin: "0 0 0.4rem", fontWeight: 600 }}>Per-listing results:</p>
+          {result.targets.map((t) => (
+            <div
+              key={t.providerListingId}
+              style={{
+                padding: "0.4rem 0.6rem",
+                marginBottom: "0.3rem",
+                background: "rgba(255,255,255,0.6)",
+                borderRadius: 4,
+                fontSize: "0.875rem",
+              }}
+            >
+              <code>{t.providerListingId}</code> — {t.status}
+              {t.txDigest && (
+                <> — Tx: <code>{t.txDigest.slice(0, 16)}…</code></>
+              )}
+              {t.receiptId && (
+                <> — Receipt: <code>{t.receiptId.slice(0, 16)}…</code></>
+              )}
+              {t.reason && <> — {t.reason}</>}
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -156,6 +194,7 @@ function RunSection({
   mandateSource,
   smokeWarning,
   agentEvmAddress,
+  targets,
 }: {
   title: string;
   mandateId: string;
@@ -167,6 +206,8 @@ function RunSection({
   smokeWarning?: boolean;
   /** Current agent EVM signer reported by the local agent service. */
   agentEvmAddress?: string | null;
+  /** Multi-listing targets forwarded from the renter page. */
+  targets?: StoredListing[];
 }) {
   const [mandateInput, setMandateInput] = useState(mandateId);
   const [stage, setStage] = useState<Stage | null>(null);
@@ -225,13 +266,19 @@ function RunSection({
         throw new Error("No packet is registered for this mandate.");
       }
 
+      // Build the run body: use targets if provided, else fall back to listingObjectId
+      // or plain mandateId (agent chooses listing from provider default).
+      const runBody: Record<string, unknown> = { mandateId: mandateInput };
+      if (targets && targets.length > 0) {
+        runBody.targets = targets;
+      } else if (listingObjectId) {
+        runBody.listingObjectId = listingObjectId;
+      }
+
       const res = await fetch(`${AGENT_API}/runs`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          mandateId: mandateInput,
-          ...(listingObjectId ? { listingObjectId } : {}),
-        }),
+        body: JSON.stringify(runBody),
       });
 
       if (!res.ok) {
@@ -431,6 +478,7 @@ export default function AgentPage() {
   const [healthError, setHealthError] = useState<string | null>(null);
   const [activeMandateId, setActiveMandateId] = useState<string>("");
   const [mandateSource, setMandateSource] = useState<MandateSource>("none");
+  const [selectedListings, setSelectedListings] = useState<StoredListing[]>([]);
 
   useEffect(() => {
     fetch(`${AGENT_API}/health`)
@@ -462,6 +510,9 @@ export default function AgentPage() {
       setActiveMandateId("");
       setMandateSource("none");
     }
+
+    // Load selected listings saved from the renter page.
+    setSelectedListings(demoSession.loadListings());
   }, []);
 
   return (
@@ -496,10 +547,49 @@ export default function AgentPage() {
         )}
       </div>
 
+      {/* Selected listings display (from renter page handoff) */}
+      {selectedListings.length > 0 && (
+        <div
+          style={{
+            marginBottom: "1rem",
+            padding: "0.5rem 0.75rem",
+            background: "#f8fafc",
+            border: "1px solid #e2e8f0",
+            borderRadius: 4,
+            fontSize: "0.9rem",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            flexWrap: "wrap",
+          }}
+        >
+          <strong>Targets:</strong>{" "}
+          <span>{selectedListings.map((t) => t.providerListingId).join(", ")}</span>
+          <button
+            onClick={() => {
+              demoSession.clearListings();
+              setSelectedListings([]);
+            }}
+            style={{
+              background: "none",
+              border: "none",
+              color: "#2563eb",
+              cursor: "pointer",
+              fontSize: "0.9rem",
+              textDecoration: "underline",
+              padding: 0,
+            }}
+          >
+            [clear]
+          </button>
+        </div>
+      )}
+
       {/* Live eligible listing run — mandate from URL/localStorage, no smoke default */}
       <RunSection
         title="Run: Eligible listing (Lisbon)"
         mandateId={activeMandateId}
+        targets={selectedListings.length > 0 ? selectedListings : undefined}
         agentEvmAddress={health?.agentEvmAddress}
         mandateSource={mandateSource !== "none" ? SOURCE_LABELS[mandateSource] : undefined}
         description="Evaluates listing eligibility, uploads packet, reserves and submits application on Sui."

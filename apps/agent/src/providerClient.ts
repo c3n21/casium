@@ -109,6 +109,16 @@ export function createProviderClient(options: ProviderClientOptions) {
       if (!response.ok) throw new Error(`getPacketForMandate failed: ${response.status}`);
       return response.json() as Promise<PacketRecord>;
     },
+
+    async getPacketForListing(mandateId: string, providerListingId: string): Promise<PacketRecord | null> {
+      const response = await fetchImpl(
+        `${baseUrl}/packets/${encodeURIComponent(mandateId)}/${encodeURIComponent(providerListingId)}`,
+        { headers: { "content-type": "application/json" } },
+      );
+      if (response.status === 404) return null;
+      if (!response.ok) throw new Error(`getPacketForListing failed: ${response.status}`);
+      return response.json() as Promise<PacketRecord>;
+    },
   };
 }
 

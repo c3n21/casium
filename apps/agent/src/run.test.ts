@@ -73,27 +73,34 @@ const mockCreateClient = vi.mocked(createRentDelegateClient);
 const mockCreateProvider = vi.mocked(createProviderClient);
 const mockExecute = vi.mocked(executeSubmitApplication);
 
-function makeSuiClient(overrides?: { findAgentCapForMandate?: () => Promise<string | null> }) {
+function makeSuiClient(overrides?: {
+  findAgentCapForMandate?: () => Promise<string | null>;
+  getListing?: (id: string) => Promise<typeof listingBase>;
+  remainingApplications?: number;
+}) {
+  const remainingApplications = overrides?.remainingApplications ?? 3;
   return {
-    getMandate: vi.fn(async () => mandateBase),
-    getListing: vi.fn(async () => listingBase),
+    getMandate: vi.fn(async () => ({ ...mandateBase, remainingApplications })),
+    getListing: overrides?.getListing ?? vi.fn(async () => listingBase),
     findAgentCapForMandate: overrides?.findAgentCapForMandate ?? vi.fn(async () => "0xcap"),
     buildSubmitApplicationTx: vi.fn(),
   } as never;
 }
 
 function makeProviderClient(walrusBlobId = "mock:blob123") {
+  const packetRecord = {
+    mandateId: "0xmandate",
+    walrusBlobId,
+    packetHash: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab",
+    sizeBytes: 256,
+    encryptionMode: "mock" as const,
+    registeredAtMs: Date.now(),
+  };
   return {
     reserveApplication: vi.fn(async () => reservedApplication),
     verifyReceipt: vi.fn(async () => ({ ...reservedApplication, status: "accepted" as const })),
-    getPacketForMandate: vi.fn(async () => ({
-      mandateId: "0xmandate",
-      walrusBlobId,
-      packetHash: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab",
-      sizeBytes: 256,
-      encryptionMode: "mock" as const,
-      registeredAtMs: Date.now(),
-    })),
+    getPacketForMandate: vi.fn(async () => packetRecord),
+    getPacketForListing: vi.fn(async () => packetRecord),
   } as never;
 }
 
@@ -199,13 +206,135 @@ describe("runAgent", () => {
     expect(result.runId).toBe([...runIds][0]);
   });
 
-  it("throws when no packet has been registered for the mandate", async () => {
+  it("returns failed when no packet has been registered for the listing", async () => {
     mockCreateProvider.mockReturnValue({
       ...makeProviderClient(),
-      getPacketForMandate: vi.fn(async () => null),
+      getPacketForListing: vi.fn(async () => null),
     } as never);
 
-    await expect(runAgent(BASE_INPUT)).rejects.toThrow(/No packet registered for mandate/);
+    const result = await runAgent(BASE_INPUT);
+    expect(result.status).toBe("failed");
+    expect(result.reason).toMatch(/No packet registered for this listing/);
+  });
+});
+
+describe("multi-target runAgent", () => {
+  const TARGET_A = { providerListingId: "listing_a", listingObjectId: "0xlisting_a" };
+  const TARGET_B = { providerListingId: "listing_b", listingObjectId: "0xlisting_b" };
+
+  it("processes both targets and returns complete with targets array", async () => {
+    const reservedA = { ...reservedApplication, id: "app_a", listingObjectId: "0xlisting_a" };
+    const reservedB = { ...reservedApplication, id: "app_b", listingObjectId: "0xlisting_b" };
+    let callCount = 0;
+    mockCreateProvider.mockReturnValue({
+      ...makeProviderClient(),
+      reserveApplication: vi.fn(async () => (callCount++ === 0 ? reservedA : reservedB)),
+      verifyReceipt: vi.fn(async () => ({ ...reservedApplication, status: "accepted" as const })),
+    } as never);
+
+    mockExecute
+      .mockResolvedValueOnce({ txDigest: "tx_a", receiptId: "0xreceipt_a" })
+      .mockResolvedValueOnce({ txDigest: "tx_b", receiptId: "0xreceipt_b" });
+
+    const result = await runAgent({ ...BASE_INPUT, listingObjectId: undefined, targets: [TARGET_A, TARGET_B] });
+
+    expect(result.status).toBe("complete");
+    expect(result.targets).toHaveLength(2);
+    expect(result.targets![0].status).toBe("complete");
+    expect(result.targets![1].status).toBe("complete");
+    // Top-level backward-compat fields from first completed target
+    expect(result.txDigest).toBe("tx_a");
+    expect(result.receiptId).toBe("0xreceipt_a");
+    expect(result.applicationId).toBe("app_a");
+  });
+
+  it("skips ineligible targets and processes eligible ones", async () => {
+    // First listing is too expensive (ineligible), second is fine
+    mockCreateClient.mockReturnValue({
+      ...makeSuiClient(),
+      getListing: vi.fn(async (id: string) => {
+        if (id === "0xlisting_a") return { ...listingBase, id: "0xlisting_a", monthlyRentEur: 9999 };
+        return { ...listingBase, id: "0xlisting_b" };
+      }),
+    } as never);
+
+    const result = await runAgent({ ...BASE_INPUT, listingObjectId: undefined, targets: [TARGET_A, TARGET_B] });
+
+    expect(result.status).toBe("complete");
+    expect(result.targets).toHaveLength(2);
+    expect(result.targets![0].status).toBe("ineligible");
+    expect(result.targets![1].status).toBe("complete");
+    expect(mockExecute).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns ineligible when all targets are ineligible", async () => {
+    mockCreateClient.mockReturnValue({
+      ...makeSuiClient(),
+      getListing: vi.fn(async () => ({ ...listingBase, monthlyRentEur: 9999 })),
+    } as never);
+
+    const result = await runAgent({ ...BASE_INPUT, listingObjectId: undefined, targets: [TARGET_A, TARGET_B] });
+
+    expect(result.status).toBe("ineligible");
+    expect(result.targets).toHaveLength(2);
+    expect(result.targets!.every((t) => t.status === "ineligible")).toBe(true);
+    expect(mockExecute).not.toHaveBeenCalled();
+  });
+
+  it("stops processing when remaining applications reaches zero mid-loop", async () => {
+    // Returns 0 remaining apps on the second getMandate call (after processing first target)
+    let mandateCall = 0;
+    mockCreateClient.mockReturnValue({
+      ...makeSuiClient(),
+      getMandate: vi.fn(async () => {
+        mandateCall++;
+        // First call (loading mandate) has 1 remaining; second call inside loop returns 0
+        return { ...mandateBase, remainingApplications: mandateCall <= 2 ? 1 : 0 };
+      }),
+    } as never);
+
+    const result = await runAgent({ ...BASE_INPUT, listingObjectId: undefined, targets: [TARGET_A, TARGET_B] });
+
+    expect(result.status).toBe("complete");
+    expect(result.targets).toHaveLength(2);
+    expect(result.targets![0].status).toBe("complete");
+    expect(result.targets![1].status).toBe("failed");
+    expect(result.targets![1].reason).toMatch(/No remaining applications/);
+    expect(mockExecute).toHaveBeenCalledTimes(1);
+  });
+
+  it("records duplicate when provider returns 409-style error and continues", async () => {
+    let reserveCall = 0;
+    mockCreateProvider.mockReturnValue({
+      ...makeProviderClient(),
+      reserveApplication: vi.fn(async () => {
+        reserveCall++;
+        if (reserveCall === 1) {
+          throw new Error("Provider API /listings/listing_a/applications returned 409: DUPLICATE_HUMAN_LISTING");
+        }
+        return { ...reservedApplication, id: "app_b", listingObjectId: "0xlisting_b" };
+      }),
+      verifyReceipt: vi.fn(async () => ({ ...reservedApplication, status: "accepted" as const })),
+    } as never);
+
+    mockExecute.mockResolvedValue({ txDigest: "tx_b", receiptId: "0xreceipt_b" });
+
+    const result = await runAgent({ ...BASE_INPUT, listingObjectId: undefined, targets: [TARGET_A, TARGET_B] });
+
+    expect(result.status).toBe("complete");
+    expect(result.targets).toHaveLength(2);
+    expect(result.targets![0].status).toBe("duplicate");
+    expect(result.targets![0].reason).toMatch(/Already applied/);
+    expect(result.targets![1].status).toBe("complete");
+  });
+
+  it("backward compat: single listingObjectId still works without targets field", async () => {
+    const result = await runAgent(BASE_INPUT);
+
+    expect(result.status).toBe("complete");
+    expect(result.targets).toBeUndefined();
+    expect(result.txDigest).toBe("txdigest");
+    expect(result.receiptId).toBe("0xreceipt");
   });
 });
 

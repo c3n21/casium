@@ -71,6 +71,7 @@ type Stage =
 type PacketBuilderProps = {
   mandateId: string; // required — needed to register the packet with the provider
   listingObjectId?: string; // needed for Seal identity (RD-135)
+  providerListingId?: string; // needed for multi-listing packet scoping
   providerApiBase?: string; // defaults to NEXT_PUBLIC_PROVIDER_API_URL or localhost:4021
   onComplete?: (result: UploadResult) => void;
 };
@@ -78,6 +79,7 @@ type PacketBuilderProps = {
 export function PacketBuilder({
   mandateId,
   listingObjectId,
+  providerListingId,
   providerApiBase,
   onComplete,
 }: PacketBuilderProps) {
@@ -132,6 +134,7 @@ export function PacketBuilder({
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
             mandateId,
+            ...(providerListingId ? { providerListingId } : {}),
             walrusBlobId: blobId,
             packetHash,
             sizeBytes: encryptedBytes.byteLength,
@@ -172,6 +175,7 @@ export function PacketBuilder({
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
             mandateId,
+            ...(providerListingId ? { providerListingId } : {}),
             walrusBlobId: blobId,
             packetHash: encrypted.packetHash,
             sizeBytes: encrypted.packetSizeBytes,

@@ -114,7 +114,8 @@ app.get("/identity", (c) =>
 app.post("/runs", async (c) => {
   const body = await c.req.json().catch(() => ({})) as {
     mandateId?: string;
-    listingObjectId?: string;
+    targets?: Array<{ providerListingId: string; listingObjectId: string }>;
+    listingObjectId?: string;  // keep for backward compat
   };
 
   const mandateId = body.mandateId ?? SMOKE_MANDATE_ID;
@@ -124,7 +125,8 @@ app.post("/runs", async (c) => {
 
   const runInput: RunInput = {
     mandateId,
-    listingObjectId: body.listingObjectId,
+    ...(body.targets ? { targets: body.targets } : {}),
+    ...(body.listingObjectId ? { listingObjectId: body.listingObjectId } : {}),
     agentSuiAddress: SMOKE_AGENT_SUI_ADDRESS,
     // When signing live this must be the signer's own address: the provider compares
     // the reserved body against the address it recovered from the signature and

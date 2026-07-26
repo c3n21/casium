@@ -67,21 +67,27 @@ export const suiReceipts = pgTable(
 );
 
 /**
- * Renter packet registrations, keyed by mandate. One packet per mandate: a
- * re-upload replaces the previous record, which is what the renter expects when
- * they rebuild a packet after changing a document.
+ * Renter packet registrations, keyed by (mandateId, providerListingId). One
+ * packet per mandate+listing pair: a re-upload replaces the previous record.
+ * providerListingId defaults to "listing_lisbon_eligible" for backwards
+ * compatibility with older single-listing records.
  *
  * Durable because the agent reads this before every run — losing it on restart
  * surfaces three steps later as "No packet registered for mandate …".
  */
-export const packets = pgTable("packets", {
-  mandateId: text("mandate_id").primaryKey(),
-  walrusBlobId: text("walrus_blob_id").notNull(),
-  packetHash: text("packet_hash").notNull(),
-  sizeBytes: integer("size_bytes").notNull(),
-  encryptionMode: text("encryption_mode").notNull(),
-  registeredAtMs: bigint("registered_at_ms", { mode: "number" }).notNull(),
-});
+export const packets = pgTable(
+  "packets",
+  {
+    mandateId: text("mandate_id").notNull(),
+    providerListingId: text("provider_listing_id").notNull().default("listing_lisbon_eligible"),
+    walrusBlobId: text("walrus_blob_id").notNull(),
+    packetHash: text("packet_hash").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    encryptionMode: text("encryption_mode").notNull(),
+    registeredAtMs: bigint("registered_at_ms", { mode: "number" }).notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.mandateId, table.providerListingId] })],
+);
 
 export const documentAccessGrants = pgTable("document_access_grants", {
   id: text("id").primaryKey(),

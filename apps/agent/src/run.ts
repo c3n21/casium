@@ -36,10 +36,28 @@ function accessWindowDays(): number {
   return Number.isFinite(configured) && configured > 0 ? configured : DEFAULT_ACCESS_WINDOW_DAYS;
 }
 
+export type RunTarget = {
+  providerListingId: string;
+  listingObjectId: string;
+};
+
+export type TargetResult = {
+  providerListingId: string;
+  listingObjectId: string;
+  status: "complete" | "ineligible" | "failed" | "duplicate";
+  reason?: string;
+  applicationId?: string;
+  txDigest?: string;
+  receiptId?: string;
+  blobId?: string;
+};
+
 export type RunInput = {
   mandateId: string;
-  /** Sui object ID of the listing to apply for. Defaults to the demo listing. */
-  listingObjectId: string | undefined;
+  /** Multi-target: process each listing in sequence. */
+  targets?: RunTarget[];
+  /** Sui object ID of the listing to apply for. Defaults to the demo listing. (legacy single-target) */
+  listingObjectId?: string;
   agentSuiAddress: string;
   agentEvmAddress: string;
   /** If provided, skip AgentCap discovery and use this ID directly. */
@@ -74,6 +92,7 @@ export type RunProgress = {
 export type RunResult = {
   runId: string;
   mandateId: string;
+  // Single-target fields (backward compat)
   applicationId?: string;
   txDigest?: string;
   receiptId?: string;
@@ -81,6 +100,8 @@ export type RunResult = {
   status: "complete" | "ineligible" | "failed";
   reason?: string;
   error?: string;
+  // Multi-target fields (new)
+  targets?: TargetResult[];
 };
 
 export async function runAgent(
@@ -102,7 +123,6 @@ export async function runAgent(
     agentkitHeader,
   } = input;
 
-  const listingObjectId = input.listingObjectId ?? DEMO_LISTING_OBJECT_ID;
   const privateKey = input.privateKey;
   if (!privateKey) {
     throw new Error(
@@ -110,10 +130,25 @@ export async function runAgent(
     );
   }
 
-  // Use the listing's Sui object ID as provider listing ID unless it's the demo listing,
-  // in which case use the well-known provider-side key.
-  const providerListingId =
-    listingObjectId === DEMO_LISTING_OBJECT_ID ? DEMO_PROVIDER_LISTING_ID : listingObjectId;
+  // Resolve targets: multi-target array, legacy single-target, or demo default.
+  const targets: RunTarget[] = input.targets
+    ? input.targets
+    : [
+        {
+          listingObjectId: input.listingObjectId ?? DEMO_LISTING_OBJECT_ID,
+          providerListingId:
+            (input.listingObjectId ?? DEMO_LISTING_OBJECT_ID) === DEMO_LISTING_OBJECT_ID
+              ? DEMO_PROVIDER_LISTING_ID
+              : (() => {
+                  console.warn(
+                    `[runAgent] No providerListingId provided for listing ${input.listingObjectId}; using Sui ID as fallback.`,
+                  );
+                  return input.listingObjectId!;
+                })(),
+        },
+      ];
+
+  const isMultiTarget = Boolean(input.targets);
 
   const suiClient = createRentDelegateClient({
     network: "testnet",
@@ -133,7 +168,7 @@ export async function runAgent(
     ...(demoAgentKitHeaders ? { demoAgentKitHeaders } : {}),
   });
 
-  // 1. Discover AgentCap
+  // 1. Discover AgentCap (once for the whole run)
   let agentCapId: string;
   if (input.agentCapId) {
     agentCapId = input.agentCapId;
@@ -145,7 +180,7 @@ export async function runAgent(
     agentCapId = discovered;
   }
 
-  // 2. Load mandate
+  // 2. Load mandate (once)
   report("loading-mandate");
   const mandate = await suiClient.getMandate(mandateId);
 
@@ -158,125 +193,202 @@ export async function runAgent(
     };
   }
 
-  // 3. Evaluate listing
-  report("evaluating");
-  const listing = await suiClient.getListing(listingObjectId);
-  const eligibility = evaluateEligibility(mandate, listing);
+  // ─── Multi-target loop ────────────────────────────────────────────────────────
+  const targetResults: TargetResult[] = [];
 
-  if (!eligibility.eligible) {
-    return {
-      runId,
-      mandateId,
-      status: "ineligible",
-      reason: eligibility.reason,
-    };
-  }
+  for (const target of targets) {
+    const { listingObjectId, providerListingId } = target;
 
-  // 4. Read renter packet from provider
-  report("uploading");
-  console.log("\n[3] Reading renter packet from provider...");
-  const packetRecord = await provider.getPacketForMandate(mandateId);
-  if (!packetRecord) {
-    throw new Error(
-      `No packet registered for mandate ${mandateId}. The renter must build and upload a packet first.`,
-    );
-  }
-  const blobId = packetRecord.walrusBlobId;
-  const packetHashHex = packetRecord.packetHash;
-  console.log(`    Blob ID: ${blobId}`);
-  console.log(`    Hash:    ${packetHashHex}`);
+    // 3. Evaluate listing
+    report("evaluating");
+    const listing = await suiClient.getListing(listingObjectId);
+    const eligibility = evaluateEligibility(mandate, listing);
 
-  // Convert blob ID to bytes for the PTB
-  const blobIdBytes = Array.from(new TextEncoder().encode(blobId));
-  // Convert packet hash hex (0x-prefixed or plain) to bytes for the PTB
-  const hexStr = packetHashHex.replace(/^0x/, "");
-  const packetHashBytes: number[] = [];
-  for (let i = 0; i < hexStr.length; i += 2) {
-    packetHashBytes.push(parseInt(hexStr.slice(i, i + 2), 16));
-  }
+    if (!eligibility.eligible) {
+      targetResults.push({
+        providerListingId,
+        listingObjectId,
+        status: "ineligible",
+        reason: eligibility.reason,
+      });
+      continue;
+    }
 
-  // 5. Reserve with provider API
-  report("reserving");
+    // 4. Fetch listing-scoped packet
+    report("uploading");
+    console.log(`\n[packet] Reading packet for listing ${providerListingId}...`);
+    const packetRecord = await provider.getPacketForListing(mandateId, providerListingId);
+    if (!packetRecord) {
+      targetResults.push({
+        providerListingId,
+        listingObjectId,
+        status: "failed",
+        reason: "No packet registered for this listing.",
+      });
+      continue;
+    }
+    const blobId = packetRecord.walrusBlobId;
+    const packetHashHex = packetRecord.packetHash;
+    console.log(`    Blob ID: ${blobId}`);
+    console.log(`    Hash:    ${packetHashHex}`);
 
-  const windowDays = accessWindowDays();
-  const accessExpiresAtMs = Date.now() + windowDays * 24 * 60 * 60 * 1000;
+    // 5. Check remaining applications
+    const freshMandate = await suiClient.getMandate(mandateId);
+    if (freshMandate.remainingApplications <= 0) {
+      targetResults.push({
+        providerListingId,
+        listingObjectId,
+        status: "failed",
+        reason: "No remaining applications.",
+      });
+      break;
+    }
 
-  // Blob lifecycle alignment check (RD-124):
-  // Skip for mock blobs (they don't expire). For real blobs, verify the configured
-  // epoch count covers the access window before spending gas.
-  const isMockBlob = blobId.startsWith("mock:");
-  if (!isMockBlob) {
-    const configuredEpochs = Number(process.env["WALRUS_EPOCHS"] ?? 5);
-    if (!blobCoversAccessWindow(configuredEpochs, accessExpiresAtMs)) {
-      const requiredEpochs = epochsForAccessWindow(accessExpiresAtMs);
-      const blobDays = configuredEpochs * (WALRUS_EPOCH_DURATION_MS / 86_400_000);
+    // Convert blob ID to bytes for the PTB
+    const blobIdBytes = Array.from(new TextEncoder().encode(blobId));
+    // Convert packet hash hex (0x-prefixed or plain) to bytes for the PTB
+    const hexStr = packetHashHex.replace(/^0x/, "");
+    const packetHashBytes: number[] = [];
+    for (let i = 0; i < hexStr.length; i += 2) {
+      packetHashBytes.push(parseInt(hexStr.slice(i, i + 2), 16));
+    }
+
+    // 6. Reserve with provider API
+    report("reserving");
+
+    const windowDays = accessWindowDays();
+    const accessExpiresAtMs = Date.now() + windowDays * 24 * 60 * 60 * 1000;
+
+    // Blob lifecycle alignment check (RD-124):
+    // Skip for mock blobs (they don't expire). For real blobs, verify the configured
+    // epoch count covers the access window before spending gas.
+    const isMockBlob = blobId.startsWith("mock:");
+    if (!isMockBlob) {
+      const configuredEpochs = Number(process.env["WALRUS_EPOCHS"] ?? 5);
+      if (!blobCoversAccessWindow(configuredEpochs, accessExpiresAtMs)) {
+        const requiredEpochs = epochsForAccessWindow(accessExpiresAtMs);
+        const blobDays = configuredEpochs * (WALRUS_EPOCH_DURATION_MS / 86_400_000);
+        throw new Error(
+          `Blob lifecycle mismatch: a ${windowDays}-day access window requires ~${requiredEpochs} epochs ` +
+            `but the blob was stored for only ${configuredEpochs} epochs (~${blobDays} days). ` +
+            `Either lower AGENT_ACCESS_WINDOW_DAYS or re-upload the packet with WALRUS_EPOCHS>=${requiredEpochs}.`,
+        );
+      }
+    }
+
+    const idempotencyKey = crypto.randomUUID();
+
+    let reserved: Awaited<ReturnType<typeof provider.reserveApplication>>;
+    try {
+      reserved = await provider.reserveApplication(providerListingId, {
+        mandateId,
+        listingObjectId,
+        agentSuiAddress,
+        agentEvmAddress,
+        walrusBlobId: blobId,
+        packetHash: packetHashHex,
+        accessExpiresAtMs,
+        idempotencyKey,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.includes("DUPLICATE_HUMAN_LISTING") || message.includes("409")) {
+        targetResults.push({
+          providerListingId,
+          listingObjectId,
+          status: "duplicate",
+          reason: "Already applied to this listing.",
+        });
+        continue;
+      }
+      throw err;
+    }
+
+    // 7. Execute Sui submit_application PTB
+    report("submitting");
+    const executed = await executeSubmitApplication({
+      suiClient,
+      executionClient,
+      packageId,
+      expectedAgentSuiAddress: agentSuiAddress,
+      privateKey,
+      input: {
+        mandateId,
+        listingObjectId,
+        agentCapId,
+        walrusBlobIdBytes: blobIdBytes,
+        packetHashBytes,
+        accessExpiresAtMs,
+        worldRefHashBytes: [],
+      },
+    });
+
+    if (!executed.receiptId) {
       throw new Error(
-        `Blob lifecycle mismatch: a ${windowDays}-day access window requires ~${requiredEpochs} epochs ` +
-          `but the blob was stored for only ${configuredEpochs} epochs (~${blobDays} days). ` +
-          `Either lower AGENT_ACCESS_WINDOW_DAYS or re-upload the packet with WALRUS_EPOCHS>=${requiredEpochs}.`,
+        "Sui transaction succeeded but ApplicationReceipt ID was not found in events/effects",
       );
     }
-  }
+    const receiptId = executed.receiptId;
 
-  const idempotencyKey = crypto.randomUUID();
-  const reserved = await provider.reserveApplication(providerListingId, {
-    mandateId,
-    listingObjectId,
-    agentSuiAddress,
-    agentEvmAddress,
-    walrusBlobId: blobId,
-    packetHash: packetHashHex,
-    accessExpiresAtMs,
-    idempotencyKey,
-  });
-
-  // 6. Execute Sui submit_application PTB
-  report("submitting");
-  const executed = await executeSubmitApplication({
-    suiClient,
-    executionClient,
-    packageId,
-    expectedAgentSuiAddress: agentSuiAddress,
-    privateKey,
-    input: {
-      mandateId,
-      listingObjectId,
-      agentCapId,
-      walrusBlobIdBytes: blobIdBytes,
-      packetHashBytes,
-      accessExpiresAtMs,
-      worldRefHashBytes: [],
-    },
-  });
-
-  if (!executed.receiptId) {
-    throw new Error(
-      "Sui transaction succeeded but ApplicationReceipt ID was not found in events/effects",
+    // 8. Verify receipt
+    report("verifying");
+    await verifyReceiptWithRetry(
+      () =>
+        provider.verifyReceipt(reserved.id, {
+          applicationId: reserved.id,
+          txDigest: executed.txDigest,
+          receiptId,
+        }),
+      { txDigest: executed.txDigest, receiptId },
     );
-  }
-  const receiptId = executed.receiptId;
 
-  // 7. Verify receipt
-  report("verifying");
-  await verifyReceiptWithRetry(
-    () => provider.verifyReceipt(reserved.id, {
+    targetResults.push({
+      providerListingId,
+      listingObjectId,
+      status: "complete",
       applicationId: reserved.id,
       txDigest: executed.txDigest,
       receiptId,
-    }),
-    { txDigest: executed.txDigest, receiptId },
-  );
+      blobId,
+    });
+  }
 
   report("complete");
-  return {
+
+  // ─── Derive top-level status ──────────────────────────────────────────────────
+  const firstComplete = targetResults.find((r) => r.status === "complete");
+  const allIneligible = targetResults.length > 0 && targetResults.every((r) => r.status === "ineligible");
+
+  const topStatus: RunResult["status"] = firstComplete
+    ? "complete"
+    : allIneligible
+      ? "ineligible"
+      : "failed";
+
+  // For backward compat (single target / legacy path), promote first completed target
+  // fields to the top level. Also set a top-level reason for ineligible/failed.
+  const firstFailed = targetResults.find((r) => r.status === "failed" || r.status === "ineligible");
+  const topReason =
+    firstComplete === undefined ? (firstFailed?.reason ?? targetResults[0]?.reason) : undefined;
+
+  const result: RunResult = {
     runId,
     mandateId,
-    applicationId: reserved.id,
-    txDigest: executed.txDigest,
-    receiptId,
-    blobId,
-    status: "complete",
+    status: topStatus,
+    ...(topReason ? { reason: topReason } : {}),
+    ...(firstComplete
+      ? {
+          applicationId: firstComplete.applicationId,
+          txDigest: firstComplete.txDigest,
+          receiptId: firstComplete.receiptId,
+          blobId: firstComplete.blobId,
+        }
+      : {}),
+    // Include targets array only when multi-target was explicitly requested
+    ...(isMultiTarget ? { targets: targetResults } : {}),
   };
+
+  return result;
 }
 
 async function verifyReceiptWithRetry(

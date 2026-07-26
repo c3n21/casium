@@ -27,6 +27,7 @@ const K = {
   lastPacketMandateId: "rentdelegate:lastPacketMandateId",
   lastPacketBlobId: "rentdelegate:lastPacketBlobId",
   lastPacketHash: "rentdelegate:lastPacketHash",
+  lastSelectedListings: "rentdelegate:lastSelectedListings",
 } as const;
 
 function isClient(): boolean {
@@ -65,6 +66,11 @@ export type StoredMandate = {
   ownerCapId: string;
   agentCapId: string;
   txDigest: string;
+};
+
+export type StoredListing = {
+  providerListingId: string;
+  listingObjectId: string;
 };
 
 export const demoSession = {
@@ -133,5 +139,27 @@ export const demoSession = {
     lsRemove(K.lastPacketMandateId);
     lsRemove(K.lastPacketBlobId);
     lsRemove(K.lastPacketHash);
+    lsRemove(K.lastSelectedListings);
+  },
+
+  /** Persist the selected listings for the multi-listing agent handoff. */
+  saveListings(listings: StoredListing[]): void {
+    lsSet(K.lastSelectedListings, JSON.stringify(listings));
+  },
+
+  /** Restore previously saved listings. Returns [] on missing key or parse error. */
+  loadListings(): StoredListing[] {
+    const raw = lsGet(K.lastSelectedListings);
+    if (!raw) return [];
+    try {
+      return JSON.parse(raw) as StoredListing[];
+    } catch {
+      return [];
+    }
+  },
+
+  /** Clear the selected-listings key from localStorage. */
+  clearListings(): void {
+    lsRemove(K.lastSelectedListings);
   },
 } as const;

@@ -6,7 +6,7 @@ import { MandateStatus } from "@/components/MandateStatus";
 import { RevokeButton } from "@/components/RevokeButton";
 import { PacketBuilder } from "@/components/PacketBuilder";
 import { WithdrawButton } from "@/components/WithdrawButton";
-import { SMOKE, DEMO_LISTING_OBJECT_ID, EXPLORER_OBJECT } from "@rentdelegate/contracts-config";
+import { SMOKE, EXPLORER_OBJECT } from "@rentdelegate/contracts-config";
 import { demoSession } from "@/lib/demoSession";
 import { EXPLORER_TX } from "@/lib/constants";
 
@@ -30,6 +30,27 @@ type Application = {
     receiptId: string;
     txDigest?: string;
   };
+};
+
+type ProviderListing = {
+  id: string;
+  listingObjectId: string;
+  externalListingId: string;
+  municipalityCode: number;
+  monthlyRentEur: number;
+  bedrooms: number;
+  active: boolean;
+};
+
+type PacketCompleteResult = { walrusBlobId: string; packetHash: string; sizeBytes: number };
+
+const MUNICIPALITY_LABELS: Record<number, string> = {
+  1: "Lisbon",
+  2: "Oeiras",
+  3: "Cascais",
+  4: "Amadora",
+  5: "Almada",
+  6: "Porto (ineligible)",
 };
 
 function ApplicationsSection({
@@ -150,6 +171,11 @@ export default function RenterPage() {
   const [revoked, setRevoked] = useState(false);
   const [revokeTxDigest, setRevokeTxDigest] = useState<string | null>(null);
 
+  // Multi-listing state
+  const [listings, setListings] = useState<ProviderListing[]>([]);
+  const [selectedListings, setSelectedListings] = useState<ProviderListing[]>([]);
+  const [packetResults, setPacketResults] = useState<Map<string, PacketCompleteResult>>(new Map());
+
   // On mount: read URL param and restore mandate from localStorage (SSR-safe).
   useEffect(() => {
     const fromUrl = new URLSearchParams(window.location.search).get("mandateId");
@@ -159,6 +185,25 @@ export default function RenterPage() {
     if (stored) {
       setMandate(stored);
     }
+  }, []);
+
+  // Fetch provider listings and restore any saved selections.
+  useEffect(() => {
+    fetch(`${PROVIDER_API}/listings`)
+      .then((r) => r.json())
+      .then((data: { listings?: ProviderListing[] }) => {
+        const fetched = data.listings ?? [];
+        setListings(fetched);
+        // Restore previously selected listings by matching stored IDs.
+        const stored = demoSession.loadListings();
+        if (stored.length > 0) {
+          const storedIds = new Set(stored.map((s) => s.providerListingId));
+          setSelectedListings(fetched.filter((l) => storedIds.has(l.id)));
+        }
+      })
+      .catch(() => {
+        // Non-fatal: listing selector stays empty.
+      });
   }, []);
 
   // The mandateId to register a packet against.
@@ -175,19 +220,35 @@ export default function RenterPage() {
   function handleRevoked(txDigest: string) {
     demoSession.clearMandate();
     demoSession.clearPacket();
+    demoSession.clearListings();
     setMandate(null);
     setQueryMandateId(null);
     setRevokeTxDigest(txDigest);
     setRevoked(true);
+    setSelectedListings([]);
+    setPacketResults(new Map());
   }
 
   function handleStartOver() {
     demoSession.clearMandate();
     demoSession.clearPacket();
+    demoSession.clearListings();
     setMandate(null);
     setQueryMandateId(null);
     setRevoked(false);
     setRevokeTxDigest(null);
+    setSelectedListings([]);
+    setPacketResults(new Map());
+  }
+
+  function toggleListing(listing: ProviderListing, checked: boolean) {
+    setSelectedListings((prev) => {
+      const next = checked ? [...prev, listing] : prev.filter((l) => l.id !== listing.id);
+      demoSession.saveListings(
+        next.map((l) => ({ providerListingId: l.id, listingObjectId: l.listingObjectId })),
+      );
+      return next;
+    });
   }
 
   return (
@@ -270,29 +331,115 @@ export default function RenterPage() {
             mandateId={mandate.mandateId}
             ownerCapId={mandate.ownerCapId}
           />
+
+          {!revoked && packetMandateId && (
+            <>
+              <hr style={{ margin: "1.5rem 0", borderColor: "#e2e8f0" }} />
+
+              <h2 style={{ marginBottom: "0.5rem" }}>Select target listings</h2>
+              <p style={{ color: "#64748b", fontSize: "0.9rem", marginTop: 0 }}>
+                Agent will evaluate each selected listing and apply only where eligible.
+              </p>
+
+              {listings.length === 0 ? (
+                <p style={{ color: "#94a3b8" }}>Loading listings…</p>
+              ) : (
+                <div style={{ marginBottom: "1rem" }}>
+                  {listings
+                    .filter((l) => l.active)
+                    .map((listing) => (
+                      <div key={listing.id} style={{ marginBottom: "0.4rem" }}>
+                        <label
+                          style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedListings.some((s) => s.id === listing.id)}
+                            onChange={(e) => toggleListing(listing, e.target.checked)}
+                          />
+                          <span>
+                            {listing.externalListingId}
+                            {" — "}
+                            {MUNICIPALITY_LABELS[listing.municipalityCode] ??
+                              `Code ${listing.municipalityCode}`}
+                            {" — "}
+                            €{listing.monthlyRentEur}/mo
+                            {" — "}
+                            {listing.bedrooms}bd
+                          </span>
+                        </label>
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              {selectedListings.length > 0 && (
+                <div style={{ marginTop: "0.5rem" }}>
+                  {selectedListings.map((listing) => {
+                    const uploaded = packetResults.has(listing.id);
+                    return (
+                      <div
+                        key={listing.id}
+                        style={{
+                          marginBottom: "1.5rem",
+                          padding: "0.75rem",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: 6,
+                        }}
+                      >
+                        <p style={{ margin: "0 0 0.5rem", fontWeight: 600 }}>
+                          {listing.externalListingId}{" "}
+                          {uploaded ? (
+                            <span style={{ color: "#16a34a", fontWeight: 400 }}>
+                              — packet uploaded ✓
+                            </span>
+                          ) : (
+                            <span style={{ color: "#94a3b8", fontWeight: 400 }}>
+                              — no packet yet
+                            </span>
+                          )}
+                        </p>
+                        <PacketBuilder
+                          mandateId={packetMandateId}
+                          listingObjectId={listing.listingObjectId}
+                          providerListingId={listing.id}
+                          onComplete={(result) => {
+                            setPacketResults((prev) => new Map(prev).set(listing.id, result));
+                            // Keep backward-compat lastPacketMandateId so agent page
+                            // still resolves the mandate via priority-2 source.
+                            demoSession.savePacket(
+                              packetMandateId,
+                              result.walrusBlobId,
+                              result.packetHash,
+                            );
+                            // Persist the full listing selection so agent page picks it up.
+                            demoSession.saveListings(
+                              selectedListings.map((s) => ({
+                                providerListingId: s.id,
+                                listingObjectId: s.listingObjectId,
+                              })),
+                            );
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
+
+                  {packetResults.size > 0 && (
+                    <p style={{ marginTop: "0.5rem" }}>
+                      <a
+                        href={`/agent?mandateId=${encodeURIComponent(packetMandateId)}`}
+                        style={{ fontWeight: 600, fontSize: "1rem" }}
+                      >
+                        Start agent run →
+                      </a>
+                    </p>
+                  )}
+                </div>
+              )}
+            </>
+          )}
         </>
-      )}
-
-      <hr style={{ margin: "2rem 0", borderColor: "#e2e8f0" }} />
-
-      <h2>Upload Application Packet</h2>
-
-      {packetMandateId ? (
-        <>
-          <p style={{ color: "#64748b" }}>Encrypt your synthetic document packet before the agent submits it.</p>
-          <PacketBuilder
-            mandateId={packetMandateId}
-            listingObjectId={DEMO_LISTING_OBJECT_ID}
-            onComplete={(result) => {
-              // Persist the packet→mandate link so the agent page can auto-fill.
-              demoSession.savePacket(packetMandateId, result.walrusBlobId, result.packetHash);
-            }}
-          />
-        </>
-      ) : (
-        <p style={{ color: "#64748b" }}>
-          Create a mandate first — the packet will be registered against it.
-        </p>
       )}
 
       {/* ── Archived evidence ── */}
