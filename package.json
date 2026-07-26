@@ -16,6 +16,8 @@
     "db:migrate": "pnpm --filter @rentdelegate/provider-api db:migrate",
     "db:reset": "docker compose down -v && docker compose up -d postgres && sleep 3 && pnpm db:migrate",
     "test": "pnpm -r --if-present test",
+    "test:e2e": "pnpm --filter @rentdelegate/e2e e2e:stubbed",
+    "test:e2e:ui": "pnpm --filter @rentdelegate/e2e e2e:ui",
     "lint:object-ids": "node scripts/check-object-ids.mjs"
   }
 }

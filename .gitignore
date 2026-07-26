@@ -5,8 +5,14 @@ node_modules/
 # Build outputs
 dist/
 .next/
+.next-e2e/
 coverage/
 packages/move/build/
+
+# Playwright E2E artifacts (may contain page screenshots and videos)
+apps/e2e/test-results/
+apps/e2e/playwright-report/
+apps/e2e/blob-report/
 
 # Local environment and secrets
 .env

@@ -1,0 +1,19 @@
+{
+  "name": "@rentdelegate/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Playwright end-to-end tests for the RentDelegate demo flows (Epic E).",
+  "scripts": {
+    "e2e:stubbed": "playwright test --project=stubbed",
+    "e2e:live": "playwright test --project=live-services",
+    "e2e:ui": "playwright test --project=stubbed --ui",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.61.1",
+    "@rentdelegate/contracts-config": "workspace:*",
+    "@rentdelegate/shared": "workspace:*",
+    "typescript": "^7.0.2"
+  }
+}

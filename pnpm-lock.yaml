@@ -51,6 +51,21 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@26.1.1)(happy-dom@18.0.1)(vite@8.1.5(@types/node@26.1.1))
 
+  apps/e2e:
+    devDependencies:
+      '@playwright/test':
+        specifier: 1.61.1
+        version: 1.61.1
+      '@rentdelegate/contracts-config':
+        specifier: workspace:*
+        version: link:../../packages/contracts-config
+      '@rentdelegate/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
   apps/provider-api:
     dependencies:
       '@hono/node-server':
@@ -125,7 +140,7 @@ importers:
         version: 5.101.4(react@19.2.8)
       next:
         specifier: ^16.2.11
-        version: 16.2.11(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        version: 16.2.11(@playwright/test@1.61.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       react:
         specifier: ^19.2.3
         version: 19.2.8
@@ -770,6 +785,11 @@ packages:
 
   '@oxc-project/types@0.139.0':
     resolution: {integrity: sha512-r9gHphtCs+1M7J0pw6Sn/hh/Wpa/iQrOOkrNAlVLF/gHq+/CJmHIWKKUUhdWjcD6CIa8idarspCsASiXCXvFUw==}
+
+  '@playwright/test@1.61.1':
+    resolution: {integrity: sha512-8nKv6+0RJSL9FE4jYOEGXnPeM/Hg12qZpmqzZjRh3qM0Y7c3z1mrOTfFLids72RDQYVh9WpLEfR5WdpNX4fkig==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
@@ -2762,6 +2782,10 @@ snapshots:
 
   '@oxc-project/types@0.139.0': {}
 
+  '@playwright/test@1.61.1':
+    dependencies:
+      playwright: 1.61.1
+
   '@polka/url@1.0.0-next.29': {}
 
   '@protobuf-ts/grpcweb-transport@2.11.1':
@@ -3585,7 +3609,7 @@ snapshots:
       railroad-diagrams: 1.0.0
       randexp: 0.4.6
 
-  next@16.2.11(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
+  next@16.2.11(@playwright/test@1.61.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
     dependencies:
       '@next/env': 16.2.11
       '@swc/helpers': 0.5.15
@@ -3604,6 +3628,7 @@ snapshots:
       '@next/swc-linux-x64-musl': 16.2.11
       '@next/swc-win32-arm64-msvc': 16.2.11
       '@next/swc-win32-x64-msvc': 16.2.11
+      '@playwright/test': 1.61.1
       sharp: 0.34.5
     transitivePeerDependencies:
       - '@babel/core'
