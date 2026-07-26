@@ -6,14 +6,16 @@
   "description": "Playwright end-to-end tests for the Casium demo flows (Epic E).",
   "scripts": {
     "e2e:stubbed": "playwright test --project=stubbed",
-    "e2e:live": "playwright test --project=live-services",
+    "e2e:live": "E2E_TIER=live playwright test --project=live-services",
     "e2e:ui": "playwright test --project=stubbed --ui",
+    "e2e:live:ui": "E2E_TIER=live playwright test --project=live-services --ui",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@playwright/test": "1.61.1",
     "@casium/contracts-config": "workspace:*",
     "@casium/shared": "workspace:*",
+    "@casium/sui-client": "workspace:*",
     "@types/node": "^24.10.1",
     "typescript": "^7.0.2"
   }

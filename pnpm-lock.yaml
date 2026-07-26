@@ -59,6 +59,9 @@ importers:
       '@casium/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@casium/sui-client':
+        specifier: workspace:*
+        version: link:../../packages/sui-client
       '@playwright/test':
         specifier: 1.61.1
         version: 1.61.1

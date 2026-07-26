@@ -2,27 +2,30 @@
  * Playwright globalTeardown.
  *
  * `next build` rewrites the tracked apps/web/next-env.d.ts to reference the
- * active distDir. Because the E2E build sets NEXT_DIST_DIR=.next-e2e, every run
- * would otherwise leave that file pointing at a directory that does not exist
- * in a clean clone — which breaks `pnpm --filter @casium/web typecheck`
- * if it is ever committed.
+ * active distDir. Because the E2E build sets NEXT_DIST_DIR (`.next-e2e` for the
+ * stubbed tier, `.next-e2e-live` for the live one), every run would otherwise
+ * leave that file pointing at a directory that does not exist in a clean clone
+ * — which breaks `pnpm --filter @casium/web typecheck` if it is ever committed.
  *
  * Point it back at `.next` afterwards. Only rewrites when the file actually
- * references the E2E dist dir, so it can never clobber an unrelated edit.
+ * references an E2E dist dir, so it can never clobber an unrelated edit.
  */
 
 import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 const NEXT_ENV = fileURLToPath(new URL("../../web/next-env.d.ts", import.meta.url));
+// Not a global regex: `test()` on one would advance `lastIndex` and make a
+// second call lie about the same string.
+const E2E_DIST_REFERENCE = /\.next-e2e[\w-]*\/types\/routes\.d\.ts/;
 
 export default async function restoreNextEnv() {
   try {
     const contents = await readFile(NEXT_ENV, "utf8");
-    if (!contents.includes(".next-e2e/types/routes.d.ts")) return;
+    if (!E2E_DIST_REFERENCE.test(contents)) return;
     await writeFile(
       NEXT_ENV,
-      contents.replace(".next-e2e/types/routes.d.ts", ".next/types/routes.d.ts"),
+      contents.replace(new RegExp(E2E_DIST_REFERENCE, "g"), ".next/types/routes.d.ts"),
       "utf8",
     );
   } catch {
