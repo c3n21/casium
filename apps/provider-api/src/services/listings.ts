@@ -78,7 +78,19 @@ async function seedDb(db: Db, listings: ProviderListing[]) {
         bedrooms: listing.bedrooms,
         active: listing.active,
       })
-      .onConflictDoNothing();
+      .onConflictDoUpdate({
+        target: listingsTable.id,
+        set: {
+          suiListingId: listing.listingObjectId,
+          externalListingId: listing.externalListingId,
+          providerSuiAddress: listing.providerSuiAddress,
+          landlordSuiAddress: listing.landlordSuiAddress,
+          municipalityCode: listing.municipalityCode,
+          monthlyRentEur: listing.monthlyRentEur,
+          bedrooms: listing.bedrooms,
+          active: listing.active,
+        },
+      });
   }
 }
 

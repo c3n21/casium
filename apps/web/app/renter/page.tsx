@@ -182,6 +182,7 @@ export default function RenterPage() {
 
   // Multi-listing state
   const [listings, setListings] = useState<ProviderListing[]>([]);
+  const [listingsError, setListingsError] = useState<string | null>(null);
   const [selectedListings, setSelectedListings] = useState<ProviderListing[]>([]);
   const [packetResults, setPacketResults] = useState<Map<string, PacketCompleteResult>>(new Map());
 
@@ -198,8 +199,12 @@ export default function RenterPage() {
 
   // Fetch provider listings and restore any saved selections.
   useEffect(() => {
+    setListingsError(null);
     fetch(`${PROVIDER_API}/listings`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`Provider returned ${r.status}`);
+        return r.json();
+      })
       .then((data: { listings?: ProviderListing[] }) => {
         const fetched = data.listings ?? [];
         setListings(fetched);
@@ -210,8 +215,8 @@ export default function RenterPage() {
           setSelectedListings(fetched.filter((l) => storedIds.has(l.id)));
         }
       })
-      .catch(() => {
-        // Non-fatal: listing selector stays empty.
+      .catch((err: unknown) => {
+        setListingsError(err instanceof Error ? err.message : String(err));
       });
   }, []);
 
@@ -219,6 +224,7 @@ export default function RenterPage() {
   // Priority: URL param (agent handoff) > active mandate > none.
   // SMOKE.mandateId is NOT a fallback here.
   const packetMandateId: string | null = queryMandateId ?? mandate?.mandateId ?? null;
+  const canBuildPackets = Boolean(packetMandateId);
 
   function handleMandateCreated(created: MandateRecord) {
     demoSession.saveMandate(created);
@@ -280,7 +286,7 @@ export default function RenterPage() {
         Create a mandate scoped to your requirements. Your agent will only be able to apply within these limits.
       </p>
 
-      {!mandate ? (
+      {!canBuildPackets ? (
         <section className="step-card">
           <span className="step-num">1</span>
           <div>
@@ -307,43 +313,61 @@ export default function RenterPage() {
           <section className="step-card">
             <span className="step-num">1</span>
             <div>
-              <h2>Mandate is active</h2>
-              <p className="muted">These limits are enforced by the Sui package before the agent can act.</p>
-          <MandateStatus
-            mandateId={mandate.mandateId}
-            ownerCapId={mandate.ownerCapId}
-            agentCapId={mandate.agentCapId}
-            createTxDigest={mandate.txDigest}
-          />
+              {mandate ? (
+                <>
+                  <h2>Mandate is active</h2>
+                  <p className="muted">These limits are enforced by the Sui package before the agent can act.</p>
+                  <MandateStatus
+                    mandateId={mandate.mandateId}
+                    ownerCapId={mandate.ownerCapId}
+                    agentCapId={mandate.agentCapId}
+                    createTxDigest={mandate.txDigest}
+                  />
 
-          {mandate.ownerCapId && !revoked && (
-            <RevokeButton
-              mandateId={mandate.mandateId}
-              ownerCapId={mandate.ownerCapId}
-              onRevoked={handleRevoked}
-            />
+                  {mandate.ownerCapId && !revoked && (
+                    <RevokeButton
+                      mandateId={mandate.mandateId}
+                      ownerCapId={mandate.ownerCapId}
+                      onRevoked={handleRevoked}
+                    />
+                  )}
+                </>
+              ) : (
+                <>
+                  <h2>Mandate from agent handoff</h2>
+                  <p className="muted">
+                    Upload packets for this mandate, then return to the agent run.
+                  </p>
+                  <p>
+                    Mandate: <code>{packetMandateId}</code>
+                  </p>
+                </>
+              )}
+            </div>
+          </section>
+
+          {mandate && (
+            <section className="step-card">
+              <span className="step-num">2</span>
+              <div>
+                <h2>Your submitted applications</h2>
+                <ApplicationsSection mandateId={mandate.mandateId} ownerCapId={mandate.ownerCapId} />
+              </div>
+            </section>
           )}
-            </div>
-          </section>
-
-          <section className="step-card">
-            <span className="step-num">2</span>
-            <div>
-              <h2>Your submitted applications</h2>
-              <ApplicationsSection mandateId={mandate.mandateId} ownerCapId={mandate.ownerCapId} />
-            </div>
-          </section>
 
           {!revoked && packetMandateId && (
             <section className="step-card" data-testid="renter-step-listings">
-              <span className="step-num">3</span>
+              <span className="step-num">{mandate ? "3" : "2"}</span>
               <div>
                 <h2 style={{ marginBottom: "0.5rem" }}>Select target listings</h2>
                 <p className="muted" style={{ fontSize: "0.9rem", marginTop: 0 }}>
                   Agent will evaluate each selected listing and apply only where eligible.
                 </p>
 
-              {listings.length === 0 ? (
+              {listingsError ? (
+                <p role="alert" className="alert error">Error loading listings: {listingsError}</p>
+              ) : listings.length === 0 ? (
                 <p className="faint">Loading listings…</p>
               ) : (
                 <div className="listing-grid" style={{ marginBottom: "1rem" }}>

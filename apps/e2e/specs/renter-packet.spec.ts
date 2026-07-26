@@ -55,6 +55,28 @@ test("uploads an encrypted packet and shows the blob ID, hash and mock badge", a
   expect(registrations[0]?.sizeBytes).toBeGreaterThan(0);
 });
 
+test("a mandate URL handoff can still select listings and upload a packet", async ({
+  page,
+  providerApi,
+}) => {
+  providerApi.setListings([LISBON_LISTING]);
+
+  await page.goto(`/renter?mandateId=${encodeURIComponent(ACTIVE_AGENT_MANDATE.mandateId)}`);
+
+  await expect(page.getByRole("heading", { name: "Mandate from agent handoff" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Select target listings" })).toBeVisible();
+  await page.getByRole("checkbox", { name: /lisbon-demo-1/ }).check();
+
+  await fillPacketForm(page);
+  await page.getByRole("button", { name: "Encrypt and upload packet" }).click();
+
+  await expect(page.getByTestId(`packet-uploaded-${LISBON_LISTING.id}`)).toBeVisible();
+  expect(providerApi.packetRegistrations()[0]).toMatchObject({
+    mandateId: ACTIVE_AGENT_MANDATE.mandateId,
+    providerListingId: LISBON_LISTING.id,
+  });
+});
+
 test("the provider registration carries no plaintext from the form", async ({
   page,
   providerApi,
