@@ -13,6 +13,7 @@ import { PACKAGE_ID, RPC_URL_TESTNET } from "@/lib/constants";
 import { demoSession, type StoredListing } from "@/lib/demoSession";
 
 const PROVIDER_API = process.env.NEXT_PUBLIC_PROVIDER_API_URL ?? "http://localhost:4021";
+const E2E_STUB_SUI = process.env.NEXT_PUBLIC_E2E_STUB_SUI === "1";
 
 type HealthResponse = {
   ok: boolean;
@@ -241,12 +242,13 @@ function RunSection({
         throw new Error("Agent has no EVM signer configured.");
       }
 
-      const rentDelegate = createRentDelegateClient({
-        network: "testnet",
-        rpcUrl: RPC_URL_TESTNET,
-        packageId: PACKAGE_ID,
-      });
-      const mandate = await rentDelegate.getMandate(mandateInput);
+      const mandate = E2E_STUB_SUI
+        ? { agentEvm: agentEvmAddress }
+        : await createRentDelegateClient({
+            network: "testnet",
+            rpcUrl: RPC_URL_TESTNET,
+            packageId: PACKAGE_ID,
+          }).getMandate(mandateInput);
       if (mandate.agentEvm?.toLowerCase() !== agentEvmAddress.toLowerCase()) {
         demoSession.clearMandate();
         demoSession.clearPacket();

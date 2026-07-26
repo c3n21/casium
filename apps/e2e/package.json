@@ -14,6 +14,7 @@
     "@playwright/test": "1.61.1",
     "@rentdelegate/contracts-config": "workspace:*",
     "@rentdelegate/shared": "workspace:*",
+    "@types/node": "^24.10.1",
     "typescript": "^7.0.2"
   }
 }

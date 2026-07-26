@@ -25,6 +25,7 @@ const CORS_HEADERS = {
 
 export type PacketRegistration = {
   mandateId: string;
+  providerListingId?: string;
   walrusBlobId: string;
   packetHash: string;
   sizeBytes: number;
@@ -35,6 +36,7 @@ export type ProviderApiStub = {
   /** Replace the listing set (e.g. [] for the empty state). */
   setListings(listings: ProviderListing[]): void;
   setApplications(applications: ReservedApplication[]): void;
+  setPackets(packets: PacketRegistration[]): void;
   /** Fail GET /listings with a 500 so the error branch can be asserted. */
   failListings(fail: boolean): void;
   /** Fail POST /applications/:id/verify with 422 RECEIPT_INVALID. */
@@ -101,6 +103,34 @@ export async function installProviderApiStub(
       return;
     }
 
+    const packetsByMandateMatch = /^\/packets\/by-mandate\/(.+)$/.exec(path);
+    if (method === "GET" && packetsByMandateMatch) {
+      const mandateId = decodeURIComponent(packetsByMandateMatch[1]!);
+      await json(route, 200, {
+        packets: packets.filter((packet) => packet.mandateId === mandateId),
+      });
+      return;
+    }
+
+    const packetExactMatch = /^\/packets\/([^/]+)\/([^/]+)$/.exec(path);
+    if (method === "GET" && packetExactMatch) {
+      const mandateId = decodeURIComponent(packetExactMatch[1]!);
+      const providerListingId = decodeURIComponent(packetExactMatch[2]!);
+      const packet = packets.find(
+        (p) => p.mandateId === mandateId && p.providerListingId === providerListingId,
+      );
+      await json(route, packet ? 200 : 404, packet ?? { error: "PACKET_NOT_FOUND" });
+      return;
+    }
+
+    const packetByMandateMatch = /^\/packets\/([^/]+)$/.exec(path);
+    if (method === "GET" && packetByMandateMatch) {
+      const mandateId = decodeURIComponent(packetByMandateMatch[1]!);
+      const packet = packets.find((p) => p.mandateId === mandateId);
+      await json(route, packet ? 200 : 404, packet ?? { error: "PACKET_NOT_FOUND" });
+      return;
+    }
+
     if (method === "POST" && path === "/packets") {
       if (packetsFail) {
         await json(route, 422, { error: "INVALID_PACKET_RECORD" });
@@ -153,6 +183,9 @@ export async function installProviderApiStub(
     },
     setApplications(next) {
       applications = next;
+    },
+    setPackets(next) {
+      packets.splice(0, packets.length, ...next);
     },
     failListings(fail) {
       listingsFail = fail;

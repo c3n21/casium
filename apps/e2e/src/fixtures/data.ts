@@ -57,6 +57,18 @@ export type RunResult = {
   status: "complete" | "ineligible" | "failed";
   reason?: string;
   error?: string;
+  targets?: TargetResult[];
+};
+
+export type TargetResult = {
+  providerListingId: string;
+  listingObjectId: string;
+  status: "complete" | "ineligible" | "failed";
+  reason?: string;
+  applicationId?: string;
+  txDigest?: string;
+  receiptId?: string;
+  blobId?: string;
 };
 
 const AGENT_EVM_ADDRESS = "0x662DbABBeff9B237490bBE6A898776a4A1D87CCe";
@@ -96,6 +108,13 @@ export const PORTO_LISTING: ProviderListing = {
 
 export const SEEDED_LISTINGS: ProviderListing[] = [LISBON_LISTING, PORTO_LISTING];
 
+export const LISBON_SECOND_LISTING: ProviderListing = {
+  ...LISBON_LISTING,
+  id: "listing_lisbon_second",
+  externalListingId: "lisbon-demo-2",
+  monthlyRentEur: 1800,
+};
+
 export const RESERVED_APPLICATION: ReservedApplication = {
   id: "app_1",
   listingId: LISBON_LISTING.id,
@@ -122,6 +141,7 @@ export const AGENT_HEALTH = {
   ok: true,
   service: "rentdelegate-agent",
   agentSuiAddress: PUBLISHER_ADDRESS,
+  agentEvmAddress: AGENT_EVM_ADDRESS,
   agentkitMode: "mock",
 };
 
@@ -134,6 +154,34 @@ export function completeRunResult(runId: string): RunResult {
     receiptId: LIVE_AGENT_RUN.receiptId,
     blobId: RESERVED_APPLICATION.walrusBlobId,
     status: "complete",
+  };
+}
+
+export function completeMultiTargetRunResult(runId: string): RunResult {
+  const first: TargetResult = {
+    providerListingId: LISBON_LISTING.id,
+    listingObjectId: LISBON_LISTING.listingObjectId,
+    status: "complete",
+    applicationId: "app_1",
+    txDigest: LIVE_AGENT_RUN.submitApplicationTxDigest,
+    receiptId: LIVE_AGENT_RUN.receiptId,
+    blobId: RESERVED_APPLICATION.walrusBlobId,
+  };
+  const second: TargetResult = {
+    providerListingId: LISBON_SECOND_LISTING.id,
+    listingObjectId: LISBON_SECOND_LISTING.listingObjectId,
+    status: "complete",
+    applicationId: "app_2",
+    txDigest: LIVE_AGENT_RUN.submitApplicationTxDigest,
+    receiptId: LIVE_AGENT_RUN.receiptId,
+    blobId: `mock:${"1a2b3c4d".repeat(8)}`,
+  };
+
+  return {
+    ...first,
+    runId,
+    mandateId: LIVE_AGENT_RUN.mandateId,
+    targets: [first, second],
   };
 }
 

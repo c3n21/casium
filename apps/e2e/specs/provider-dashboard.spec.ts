@@ -5,7 +5,11 @@
 
 import { SMOKE } from "@rentdelegate/contracts-config";
 import { expect, test } from "../src/fixtures/test.js";
-import { RESERVED_APPLICATION, VERIFY_INPUT } from "../src/fixtures/data.js";
+import {
+  LISBON_SECOND_LISTING,
+  RESERVED_APPLICATION,
+  VERIFY_INPUT,
+} from "../src/fixtures/data.js";
 
 test.describe("listings table", () => {
   test("renders the eligible Lisbon row and the ineligible Porto row", async ({ page }) => {
@@ -91,5 +95,35 @@ test.describe("application inbox", () => {
     await expect(page.getByText("RECEIPT_INVALID")).toBeVisible();
     await expect(page.getByText("reserved")).toBeVisible();
     await expect(page.getByText("accepted")).toHaveCount(0);
+  });
+
+  test("shows both accepted applications from a multi-target run", async ({
+    page,
+    providerApi,
+  }) => {
+    providerApi.setApplications([
+      {
+        ...RESERVED_APPLICATION,
+        status: "accepted",
+        receipt: VERIFY_INPUT,
+      },
+      {
+        ...RESERVED_APPLICATION,
+        id: "app_2",
+        listingId: LISBON_SECOND_LISTING.id,
+        listingObjectId: LISBON_SECOND_LISTING.listingObjectId,
+        walrusBlobId: "mock:second-listing-packet",
+        idempotencyKey: "idem-e2e-2",
+        status: "accepted",
+        receipt: VERIFY_INPUT,
+      },
+    ]);
+
+    await page.goto("/provider");
+
+    await expect(page.getByText("app_1")).toBeVisible();
+    await expect(page.getByText("app_2")).toBeVisible();
+    await expect(page.getByText("accepted")).toHaveCount(2);
+    await expect(page.getByText(/mock:second-listing/)).toBeVisible();
   });
 });

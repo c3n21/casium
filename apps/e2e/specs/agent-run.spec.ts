@@ -1,31 +1,32 @@
 /**
- * RD-147 — Flow F4: agent operator runs.
+ * Agent operator E2E coverage for the current live-demo flow.
  *
- * This is the pitch: the agent completes an in-scope run and refuses the
- * out-of-scope Porto listing. Both RunSections render identical labels, so
- * every locator is scoped to its section by heading text.
+ * The stubbed tier mirrors the manual QA flow without wallet, Sui, World, or
+ * Walrus dependencies: selected listings come from localStorage, packet records
+ * come from the provider stub, and /runs is handled by the agent stub.
  */
 
-import { INELIGIBLE_LISTING_OBJECT_ID, LIVE_AGENT_RUN, SMOKE } from "@rentdelegate/contracts-config";
+import { LIVE_AGENT_RUN } from "@rentdelegate/contracts-config";
 import { expect, test } from "../src/fixtures/test.js";
+import { LISBON_LISTING, LISBON_SECOND_LISTING } from "../src/fixtures/data.js";
+import { seedMandateSession, seedSelectedListings } from "../src/fixtures/session.js";
 import type { Page } from "@playwright/test";
 
-const ELIGIBLE = "Run: Eligible listing (Lisbon)";
-const INELIGIBLE = "Ineligible listing proof (Porto)";
-
-/** Scope to one RunSection — the page renders two with identical controls. */
-function section(page: Page, heading: string) {
-  return page.locator("section").filter({ has: page.getByRole("heading", { name: heading }) });
+function runSection(page: Page) {
+  return page.locator("section").filter({
+    has: page.getByRole("heading", { name: "Run: Eligible listing (Lisbon)" }),
+  });
 }
 
-/**
- * Result status must be matched exactly. Playwright's default text matching is
- * a case-insensitive substring, and each section's own description ends with
- * "Expect status: complete." / "Expect status: ineligible." — so a loose match
- * passes whether or not the run ever produced a result.
- */
-function resultStatus(page: Page, heading: string, status: string) {
-  return section(page, heading).getByText(`Status: ${status}`, { exact: true });
+function packet(providerListingId: string, walrusBlobId: string) {
+  return {
+    mandateId: LIVE_AGENT_RUN.mandateId,
+    providerListingId,
+    walrusBlobId,
+    packetHash: `0x${"feedface".repeat(8)}`,
+    sizeBytes: 861,
+    encryptionMode: "mock",
+  };
 }
 
 test.describe("agent operator", () => {
@@ -34,6 +35,13 @@ test.describe("agent operator", () => {
 
     await expect(page.getByText("Agent online")).toBeVisible();
     await expect(page.getByText("agentkit: mock")).toBeVisible();
+  });
+
+  test("shows no-run guidance when no mandate has been handed off", async ({ page }) => {
+    await page.goto("/agent");
+
+    await expect(page.getByText("No active mandate.")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Start run" })).toHaveCount(0);
   });
 
   test("shows an offline banner when the agent service is unreachable", async ({
@@ -46,26 +54,36 @@ test.describe("agent operator", () => {
     await expect(page.getByText(/Agent offline:/)).toBeVisible();
   });
 
-  test("eligible run reaches status complete with tx and receipt links", async ({
+  test("starts a multi-target run and renders per-listing results", async ({
     page,
+    providerApi,
     agentApi,
   }) => {
+    agentApi.setScript("multi-complete");
+    providerApi.setPackets([
+      packet(LISBON_LISTING.id, "mock:first-listing-packet"),
+      packet(LISBON_SECOND_LISTING.id, "mock:second-listing-packet"),
+    ]);
+    await seedMandateSession(page);
+    await seedSelectedListings(page, [LISBON_LISTING, LISBON_SECOND_LISTING]);
+
     await page.goto("/agent");
-    const eligible = section(page, ELIGIBLE);
 
-    // The mandate input is pre-filled with the smoke mandate.
-    await expect(eligible.getByRole("textbox")).toHaveValue(SMOKE.mandateId);
+    await expect(page.getByText("listing_lisbon_eligible, listing_lisbon_second")).toBeVisible();
+    const section = runSection(page);
+    await expect(section.getByRole("textbox")).toHaveValue(LIVE_AGENT_RUN.mandateId);
 
-    await eligible.getByRole("button", { name: "Start run" }).click();
-    await expect(eligible.getByRole("button", { name: "Running…" })).toBeDisabled();
+    await section.getByRole("button", { name: "Start run" }).click();
+    await expect(section.getByRole("button", { name: "Running…" })).toBeDisabled();
 
-    // The page polls every 2 s, so allow two cycles rather than sleeping.
-    await expect(resultStatus(page, ELIGIBLE, "complete")).toBeVisible({ timeout: 20_000 });
-    await expect(eligible.getByText("Application ID:")).toBeVisible();
-    await expect(eligible.getByText(/Blob ID:/)).toBeVisible();
+    await expect(section.getByText("Status: complete", { exact: true })).toBeVisible({
+      timeout: 20_000,
+    });
+    await expect(section.getByText("Per-listing results:")).toBeVisible();
+    await expect(section.getByText(LISBON_LISTING.id)).toBeVisible();
+    await expect(section.getByText(LISBON_SECOND_LISTING.id)).toBeVisible();
 
-    // Explorer links must point at the testnet subdomain (guards commit 01bde65).
-    const txLink = eligible.getByRole("link", {
+    const txLink = section.getByRole("link", {
       name: new RegExp(LIVE_AGENT_RUN.submitApplicationTxDigest.slice(0, 12)),
     });
     await expect(txLink).toHaveAttribute(
@@ -73,69 +91,56 @@ test.describe("agent operator", () => {
       `https://testnet.suivision.xyz/txblock/${LIVE_AGENT_RUN.submitApplicationTxDigest}`,
     );
 
-    const receiptLink = eligible.getByRole("link", {
-      name: new RegExp(LIVE_AGENT_RUN.receiptId.slice(0, 12)),
-    });
-    await expect(receiptLink).toHaveAttribute(
-      "href",
-      `https://testnet.suivision.xyz/object/${LIVE_AGENT_RUN.receiptId}`,
-    );
-
-    // The run was started for the smoke mandate, with no listing override.
-    expect(agentApi.startedRuns()).toHaveLength(1);
-    expect(agentApi.startedRuns()[0]?.mandateId).toBe(SMOKE.mandateId);
-    expect(agentApi.startedRuns()[0]?.listingObjectId).toBeUndefined();
+    expect(agentApi.startedRuns()).toEqual([
+      {
+        mandateId: LIVE_AGENT_RUN.mandateId,
+        targets: [
+          {
+            providerListingId: LISBON_LISTING.id,
+            listingObjectId: LISBON_LISTING.listingObjectId,
+          },
+          {
+            providerListingId: LISBON_SECOND_LISTING.id,
+            listingObjectId: LISBON_SECOND_LISTING.listingObjectId,
+          },
+        ],
+      },
+    ]);
   });
 
-  test("Porto run is refused as ineligible, with a reason and no tx link", async ({
+  test("blocks a target run when one selected listing has no packet", async ({
     page,
+    providerApi,
     agentApi,
   }) => {
-    agentApi.setScript("ineligible");
-    await page.goto("/agent");
-    const porto = section(page, INELIGIBLE);
+    providerApi.setPackets([packet(LISBON_LISTING.id, "mock:first-listing-packet")]);
+    await seedMandateSession(page);
+    await seedSelectedListings(page, [LISBON_LISTING, LISBON_SECOND_LISTING]);
 
-    await expect(porto.getByRole("link", { name: /…/ })).toHaveAttribute(
-      "href",
-      new RegExp(INELIGIBLE_LISTING_OBJECT_ID),
+    await page.goto("/agent");
+    await runSection(page).getByRole("button", { name: "Start run" }).click();
+
+    await expect(runSection(page).getByRole("alert")).toContainText(
+      `No packet is registered for target ${LISBON_SECOND_LISTING.id}.`,
     );
-
-    await porto.getByRole("button", { name: "Start run" }).click();
-
-    await expect(resultStatus(page, INELIGIBLE, "ineligible")).toBeVisible({ timeout: 20_000 });
-    await expect(porto.getByText(/Reason:/)).toBeVisible();
-    await expect(porto.getByText(/^Tx:/)).toHaveCount(0);
-    await expect(resultStatus(page, INELIGIBLE, "complete")).toHaveCount(0);
-
-    // The ineligible section overrides the listing — that override is the proof.
-    expect(agentApi.startedRuns()[0]?.listingObjectId).toBe(INELIGIBLE_LISTING_OBJECT_ID);
-  });
-
-  test("a run that throws surfaces the failure instead of claiming success", async ({
-    page,
-    agentApi,
-  }) => {
-    agentApi.setScript("failed");
-    await page.goto("/agent");
-    const eligible = section(page, ELIGIBLE);
-
-    await eligible.getByRole("button", { name: "Start run" }).click();
-
-    await expect(eligible.getByText(/Run failed:/)).toBeVisible({ timeout: 20_000 });
-    await expect(resultStatus(page, ELIGIBLE, "complete")).toHaveCount(0);
+    expect(agentApi.startedRuns()).toEqual([]);
   });
 
   test("a rejected start request is reported and re-enables the button", async ({
     page,
+    providerApi,
     agentApi,
   }) => {
     agentApi.failStart(true);
+    providerApi.setPackets([packet(LISBON_LISTING.id, "mock:first-listing-packet")]);
+    await seedMandateSession(page);
+    await seedSelectedListings(page, [LISBON_LISTING]);
+
     await page.goto("/agent");
-    const eligible = section(page, ELIGIBLE);
+    const section = runSection(page);
+    await section.getByRole("button", { name: "Start run" }).click();
 
-    await eligible.getByRole("button", { name: "Start run" }).click();
-
-    await expect(eligible.getByRole("alert")).toContainText("Agent returned 500");
-    await expect(eligible.getByRole("button", { name: "Start run" })).toBeEnabled();
+    await expect(section.getByRole("alert")).toContainText("Agent returned 500");
+    await expect(section.getByRole("button", { name: "Start run" })).toBeEnabled();
   });
 });

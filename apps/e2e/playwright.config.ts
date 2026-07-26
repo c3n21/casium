@@ -31,6 +31,7 @@ const webServerEnv = {
   NEXT_DIST_DIR: ".next-e2e",
   NEXT_PUBLIC_ENCRYPTION_MODE: "mock",
   NEXT_PUBLIC_WALRUS_MODE: "mock",
+  NEXT_PUBLIC_E2E_STUB_SUI: "1",
   NEXT_PUBLIC_PROVIDER_API_URL: "http://localhost:4021",
   NEXT_PUBLIC_AGENT_API_URL: "http://localhost:4022",
 };

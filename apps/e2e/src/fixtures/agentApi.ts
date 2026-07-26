@@ -9,6 +9,7 @@
 import type { Page, Route } from "@playwright/test";
 import {
   AGENT_HEALTH,
+  completeMultiTargetRunResult,
   completeRunResult,
   failedRunResult,
   ineligibleRunResult,
@@ -21,7 +22,7 @@ const CORS_HEADERS = {
   "access-control-allow-headers": "content-type",
 };
 
-export type RunScript = "complete" | "ineligible" | "failed";
+export type RunScript = "complete" | "multi-complete" | "ineligible" | "failed";
 
 export type AgentApiStub = {
   /** Which result the *next* run resolves to. */
@@ -33,7 +34,11 @@ export type AgentApiStub = {
   /** How many polls report `running` before the result lands (default 1). */
   setPollsBeforeDone(polls: number): void;
   /** Mandate IDs received by POST /runs, in order. */
-  startedRuns(): { mandateId?: string; listingObjectId?: string }[];
+  startedRuns(): Array<{
+    mandateId?: string;
+    listingObjectId?: string;
+    targets?: Array<{ providerListingId: string; listingObjectId: string }>;
+  }>;
 };
 
 export async function installAgentApiStub(
@@ -44,7 +49,11 @@ export async function installAgentApiStub(
   let offline = options.offline ?? false;
   let startFails = false;
   let pollsBeforeDone = 1;
-  const started: { mandateId?: string; listingObjectId?: string }[] = [];
+  const started: Array<{
+    mandateId?: string;
+    listingObjectId?: string;
+    targets?: Array<{ providerListingId: string; listingObjectId: string }>;
+  }> = [];
   const pollCounts = new Map<string, number>();
   const runScripts = new Map<string, RunScript>();
 
@@ -56,6 +65,7 @@ export async function installAgentApiStub(
     });
 
   const resultFor = (runId: string, kind: RunScript): RunResult => {
+    if (kind === "multi-complete") return completeMultiTargetRunResult(runId);
     if (kind === "complete") return completeRunResult(runId);
     if (kind === "ineligible") return ineligibleRunResult(runId);
     return failedRunResult(runId);
@@ -89,6 +99,7 @@ export async function installAgentApiStub(
       const body = (request.postDataJSON() ?? {}) as {
         mandateId?: string;
         listingObjectId?: string;
+        targets?: Array<{ providerListingId: string; listingObjectId: string }>;
       };
       started.push(body);
       const runId = `run_${started.length}`;
