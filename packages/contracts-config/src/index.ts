@@ -38,8 +38,11 @@ export const UPGRADE_TX_DIGEST = "BLqv4XRxg5MEGAt4jDr1v2eeNzuauQ7MhixH5971HgyS";
 /** UpgradeCap — required for RD-133 package upgrade. */
 export const UPGRADE_CAP_ID = "0x2250bb6b4e9804285aa42d9dd7f2737ecdd93ed4b03edbf515459fb7223d62af";
 
-/** Address that published the package; also used as provider + landlord in demo listings. */
+/** Address that published the package and acts as the provider in demo listings. */
 export const PUBLISHER_ADDRESS = "0x371321932fb4c4b79b9b0762ac0878ebfb670cc6f6327ecf9d1d06cd9489243e";
+
+/** Distinct landlord wallet used by the primary Lisbon demo listing. */
+export const LANDLORD_ADDRESS = "0x4541d030e1c71bc107aebb930d573c49127551cf458f69e721686acf91efc5e0";
 
 /**
  * Smoke-test objects created during initial publish smoke (ANNzWCc4…).
@@ -77,12 +80,29 @@ export const LIVE_AGENT_RUN = {
   rejectedSubmitTxDigest: "6YRsTLLYKCEcWjnXBrfKwxwFc1tiTomLryxmvG7r71sA",
 } as const;
 
+/** Active mandate used for current live service tests; no receipt is attached yet. */
+export const ACTIVE_AGENT_MANDATE = {
+  mandateId: "0x7b489e3c9edb64fc8a9052b4477dfdad7e7f88d7619cfcbb5058cfa83e7d0c7c",
+  ownerCapId: "0x65115acf6501f6bea187efa1bf9ebe592b5b7a5147958c51e66f9276813b2aea",
+  agentCapId: "0x9fc8eb796e39d13e32d9f8a03ee0ff7c29388b6ee97f5f4f82f585d1e5e904d6",
+  createMandateTxDigest: "7HZWJTFCYzKMSiVPcZz3v5enxu9iu8i9BmLnnkJSoopP",
+} as const;
+
+/** Primary Lisbon listing with provider != landlord, created for the landlord flow. */
+export const LANDLORD_DEMO_LISTING = {
+  listingObjectId: "0xac3db8dab70daec3e71be4d66a88a97a2ae428fcb6dbc7c819429c8b84034a3e",
+  createListingTxDigest: "9x6wdeRiSdeKFdRvknriFWT6vaWJZ6o6i8B5bco8oAze",
+  receiptId: "0xdb52f69fb866b835a6066ea1964fc95c0d0b2b9a3f3cec6b3bc40b54e47b1477",
+  submitApplicationTxDigest: "6ynu7VJuE95v2azrUggdt1bGnNfdEjmxqtWxSs2jZYs",
+  externalListingId: "lisbon-landlord-demo-1",
+} as const;
+
 // ---------------------------------------------------------------------------
 // Convenience flat aliases (for simpler destructuring in consumers)
 // ---------------------------------------------------------------------------
 
-/** Eligible Lisbon listing — the one the agent successfully applies to. */
-export const DEMO_LISTING_OBJECT_ID = SMOKE.listingObjectId;
+/** Eligible Lisbon listing — the current primary demo listing. */
+export const DEMO_LISTING_OBJECT_ID = LANDLORD_DEMO_LISTING.listingObjectId;
 
 /**
  * Ineligible Porto listing — must trigger EMUNICIPALITY_NOT_ALLOWED, not a read failure.

@@ -80,7 +80,7 @@ Open `http://localhost:3000`. **Port 3000 specifically** — the saved wallet se
 `NEXT_PUBLIC_*` URLs are bound to that origin. You will see three links:
 - **Renter** — create mandate, encrypt packet, track applications
 - **Provider** — manage listings, review applications, verify receipts
-- **Landlord** — view on-chain receipt
+- **Landlord** — view applications for the distinct landlord wallet and on-chain receipt evidence
 
 ---
 
@@ -236,9 +236,27 @@ A full agent-signed run on testnet, with the World layer in mock mode and Walrus
 | Provider verification | `accepted` (real Sui verifier against testnet) |
 | Ineligible listing (Porto, municipality 6) | `0xd0f9b4ae975b27d56af6c23844cbfa76dfda81f2913585788c51289ad1f0b3d1` |
 | Forced ineligible submit | tx `6YRsTLLYKCEcWjnXBrfKwxwFc1tiTomLryxmvG7r71sA`, aborted with code 7 `EMUNICIPALITY_NOT_ALLOWED` |
+| Current active test mandate | `0x7b489e3c9edb64fc8a9052b4477dfdad7e7f88d7619cfcbb5058cfa83e7d0c7c` |
+| Current active AgentCap | `0x9fc8eb796e39d13e32d9f8a03ee0ff7c29388b6ee97f5f4f82f585d1e5e904d6` |
+| Current active create mandate tx | `7HZWJTFCYzKMSiVPcZz3v5enxu9iu8i9BmLnnkJSoopP` |
 
-The last row is the "Sui limits what the agent can do" proof: the agent refuses the out-of-scope listing
-before building a transaction, and Move rejects it even when a submission is forced by hand.
+### Distinct landlord listing (2026-07-26)
+
+The primary seeded Lisbon listing now uses a separate landlord wallet, so provider and landlord are no
+longer the same party in the demo data.
+
+| What | Value |
+|---|---|
+| Provider | `0x371321932fb4c4b79b9b0762ac0878ebfb670cc6f6327ecf9d1d06cd9489243e` |
+| Landlord | `0x4541d030e1c71bc107aebb930d573c49127551cf458f69e721686acf91efc5e0` |
+| Landlord demo listing | `0xac3db8dab70daec3e71be4d66a88a97a2ae428fcb6dbc7c819429c8b84034a3e` |
+| Create listing tx | `9x6wdeRiSdeKFdRvknriFWT6vaWJZ6o6i8B5bco8oAze` |
+| Landlord demo receipt | `0xdb52f69fb866b835a6066ea1964fc95c0d0b2b9a3f3cec6b3bc40b54e47b1477` |
+| Submit tx | `6ynu7VJuE95v2azrUggdt1bGnNfdEjmxqtWxSs2jZYs` |
+
+The forced ineligible submit row is the "Sui limits what the agent can do" proof: the agent refuses the
+out-of-scope listing before building a transaction, and Move rejects it even when a submission is forced
+by hand.
 
 ---
 
@@ -277,7 +295,11 @@ before building a transaction, and Move rejects it even when a submission is for
 | RentalMandate | `0x835478969ce38a0a1d0f981aa1a278a8862f9283de735ebba81c6169d388dbee` |
 | OwnerCap | `0xcdb3924e29345c3be077f3c54de78435144ad141d0458a93f6fb6ae0381a571d` |
 | AgentCap | `0xabeb55d1266102eed4235531c542fb01fd85bb3095c3d579960923f2e1e25c2a` |
-| RentalListing | `0xe7f676b93b9df816c7c44806ca2bbda0c6bf29334802206fb025c12e320ad72a` |
+| Landlord demo RentalListing | `0xac3db8dab70daec3e71be4d66a88a97a2ae428fcb6dbc7c819429c8b84034a3e` |
+| Landlord demo ApplicationReceipt | `0xdb52f69fb866b835a6066ea1964fc95c0d0b2b9a3f3cec6b3bc40b54e47b1477` |
+| Active live RentalMandate | `0x7b489e3c9edb64fc8a9052b4477dfdad7e7f88d7619cfcbb5058cfa83e7d0c7c` |
+| Active live AgentCap | `0x9fc8eb796e39d13e32d9f8a03ee0ff7c29388b6ee97f5f4f82f585d1e5e904d6` |
+| Smoke RentalListing | `0xe7f676b93b9df816c7c44806ca2bbda0c6bf29334802206fb025c12e320ad72a` |
 | ApplicationReceipt | `0xc46d42744b7381447851f9f2adb6cf32322ab4bd6aba243e925597418899ad20` |
 | Publish tx | `GvxTETJej5RH4U3rFD2PNCENW65tG8vynRF1xskTrxP7` |
 | submit_application tx | `6vKuZNC3p5uoaSni2N5NifW1eQjqdLDesBAj9gN799Lh` |

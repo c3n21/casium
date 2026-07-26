@@ -2,6 +2,7 @@ import { MUNICIPALITIES } from "@casium/shared";
 import {
   DEMO_LISTING_OBJECT_ID,
   INELIGIBLE_LISTING_OBJECT_ID,
+  LANDLORD_ADDRESS,
   PUBLISHER_ADDRESS,
 } from "@casium/contracts-config";
 
@@ -11,7 +12,7 @@ export const DEMO_LISTINGS = [
     suiListingId: DEMO_LISTING_OBJECT_ID,
     externalListingId: "lisbon-demo-1",
     providerSuiAddress: PUBLISHER_ADDRESS,
-    landlordSuiAddress: PUBLISHER_ADDRESS,
+    landlordSuiAddress: LANDLORD_ADDRESS,
     municipalityCode: MUNICIPALITIES.LISBON,
     monthlyRentEur: 1700,
     bedrooms: 2,

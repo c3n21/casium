@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { defineConfig, devices } from "@playwright/test";
-import { LATEST_PACKAGE_ID, LIVE_AGENT_RUN, PUBLISHER_ADDRESS, RPC_URL } from "@casium/contracts-config";
+import { ACTIVE_AGENT_MANDATE, LATEST_PACKAGE_ID, PUBLISHER_ADDRESS, RPC_URL } from "@casium/contracts-config";
 import {
   AGENT_ACCESS_WINDOW_DAYS,
   AGENT_API_PORT,
@@ -126,7 +126,7 @@ const agentServer = {
     // The mandate whose on-chain agent_evm matches AGENT_EVM_ADDRESS and whose
     // agent_sui is the publisher. Any other mandate fails the provider's
     // on-chain identity cross-check — which mandate-binding.spec.ts asserts.
-    MANDATE_ID: LIVE_AGENT_RUN.mandateId,
+    MANDATE_ID: ACTIVE_AGENT_MANDATE.mandateId,
     AGENT_SUI_ADDRESS: PUBLISHER_ADDRESS,
     AGENT_EVM_ADDRESS,
     // Pinned, not discovered — and it has to be. `findAgentCapForMandate`
@@ -136,7 +136,7 @@ const agentServer = {
     // LATEST_PACKAGE_ID matches nothing and the run dies with "No AgentCap
     // found for mandate …". `.env.example` sets AGENT_CAP_ID for exactly this
     // reason; the tier mirrors that rather than papering over it.
-    AGENT_CAP_ID: LIVE_AGENT_RUN.agentCapId,
+    AGENT_CAP_ID: ACTIVE_AGENT_MANDATE.agentCapId,
     AGENT_SUI_PRIVATE_KEY: THROWAWAY_AGENT_SUI_KEY,
     AGENT_ACCESS_WINDOW_DAYS: String(AGENT_ACCESS_WINDOW_DAYS),
     // Mock AgentKit. Proves nothing about World identity and is labeled as such

@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { LIVE_AGENT_RUN } from "@casium/contracts-config";
+import { ACTIVE_AGENT_MANDATE } from "@casium/contracts-config";
 import type { ProviderListing } from "./data.js";
 
 export async function seedMandateSession(page: Page) {
@@ -11,10 +11,10 @@ export async function seedMandateSession(page: Page) {
       localStorage.setItem("casium:lastMandateTxDigest", txDigest);
     },
     {
-      mandateId: LIVE_AGENT_RUN.mandateId,
-      ownerCapId: LIVE_AGENT_RUN.ownerCapId,
-      agentCapId: LIVE_AGENT_RUN.agentCapId,
-      txDigest: LIVE_AGENT_RUN.submitApplicationTxDigest,
+      mandateId: ACTIVE_AGENT_MANDATE.mandateId,
+      ownerCapId: ACTIVE_AGENT_MANDATE.ownerCapId,
+      agentCapId: ACTIVE_AGENT_MANDATE.agentCapId,
+      txDigest: ACTIVE_AGENT_MANDATE.createMandateTxDigest,
     },
   );
 }

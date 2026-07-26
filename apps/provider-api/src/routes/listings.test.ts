@@ -14,6 +14,7 @@ describe("listing routes", () => {
       "listing_porto_ineligible",
     ]);
     expect(body.listings[0].listingObjectId).toMatch(/^0x/);
+    expect(body.listings[0].providerSuiAddress).not.toBe(body.listings[0].landlordSuiAddress);
   });
 
   it("returns listing detail and 404 for missing listings", async () => {

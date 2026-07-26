@@ -8,7 +8,7 @@
  * No wallet is needed — the AES-GCM path never touches a connected account.
  */
 
-import { LIVE_AGENT_RUN } from "@casium/contracts-config";
+import { ACTIVE_AGENT_MANDATE } from "@casium/contracts-config";
 import { expect, test } from "../src/fixtures/test.js";
 import { LISBON_LISTING, LISBON_SECOND_LISTING } from "../src/fixtures/data.js";
 import { seedMandateSession } from "../src/fixtures/session.js";
@@ -48,7 +48,7 @@ test("uploads an encrypted packet and shows the blob ID, hash and mock badge", a
 
   const registrations = providerApi.packetRegistrations();
   expect(registrations).toHaveLength(1);
-  expect(registrations[0]?.mandateId).toBe(LIVE_AGENT_RUN.mandateId);
+  expect(registrations[0]?.mandateId).toBe(ACTIVE_AGENT_MANDATE.mandateId);
   expect(registrations[0]?.providerListingId).toBe(LISBON_LISTING.id);
   expect(registrations[0]?.walrusBlobId).toMatch(/^mock:/);
   expect(registrations[0]?.packetHash).toMatch(/^0x[0-9a-f]{64}$/);
@@ -134,7 +134,7 @@ test("uploads separate packets for each selected listing and saves the target ha
 
   await expect(page.getByTestId("start-agent-run-link")).toHaveAttribute(
     "href",
-    `/agent?mandateId=${encodeURIComponent(LIVE_AGENT_RUN.mandateId)}`,
+    `/agent?mandateId=${encodeURIComponent(ACTIVE_AGENT_MANDATE.mandateId)}`,
   );
   await expect
     .poll(() =>

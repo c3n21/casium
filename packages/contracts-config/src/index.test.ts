@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   DEMO_LISTING_OBJECT_ID,
+  ACTIVE_AGENT_MANDATE,
   INELIGIBLE_LISTING_OBJECT_ID,
+  LANDLORD_DEMO_LISTING,
   LIVE_AGENT_RUN,
   PACKAGE_ID,
   SMOKE,
@@ -43,8 +45,14 @@ describe("contracts-config ID format", () => {
     assertSuiId(LIVE_AGENT_RUN.ineligibleListingObjectId, "LIVE_AGENT_RUN.ineligibleListingObjectId");
   });
 
+  it("ACTIVE_AGENT_MANDATE object IDs are valid", () => {
+    assertSuiId(ACTIVE_AGENT_MANDATE.mandateId, "ACTIVE_AGENT_MANDATE.mandateId");
+    assertSuiId(ACTIVE_AGENT_MANDATE.ownerCapId, "ACTIVE_AGENT_MANDATE.ownerCapId");
+    assertSuiId(ACTIVE_AGENT_MANDATE.agentCapId, "ACTIVE_AGENT_MANDATE.agentCapId");
+  });
+
   it("flat aliases match their sources", () => {
-    expect(DEMO_LISTING_OBJECT_ID).toBe(SMOKE.listingObjectId);
+    expect(DEMO_LISTING_OBJECT_ID).toBe(LANDLORD_DEMO_LISTING.listingObjectId);
     expect(INELIGIBLE_LISTING_OBJECT_ID).toBe(LIVE_AGENT_RUN.ineligibleListingObjectId);
     expect(SMOKE_MANDATE_ID).toBe(SMOKE.mandateId);
     expect(SMOKE_RECEIPT_ID).toBe(SMOKE.receiptId);

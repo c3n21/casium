@@ -3,6 +3,7 @@
   "rpcUrl": "https://fullnode.testnet.sui.io:443",
   "publishedAtMs": 1784962791499,
   "publisherAddress": "0x371321932fb4c4b79b9b0762ac0878ebfb670cc6f6327ecf9d1d06cd9489243e",
+  "landlordAddress": "0x4541d030e1c71bc107aebb930d573c49127551cf458f69e721686acf91efc5e0",
   "packageId": "0x7e0130cdc105d06707f1f3abd4c76aac8211a09a5502692ba454d1b4b758af3d",
   "upgradeCapId": "0x2250bb6b4e9804285aa42d9dd7f2737ecdd93ed4b03edbf515459fb7223d62af",
   "publishTxDigest": "GvxTETJej5RH4U3rFD2PNCENW65tG8vynRF1xskTrxP7",
@@ -47,6 +48,41 @@
     "rejectedSubmitTxDigest": "6YRsTLLYKCEcWjnXBrfKwxwFc1tiTomLryxmvG7r71sA",
     "rejectedSubmitAbortCode": 7,
     "rejectedSubmitAbortName": "EMUNICIPALITY_NOT_ALLOWED"
+  },
+  "activeAgentMandate": {
+    "ticket": "RD-182",
+    "createdAtMs": 1785035794145,
+    "note": "Fresh mandate for current live service tests after the RD-108 mandate exhausted its remaining application allowance.",
+    "mandateId": "0x7b489e3c9edb64fc8a9052b4477dfdad7e7f88d7619cfcbb5058cfa83e7d0c7c",
+    "ownerCapId": "0x65115acf6501f6bea187efa1bf9ebe592b5b7a5147958c51e66f9276813b2aea",
+    "agentCapId": "0x9fc8eb796e39d13e32d9f8a03ee0ff7c29388b6ee97f5f4f82f585d1e5e904d6",
+    "createMandateTxDigest": "7HZWJTFCYzKMSiVPcZz3v5enxu9iu8i9BmLnnkJSoopP",
+    "agentSuiAddress": "0x371321932fb4c4b79b9b0762ac0878ebfb670cc6f6327ecf9d1d06cd9489243e",
+    "agentEvmAddress": "0x662DbABBeff9B237490bBE6A898776a4A1D87CCe",
+    "remainingApplications": 5,
+    "explorer": {
+      "mandate": "https://testnet.suivision.xyz/object/0x7b489e3c9edb64fc8a9052b4477dfdad7e7f88d7619cfcbb5058cfa83e7d0c7c",
+      "createMandateTx": "https://testnet.suivision.xyz/txblock/7HZWJTFCYzKMSiVPcZz3v5enxu9iu8i9BmLnnkJSoopP"
+    }
+  },
+  "landlordDemoListing": {
+    "ticket": "RD-182",
+    "createdAtMs": 1785035393002,
+    "listingObjectId": "0xac3db8dab70daec3e71be4d66a88a97a2ae428fcb6dbc7c819429c8b84034a3e",
+    "createListingTxDigest": "9x6wdeRiSdeKFdRvknriFWT6vaWJZ6o6i8B5bco8oAze",
+    "receiptId": "0xdb52f69fb866b835a6066ea1964fc95c0d0b2b9a3f3cec6b3bc40b54e47b1477",
+    "submitApplicationTxDigest": "6ynu7VJuE95v2azrUggdt1bGnNfdEjmxqtWxSs2jZYs",
+    "walrusBlobId": "mock:rd182-landlord-demo",
+    "packetHash": "0x4fab8727d01e46c6a91847a7ad4b8822eeeac3bf5634d64a60b6992598c5bd16",
+    "externalListingId": "lisbon-landlord-demo-1",
+    "providerSuiAddress": "0x371321932fb4c4b79b9b0762ac0878ebfb670cc6f6327ecf9d1d06cd9489243e",
+    "landlordSuiAddress": "0x4541d030e1c71bc107aebb930d573c49127551cf458f69e721686acf91efc5e0",
+    "explorer": {
+      "listing": "https://testnet.suivision.xyz/object/0xac3db8dab70daec3e71be4d66a88a97a2ae428fcb6dbc7c819429c8b84034a3e",
+      "createListingTx": "https://testnet.suivision.xyz/txblock/9x6wdeRiSdeKFdRvknriFWT6vaWJZ6o6i8B5bco8oAze",
+      "receipt": "https://testnet.suivision.xyz/object/0xdb52f69fb866b835a6066ea1964fc95c0d0b2b9a3f3cec6b3bc40b54e47b1477",
+      "submitApplicationTx": "https://testnet.suivision.xyz/txblock/6ynu7VJuE95v2azrUggdt1bGnNfdEjmxqtWxSs2jZYs"
+    }
   },
   "explorer": {
     "package": "https://testnet.suivision.xyz/package/0x7e0130cdc105d06707f1f3abd4c76aac8211a09a5502692ba454d1b4b758af3d",

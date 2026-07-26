@@ -25,7 +25,7 @@ export const PROVIDER_API_URL = `http://localhost:${PROVIDER_API_PORT}`;
 export const AGENT_API_URL = `http://localhost:${AGENT_API_PORT}`;
 
 /**
- * The EVM address recorded on chain as `agent_evm` of `LIVE_AGENT_RUN.mandateId`.
+ * The EVM address recorded on chain as `agent_evm` of `ACTIVE_AGENT_MANDATE.mandateId`.
  *
  * The live agent service presents exactly this address, so the provider's
  * on-chain identity cross-check (`applications.ts` → reserve) passes. Point the

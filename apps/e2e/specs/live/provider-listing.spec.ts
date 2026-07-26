@@ -10,7 +10,7 @@
  */
 
 import { MUNICIPALITIES } from "@casium/shared";
-import { INELIGIBLE_LISTING_OBJECT_ID, SMOKE } from "@casium/contracts-config";
+import { DEMO_LISTING_OBJECT_ID, INELIGIBLE_LISTING_OBJECT_ID, LANDLORD_ADDRESS, PUBLISHER_ADDRESS } from "@casium/contracts-config";
 import { expect, test } from "../../src/live/test.js";
 import { createListing, listListings } from "../../src/live/providerApi.js";
 import { seedMandate } from "../../src/live/session.js";
@@ -21,7 +21,9 @@ test("the seeded demo listings are served by the real API", async ({ request }) 
 
   expect(byId.get("listing_lisbon_eligible")).toMatchObject({
     externalListingId: "lisbon-demo-1",
-    listingObjectId: SMOKE.listingObjectId,
+    listingObjectId: DEMO_LISTING_OBJECT_ID,
+    providerSuiAddress: PUBLISHER_ADDRESS,
+    landlordSuiAddress: LANDLORD_ADDRESS,
     municipalityCode: MUNICIPALITIES.LISBON,
     monthlyRentEur: 1700,
     bedrooms: 2,
@@ -64,14 +66,14 @@ test("a newly created listing appears in the dashboard and keeps its Sui object 
   // The mapping the agent depends on: the provider's own listing key resolves
   // to the shared on-chain object it will read during eligibility evaluation.
   const persisted = (await listListings(request)).find((listing) => listing.id === created.id);
-  expect(persisted?.listingObjectId).toBe(SMOKE.listingObjectId);
+  expect(persisted?.listingObjectId).toBe(created.listingObjectId);
 });
 
 test("the live API rejects an EVM-shaped landlord address in a Sui field", async ({ request }) => {
   const response = await request.post("http://localhost:4021/listings", {
     data: {
       id: `listing_bad_landlord_${crypto.randomUUID().slice(0, 8)}`,
-      listingObjectId: SMOKE.listingObjectId,
+      listingObjectId: DEMO_LISTING_OBJECT_ID,
       externalListingId: `bad-landlord-${crypto.randomUUID().slice(0, 8)}`,
       providerSuiAddress: "0x2",
       landlordSuiAddress: "0x1234567890123456789012345678901234567890",

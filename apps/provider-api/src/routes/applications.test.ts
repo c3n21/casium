@@ -1,4 +1,5 @@
 import { ERROR_CODES } from "@casium/shared";
+import { DEMO_LISTING_OBJECT_ID } from "@casium/contracts-config";
 import type { RentalMandate } from "@casium/sui-client";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../app.js";
@@ -6,7 +7,7 @@ import type { ReceiptVerificationService } from "../services/suiVerifier.js";
 
 const reserveRequest = {
   mandateId: "0xabc123",
-  listingObjectId: "0xe7f676b93b9df816c7c44806ca2bbda0c6bf29334802206fb025c12e320ad72a",
+  listingObjectId: DEMO_LISTING_OBJECT_ID,
   agentSuiAddress: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   agentEvmAddress: "0x1111111111111111111111111111111111111111",
   walrusBlobId: "mock:blob",

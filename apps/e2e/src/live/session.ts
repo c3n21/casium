@@ -10,7 +10,7 @@
  */
 
 import type { Page } from "@playwright/test";
-import { LIVE_AGENT_RUN } from "@casium/contracts-config";
+import { ACTIVE_AGENT_MANDATE } from "@casium/contracts-config";
 
 export type SeedListing = {
   providerListingId: string;
@@ -19,7 +19,7 @@ export type SeedListing = {
 };
 
 /** The mandate every live spec drives: real, unrevoked, bound to this agent. */
-export const LIVE_MANDATE_ID = LIVE_AGENT_RUN.mandateId;
+export const LIVE_MANDATE_ID = ACTIVE_AGENT_MANDATE.mandateId;
 
 export async function seedMandate(page: Page, mandateId: string = LIVE_MANDATE_ID) {
   await page.addInitScript(
@@ -31,9 +31,9 @@ export async function seedMandate(page: Page, mandateId: string = LIVE_MANDATE_I
     },
     {
       mandateId,
-      ownerCapId: LIVE_AGENT_RUN.ownerCapId,
-      agentCapId: LIVE_AGENT_RUN.agentCapId,
-      txDigest: LIVE_AGENT_RUN.submitApplicationTxDigest,
+      ownerCapId: ACTIVE_AGENT_MANDATE.ownerCapId,
+      agentCapId: ACTIVE_AGENT_MANDATE.agentCapId,
+      txDigest: ACTIVE_AGENT_MANDATE.createMandateTxDigest,
     },
   );
 }

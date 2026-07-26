@@ -37,8 +37,8 @@ test("the mandate panel is filled from the live testnet object", async ({ page }
 
   await expect(mandatePanel.getByTestId("mandate-status")).toContainText("Active");
   await expect(mandatePanel.getByText("Remaining applications")).toBeVisible();
-  // Mandate scope as published on chain: max €1800/month, Lisbon-area only.
-  await expect(mandatePanel.getByText("€1800 / month")).toBeVisible();
+  // Mandate scope as published on chain: max €2000/month, Lisbon-area only.
+  await expect(mandatePanel.getByText("€2000 / month")).toBeVisible();
   await expect(mandatePanel.getByText(PUBLISHER_ADDRESS, { exact: true })).toBeVisible();
 });
 

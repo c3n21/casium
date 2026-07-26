@@ -11,7 +11,9 @@
  */
 
 import {
+  DEMO_LISTING_OBJECT_ID,
   INELIGIBLE_LISTING_OBJECT_ID,
+  LANDLORD_ADDRESS,
   LIVE_AGENT_RUN,
   PUBLISHER_ADDRESS,
   SMOKE,
@@ -89,10 +91,10 @@ const MOCK_BLOB_ID = `mock:${"0f1e2d3c".repeat(8)}`;
 /** Matches the provider-api seed in apps/provider-api/src/services/listings.ts. */
 export const LISBON_LISTING: ProviderListing = {
   id: "listing_lisbon_eligible",
-  listingObjectId: SMOKE.listingObjectId,
+  listingObjectId: DEMO_LISTING_OBJECT_ID,
   externalListingId: "lisbon-demo-1",
   providerSuiAddress: PUBLISHER_ADDRESS,
-  landlordSuiAddress: PUBLISHER_ADDRESS,
+  landlordSuiAddress: LANDLORD_ADDRESS,
   municipalityCode: 1,
   monthlyRentEur: 1700,
   bedrooms: 2,
@@ -125,9 +127,9 @@ export const LISBON_SECOND_LISTING: ProviderListing = {
 export const RESERVED_APPLICATION: ReservedApplication = {
   id: "app_1",
   listingId: LISBON_LISTING.id,
-  listingObjectId: SMOKE.listingObjectId,
+  listingObjectId: DEMO_LISTING_OBJECT_ID,
   providerSuiAddress: PUBLISHER_ADDRESS,
-  landlordSuiAddress: PUBLISHER_ADDRESS,
+  landlordSuiAddress: LANDLORD_ADDRESS,
   mandateId: SMOKE.mandateId,
   agentSuiAddress: PUBLISHER_ADDRESS,
   agentEvmAddress: AGENT_EVM_ADDRESS,

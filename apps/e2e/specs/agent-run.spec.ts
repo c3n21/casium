@@ -6,7 +6,7 @@
  * come from the provider stub, and /runs is handled by the agent stub.
  */
 
-import { LIVE_AGENT_RUN } from "@casium/contracts-config";
+import { ACTIVE_AGENT_MANDATE, LIVE_AGENT_RUN } from "@casium/contracts-config";
 import { expect, test } from "../src/fixtures/test.js";
 import { LISBON_LISTING, LISBON_SECOND_LISTING, PORTO_LISTING } from "../src/fixtures/data.js";
 import { seedMandateSession, seedSelectedListings } from "../src/fixtures/session.js";
@@ -23,7 +23,7 @@ function runSection(page: Page) {
 
 function packet(providerListingId: string, walrusBlobId: string) {
   return {
-    mandateId: LIVE_AGENT_RUN.mandateId,
+    mandateId: ACTIVE_AGENT_MANDATE.mandateId,
     providerListingId,
     walrusBlobId,
     packetHash: `0x${"feedface".repeat(8)}`,
@@ -77,7 +77,7 @@ test.describe("agent operator", () => {
     await expect(
       section.getByRole("heading", { name: "Run: lisbon-demo-1, lisbon-demo-2" }),
     ).toBeVisible();
-    await expect(section.getByRole("textbox")).toHaveValue(LIVE_AGENT_RUN.mandateId);
+    await expect(section.getByRole("textbox")).toHaveValue(ACTIVE_AGENT_MANDATE.mandateId);
 
     await section.getByRole("button", { name: "Start run" }).click();
     await expect(section.getByRole("button", { name: "Running…" })).toBeDisabled();
@@ -104,7 +104,7 @@ test.describe("agent operator", () => {
 
     expect(agentApi.startedRuns()).toEqual([
       {
-        mandateId: LIVE_AGENT_RUN.mandateId,
+        mandateId: ACTIVE_AGENT_MANDATE.mandateId,
         targets: [
           {
             providerListingId: LISBON_LISTING.id,
@@ -149,7 +149,7 @@ test.describe("agent operator", () => {
 
     expect(agentApi.startedRuns()).toEqual([
       {
-        mandateId: LIVE_AGENT_RUN.mandateId,
+        mandateId: ACTIVE_AGENT_MANDATE.mandateId,
         targets: [
           {
             providerListingId: PORTO_LISTING.id,
