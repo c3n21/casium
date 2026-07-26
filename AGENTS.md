@@ -17,6 +17,7 @@
   `plan/backlog-e2e.md` (Epic E, RD-141..RD-152, Playwright E2E tests),
   `plan/backlog-identity.md` (Epic I, RD-161..RD-166, agent identity binding),
   `plan/backlog-deploy.md` (Epic D, RD-171..RD-179, hosting the demo on the VPS),
+  `plan/backlog-landlord.md` (Epic L, RD-181..RD-188, making the landlord a real party),
   `plan/backlog-stretch.md` (RD-202, RD-203; RD-201 superseded by Epic S).
   `spec/development-spec.md` is the implementation contract for
   object shapes, endpoints, and schemas — if it conflicts with executable
@@ -67,7 +68,8 @@ scripts/            demo-agentkit-duplicate.mjs, agentkit-live-request.html
 docs/               demo-script, sui-deployment, provider-api, world-agentkit,
                     walrus-adapter, duplicate-human-demo
 plan/backlog.md     Index: lanes, dep graph, parallel plan, file ownership
-plan/backlog-*.md   Epic ticket files (archive, completion, walrus, seal, stretch)
+plan/backlog-*.md   Epic ticket files (archive, completion, walrus, seal, e2e,
+                    identity, deploy, landlord, stretch)
 spec/development-spec.md   Implementation contract (schemas, endpoints, Move spec)
 ```
 

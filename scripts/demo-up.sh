@@ -103,9 +103,10 @@ pids+=($!)
 wait_for_http http://localhost:4022/health "Agent"
 
 echo "==> Starting web app (:3000)"
-pnpm --filter @casium/web start >"$LOG_DIR/web.log" 2>&1 &
+pnpm --filter @casium/web start  >"$LOG_DIR/web.log" 2>&1 &
 pids+=($!)
-wait_for_http http://localhost:3000 "Web app"
+# wait_for_http http://localhost:3000 "Web app"
+# wait_for_http http://100.64.0.5:3000 "Web app"
 
 cat <<EOF
 

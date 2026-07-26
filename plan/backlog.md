@@ -16,6 +16,7 @@ Ticket detail lives in the epic files. `spec/development-spec.md` is the impleme
 | `plan/backlog-e2e.md` | RD-141 … RD-152 | **Epic E — Playwright E2E Tests.** Active. Not front-to-back: start with Phase 1 (RD-141 → RD-144 → RD-147, RD-145, RD-146, RD-149), which needs no wallet. See that file's *Recommended Order*. |
 | `plan/backlog-identity.md` | RD-161 … RD-167 | **Epic I — Agent Identity Binding.** Active. Closes the gap where the renter hand-types the agent's Sui and EVM addresses and nothing ever reads `agent_evm`; RD-167 removes the legacy smoke mandate as the live-demo default. Start with RD-167 if rehearsing the real testnet flow. |
 | `plan/backlog-deploy.md` | RD-171 … RD-179 | **Epic D — Demo Deployment.** Active. Hosting the three services on the NixOS VPS so a judge can open a URL. Everything runs on `localhost` today and there is no Dockerfile in the repo. Start with RD-171 (a decision the user must make) ‖ RD-172. |
+| `plan/backlog-landlord.md` | RD-181 … RD-188 | **Epic L — The Landlord Is A Real Party.** Active. Epic S shipped the Seal policy; the app never exercises it. The decrypt UI is wired only to two hardcoded receipts, provider and landlord are the same address everywhere, and the receipt ID never survives a Postgres read. Start with RD-181 ‖ RD-183 ‖ RD-188 → RD-182. Nothing in it is blocked on the user: RD-182's owner creates the landlord Sui wallet itself under a standing grant — see that file's *Wallet Provisioning* section. |
 | `plan/backlog-stretch.md` | RD-202, RD-203 | Optional. RD-201 superseded by Epic S. |
 
 ## ⚠️ Open Thread — RD-180 AgentKit Mode Mismatch (deferred to last)
@@ -80,7 +81,7 @@ environment variables and hardcoded fixtures rather than by code.
 | Agent | Deterministic rules, real signing, receipt parsing | Service mode and cap discovery — mandate and cap come from env (RD-112, RD-113) |
 | Web | Wallet connect, mandate/listing PTBs, packet encryption UI | Live data — pages read hardcoded fixtures (RD-114); `/agent` route does not exist (RD-116) |
 | Walrus | Adapter interface, mock, CLI adapter | Any byte ever reaching the network; a browser-usable adapter (Epic W) |
-| Seal | Nothing — `packages/seal` is a `package.json` | All of it (Epic S) |
+| Seal | `seal_approve_packet` deployed and tested, client wrapper, renter encryption, landlord decrypt UI (Epic S) | The app never exercises the policy: the decrypt UI is mounted only on two hardcoded receipts, and provider == landlord in every fixture (Epic L) |
 
 ## Coordination Rules
 
@@ -100,17 +101,17 @@ environment variables and hardcoded fixtures rather than by code.
 
 | Lane | Owner profile | Primary paths | Active epic tickets |
 |---|---|---|---|
-| L0 Project setup | DevOps/full-stack | root, `scripts/`, `deploy/`, `packages/contracts-config/` | RD-115, RD-133, RD-171 … RD-177 |
+| L0 Project setup | DevOps/full-stack | root, `scripts/`, `deploy/`, `packages/contracts-config/` | RD-115, RD-133, RD-171 … RD-177, RD-182 |
 | L1 Sui Move | Move engineer | `packages/move/` | RD-132, RD-133 |
 | L2 Sui TS | Full-stack Sui | `packages/sui-client/` | RD-112, RD-162 |
-| L3 Provider API | Backend | `apps/provider-api/` | RD-109, RD-110, RD-117, RD-118, RD-126, RD-164 |
+| L3 Provider API | Backend | `apps/provider-api/` | RD-109, RD-110, RD-117, RD-118, RD-126, RD-164, RD-181, RD-185, RD-186, RD-188 |
 | L4 World AgentKit | World specialist | `packages/agentkit/`, provider middleware | RD-014 follow-up only |
 | L5 Walrus/privacy | Storage engineer | `packages/walrus/`, packet flow | RD-111, RD-121 … RD-126, RD-135 |
-| L6 Seal | Privacy engineer | `packages/seal/`, Move policy | RD-131 … RD-137 |
-| L7 Frontend | Frontend | `apps/web/` | RD-114, RD-116, RD-117, RD-135, RD-136, RD-142, RD-163 |
+| L6 Seal | Privacy engineer | `packages/seal/`, Move policy | RD-131 … RD-137, RD-184 |
+| L7 Frontend | Frontend | `apps/web/` | RD-114, RD-116, RD-117, RD-135, RD-136, RD-142, RD-163, RD-183, RD-184, RD-186 |
 | L8 Agent | Agent/full-stack | `apps/agent/` | RD-111, RD-112, RD-113, RD-161 |
-| L9 Demo/docs | Writer | `README.md`, `docs/`, `plan/` | RD-138, RD-152, RD-165, RD-178 |
-| L10 QA/E2E | Test engineer | `apps/e2e/` | RD-141, RD-143 … RD-151, RD-166, RD-179 |
+| L9 Demo/docs | Writer | `README.md`, `docs/`, `plan/` | RD-138, RD-152, RD-165, RD-178, RD-187 |
+| L10 QA/E2E | Test engineer | `apps/e2e/` | RD-141, RD-143 … RD-151, RD-166, RD-179, RD-187 |
 
 ## Dependency Graph
 
@@ -176,6 +177,11 @@ flowchart TD
 Epic I (RD-161…RD-167) hangs off the completed Epic C work and is otherwise independent — it shares no
 files with Epic W or Epic S. Detail and its own graph live in `plan/backlog-identity.md`.
 
+Epic L (RD-181…RD-188) hangs off Epic S and the completed Epic C work: it consumes `seal_approve_packet`
+(RD-132) and the live-data dashboards (RD-114) rather than changing either. Its only Move-adjacent
+dependency is a landlord wallet its own RD-182 owner creates. Detail and its own graph live in
+`plan/backlog-landlord.md`.
+
 Epic D (RD-171…RD-179) is deliberately absent from the graph above: it depends on no feature ticket and
 blocks none. It packages and hosts whatever is on `main` at deploy time, so it can run concurrently with
 any other epic. Its only cross-epic contact points are `apps/agent/src/server.ts` (RD-161) and the
@@ -219,14 +225,16 @@ genuinely independent early work is in the leaf packages: `packages/move`, `pack
 
 | File | Wanted by | Rule |
 |---|---|---|
-| `apps/provider-api/src/services/applications.ts` | RD-109, RD-110, RD-117, RD-126, RD-164 | One owner at a time, in dependency order. |
+| `apps/provider-api/src/services/applications.ts` | RD-109, RD-110, RD-117, RD-126, RD-164, RD-181, RD-185 | One owner at a time, in dependency order. |
 | `apps/web/src/components/PacketBuilder.tsx` | RD-111, RD-125, RD-135 | Same owner should take all three. |
 | `apps/web/src/components/MandateForm.tsx` | RD-163 | Sole owner; announce if any other L7 work is live. |
 | `apps/web/app/agent/page.tsx` | RD-142, RD-163 | RD-163's edit is one shared-constant import — announce, do not serialize. |
 | `apps/agent/src/server.ts` | RD-161, RD-175 (public-agent case only) | RD-161 first; RD-175's token is deferrable. |
 | `apps/agent/src/checkEnv.ts` | RD-177 | Sole owner. |
 | `deploy/Dockerfile`, `deploy/docker-compose.yml` | RD-172, RD-173, RD-175, RD-177 | RD-172 creates both; the rest extend distinct sections. Announce, do not serialize. |
-| `apps/web/app/landlord/page.tsx` | RD-114, RD-136 | RD-114 lands first, always. |
+| `apps/web/app/landlord/page.tsx` | RD-114, RD-136, RD-184, RD-185 | RD-114 lands first, always. RD-184 owns it within Epic L. |
+| `apps/web/src/components/ApplicationInbox.tsx` | RD-183, RD-184, RD-186 | Same owner takes all three, in that order. |
+| `.playwright-wallet-profile/` | RD-150, RD-187 | One run at a time — a single shared browser profile. Wallet re-authentication is the user's action, never an agent's. |
 | `apps/agent/src/index.ts` | RD-111, RD-112, RD-113, RD-115, RD-124 | RD-115 first (mechanical), then one owner for the rest. |
 | `packages/move/sources/rental.move` | RD-132, RD-202 | Single owner; RD-133 deploys it. |
 | `packages/contracts-config/testnet.json` | RD-115, RD-123, RD-133, RD-179 | Append-only blocks; announce before writing. |
@@ -257,7 +265,8 @@ User-provisioned, not agent-installable without permission:
 | Item | Why |
 |---|---|
 | Postgres server | Required from RD-109 onward; `psql` is installed but the server was never verified running. |
-| Fresh Sui testnet wallets for renter, agent, provider, landlord | Avoid the auto-generated key that printed a recovery phrase. |
+| Fresh Sui testnet wallets for renter, agent, provider | Avoid the auto-generated key that printed a recovery phrase. |
+| ~~Landlord wallet~~ — **delegated to the agent, 2026-07-26** | RD-182's owner creates and faucet-funds the landlord Sui address itself. Narrow grant: that one address, testnet only, address exported to config, key never committed. Scope and rationale in `plan/backlog-landlord.md` → *Wallet Provisioning*. It must be a **Sui** address with its key in `sui.keystore` — the landlord signs a Seal `SessionKey` in the browser, and `receipt.landlord` is compared against `tx_context::sender()`. An EVM account cannot fill this role. |
 | Sui testnet gas | Required for the RD-133 upgrade and all transactions. |
 | **Testnet WAL tokens** | Required for RD-123/RD-124. The Walrus epic cannot complete without them. |
 | World/AgentKit registration access | User-controlled World flow. |
@@ -361,6 +370,8 @@ the *complete* application.
 | Package upgrade (RD-133) breaks existing objects or IDs other lanes read | L1/L0 | Dry-run first; verify a pre-upgrade listing still works; record both package IDs; announce before running. |
 | Seal identity chosen wrong (RD-131) makes ciphertext permanently unreadable | L6 | Decide and document before any encryption ships; single shared derivation function. |
 | Seal key server availability or API drift | L6 | `threshold >= 2` across independent servers; keep the labeled fallback mode. |
+| Provider, landlord, and agent are one address in every fixture, so `ESEAL_WRONG_SENDER` can never fire on the demo path | L0/L6 | RD-182 creates a distinct landlord **Sui** wallet under the standing grant — no external dependency, so this is now a scheduling risk rather than a blocking one. Until it lands, the strongest guarantee in the system is proven only by Move tests, and `docs/seal.md` must say so. |
+| `suiAddressSchema` has no length bound, so an EVM address in a Sui field validates and fails later as a misleading Seal denial | L3 | RD-188 bounds the length and names the EVM/Sui confusion in the error. Land it before seeding any new address. |
 | AgentKit same-human two-agent proof is hard to stage | L4 | Fixture proof exists and is labeled; ask sponsor mentors early. |
 | Postgres unavailable in the demo environment | L3 | Durable embedded fallback behind the same drizzle schema — never a `Map`. |
 | Sui shared-object contention during the demo | L2 | One demo path, fresh object refs, retry with backoff. |
