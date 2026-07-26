@@ -79,6 +79,23 @@ test.describe("application inbox", () => {
     );
   });
 
+  test("keeps receipt verification controls scoped to the provider role", async ({
+    page,
+    providerApi,
+  }) => {
+    providerApi.setApplications([RESERVED_APPLICATION]);
+
+    await page.goto("/provider");
+    await expect(page.getByTestId("verify-receipt-summary")).toBeVisible();
+
+    await page.goto("/landlord");
+    await expect(page.getByTestId("application-card-app_1")).toBeVisible();
+    await expect(page.getByTestId("verify-receipt-summary")).toHaveCount(0);
+    await expect(page.getByTestId("landlord-awaiting-receipt")).toContainText(
+      "Awaiting on-chain receipt verification by the provider.",
+    );
+  });
+
   test("a rejected receipt keeps the application reserved and shows the error", async ({
     page,
     providerApi,

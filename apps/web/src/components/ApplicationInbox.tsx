@@ -30,11 +30,12 @@ export type ReservedApplication = {
 };
 
 type ApplicationInboxProps = {
+  role: "provider" | "landlord";
   applications: ReservedApplication[];
   onRefetch?: () => void;
 };
 
-export function ApplicationInbox({ applications, onRefetch }: ApplicationInboxProps) {
+export function ApplicationInbox({ role, applications, onRefetch }: ApplicationInboxProps) {
   const [verifyInputs, setVerifyInputs] = useState<Record<string, { txDigest: string; receiptId: string }>>({});
   const [verifying, setVerifying] = useState<string | null>(null);
   const [verifyErrors, setVerifyErrors] = useState<Record<string, string>>({});
@@ -88,7 +89,7 @@ export function ApplicationInbox({ applications, onRefetch }: ApplicationInboxPr
             </p>
           )}
 
-          {a.status === "reserved" && (
+          {role === "provider" && a.status === "reserved" && (
             <details style={{ marginTop: 8 }}>
               <summary data-testid="verify-receipt-summary">Verify Sui receipt</summary>
               <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -120,6 +121,12 @@ export function ApplicationInbox({ applications, onRefetch }: ApplicationInboxPr
                 </button>
               </div>
             </details>
+          )}
+
+          {role === "landlord" && a.status === "reserved" && (
+            <p className="muted" data-testid="landlord-awaiting-receipt" style={{ margin: "8px 0 0", fontSize: "0.85rem" }}>
+              Awaiting on-chain receipt verification by the provider.
+            </p>
           )}
 
           {a.receipt && (

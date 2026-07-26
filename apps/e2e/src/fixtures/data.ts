@@ -44,7 +44,14 @@ export type ReservedApplication = {
   packetHash: string;
   status: "reserved" | "accepted" | "withdrawn";
   idempotencyKey: string;
-  receipt?: { receiptId: string; txDigest: string };
+  receipt?: {
+    receiptId: string;
+    txDigest: string;
+    mandateId: string;
+    listingObjectId: string;
+    submittedAtMs: number;
+    accessExpiresAtMs: number;
+  };
 };
 
 export type RunResult = {
@@ -135,6 +142,10 @@ export const RESERVED_APPLICATION: ReservedApplication = {
 export const VERIFY_INPUT = {
   txDigest: LIVE_AGENT_RUN.submitApplicationTxDigest,
   receiptId: SMOKE.receiptId,
+  mandateId: SMOKE.mandateId,
+  listingObjectId: SMOKE.listingObjectId,
+  submittedAtMs: 1_784_962_851_988,
+  accessExpiresAtMs: 1_790_000_000_000,
 };
 
 export const AGENT_HEALTH = {

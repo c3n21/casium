@@ -10,6 +10,7 @@ import {
   RPC_URL as RPC_URL_TESTNET,
   SMOKE,
   LIVE_AGENT_RUN,
+  PUBLISHER_ADDRESS,
 } from "@casium/contracts-config";
 import { ApplicationInbox, type ReservedApplication } from "@/components/ApplicationInbox";
 import { PacketViewer } from "@/components/PacketViewer";
@@ -17,11 +18,12 @@ import { PacketViewer } from "@/components/PacketViewer";
 const PROVIDER_API = process.env.NEXT_PUBLIC_PROVIDER_API_URL ?? "http://localhost:4021";
 const SMOKE_RECEIPT_ID = SMOKE.receiptId;
 const LIVE_RECEIPT_ID = LIVE_AGENT_RUN.receiptId;
+const E2E_STUB_SUI = process.env.NEXT_PUBLIC_E2E_STUB_SUI === "1";
 
 export default function LandlordPage() {
   const suiClient = useCurrentClient();
   const account = useCurrentAccount();
-  const connectedAddress = account?.address ?? null;
+  const connectedAddress = account?.address ?? (E2E_STUB_SUI ? PUBLISHER_ADDRESS : null);
 
   // Fetch smoke receipt for the demo evidence panel
   const { data: smokeReceipt, isLoading: smokeLoading, error: smokeError } = useQuery({
@@ -96,7 +98,7 @@ export default function LandlordPage() {
               </p>
             )}
             {!appsLoading && !appsError && (
-              <ApplicationInbox applications={landlordApplications} onRefetch={() => void refetch()} />
+              <ApplicationInbox role="landlord" applications={landlordApplications} onRefetch={() => void refetch()} />
             )}
           </>
         )}

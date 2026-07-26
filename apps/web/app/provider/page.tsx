@@ -191,7 +191,7 @@ export default function ProviderPage() {
           </p>
         )}
         {!isLoading && !error && (
-          <ApplicationInbox applications={applications} onRefetch={() => void refetch()} />
+          <ApplicationInbox role="provider" applications={applications} onRefetch={() => void refetch()} />
         )}
 
         <details className="evidence-panel" data-testid="developer-evidence" style={{ marginTop: "2rem" }}>

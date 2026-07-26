@@ -155,7 +155,14 @@ export async function installProviderApiStub(
           ? {
               ...a,
               status: "accepted" as const,
-              receipt: { receiptId: body.receiptId, txDigest: body.txDigest },
+              receipt: {
+                receiptId: body.receiptId,
+                txDigest: body.txDigest,
+                mandateId: a.mandateId,
+                listingObjectId: a.listingObjectId,
+                submittedAtMs: 1_784_962_851_988,
+                accessExpiresAtMs: 1_790_000_000_000,
+              },
             }
           : a,
       );
