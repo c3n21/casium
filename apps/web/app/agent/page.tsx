@@ -256,14 +256,36 @@ function RunSection({
         );
       }
 
-      // Preflight. The agent needs a packet registered for this mandate, and without
-      // this check its absence surfaces four stages later as an opaque run failure.
-      const packetRes = await fetch(
-        `${PROVIDER_API}/packets/${encodeURIComponent(mandateInput)}`,
-      );
-      if (packetRes.status === 404) {
-        setPacketMissing(true);
-        throw new Error("No packet is registered for this mandate.");
+      // Preflight. The agent needs one packet per selected target; otherwise its
+      // absence surfaces four stages later as an opaque run failure.
+      if (targets && targets.length > 0) {
+        const packetRes = await fetch(
+          `${PROVIDER_API}/packets/by-mandate/${encodeURIComponent(mandateInput)}`,
+        );
+        if (packetRes.status === 404) {
+          setPacketMissing(true);
+          throw new Error("No packet is registered for this mandate.");
+        }
+        if (!packetRes.ok) throw new Error(`Packet lookup returned ${packetRes.status}`);
+
+        const { packets } = (await packetRes.json()) as {
+          packets?: Array<{ providerListingId: string }>;
+        };
+        const packetListingIds = new Set((packets ?? []).map((packet) => packet.providerListingId));
+        const missingTarget = targets.find((target) => !packetListingIds.has(target.providerListingId));
+        if (missingTarget) {
+          setPacketMissing(true);
+          throw new Error(`No packet is registered for target ${missingTarget.providerListingId}.`);
+        }
+      } else {
+        const packetRes = await fetch(
+          `${PROVIDER_API}/packets/${encodeURIComponent(mandateInput)}`,
+        );
+        if (packetRes.status === 404) {
+          setPacketMissing(true);
+          throw new Error("No packet is registered for this mandate.");
+        }
+        if (!packetRes.ok) throw new Error(`Packet lookup returned ${packetRes.status}`);
       }
 
       // Build the run body: use targets if provided, else fall back to listingObjectId

@@ -35,28 +35,34 @@ describe("provider database schema", () => {
     ).toThrow();
   });
 
-  it("keeps one packet per mandate, replacing on re-upload", () => {
+  it("keeps one packet per mandate and listing, replacing on re-upload", () => {
     const db = newDb();
     db.public.none(migrationSql);
 
     db.public.none(`
-      insert into packets (mandate_id, walrus_blob_id, packet_hash, size_bytes, encryption_mode, registered_at_ms)
-      values ('0xmandate', 'blob_first', '0xhash1', 128, 'seal', 1000)
-      on conflict (mandate_id) do update set
+      insert into packets (mandate_id, provider_listing_id, walrus_blob_id, packet_hash, size_bytes, encryption_mode, registered_at_ms)
+      values ('0xmandate', 'listing_1', 'blob_first', '0xhash1', 128, 'seal', 1000)
+      on conflict (mandate_id, provider_listing_id) do update set
         walrus_blob_id = excluded.walrus_blob_id,
         packet_hash = excluded.packet_hash,
         registered_at_ms = excluded.registered_at_ms;
 
-      insert into packets (mandate_id, walrus_blob_id, packet_hash, size_bytes, encryption_mode, registered_at_ms)
-      values ('0xmandate', 'blob_second', '0xhash2', 256, 'seal', 2000)
-      on conflict (mandate_id) do update set
+      insert into packets (mandate_id, provider_listing_id, walrus_blob_id, packet_hash, size_bytes, encryption_mode, registered_at_ms)
+      values ('0xmandate', 'listing_1', 'blob_second', '0xhash2', 256, 'seal', 2000)
+      on conflict (mandate_id, provider_listing_id) do update set
         walrus_blob_id = excluded.walrus_blob_id,
         packet_hash = excluded.packet_hash,
         registered_at_ms = excluded.registered_at_ms;
+
+      insert into packets (mandate_id, provider_listing_id, walrus_blob_id, packet_hash, size_bytes, encryption_mode, registered_at_ms)
+      values ('0xmandate', 'listing_2', 'blob_third', '0xhash3', 256, 'seal', 3000);
     `);
 
-    const rows = db.public.many("select walrus_blob_id from packets where mandate_id = '0xmandate'");
-    expect(rows).toHaveLength(1);
-    expect(rows[0].walrus_blob_id).toBe("blob_second");
+    const rows = db.public.many(
+      "select provider_listing_id, walrus_blob_id from packets where mandate_id = '0xmandate' order by provider_listing_id",
+    );
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({ provider_listing_id: "listing_1", walrus_blob_id: "blob_second" });
+    expect(rows[1]).toMatchObject({ provider_listing_id: "listing_2", walrus_blob_id: "blob_third" });
   });
 });
