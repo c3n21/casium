@@ -104,6 +104,10 @@ AGENTKIT_HEADER=<base64-encoded-agentkit-header>
 PROVIDER_API_URL=http://localhost:4021
 PROVIDER_STORE=memory
 
+# Browser-facing public origins for the exposed demo
+NEXT_PUBLIC_PROVIDER_API_URL=https://api.zhifan.me
+NEXT_PUBLIC_AGENT_API_URL=https://agent.zhifan.me
+
 # Storage / encryption
 WALRUS_MODE=mock
 NEXT_PUBLIC_WALRUS_MODE=mock
@@ -136,6 +140,12 @@ The `AGENTKIT_DEMO_*` pair is the opt-in mock path for exercising the Sui flow w
 It only works against a provider started with `AGENTKIT_MODE=mock`, both variables must be set, a real
 `AGENTKIT_HEADER` always takes precedence, and the agent labels the run `[MOCK]`. It proves nothing
 about World identity.
+
+For the exposed demo, the public proxy serves `casium.zhifan.me`, `api.zhifan.me`, and
+`agent.zhifan.me`, then forwards over the tailnet to this machine at `100.64.0.5`. The local `Caddyfile`
+maps tailnet ports `3030`, `5050`, and `4040` to the web app, provider API, and agent service. Restart
+`next dev`, or rebuild the web app, after changing any `NEXT_PUBLIC_*` URL because Next.js inlines these
+values into the browser bundle.
 
 ### Web app: mock vs live packet upload
 
