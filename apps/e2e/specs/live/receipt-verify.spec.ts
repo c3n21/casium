@@ -82,16 +82,16 @@ test.describe("accepting a real on-chain receipt", () => {
     // from the request.
     expect(accepted.receipt).toMatchObject({
       receiptId: LIVE_AGENT_RUN.receiptId,
+      txDigest: LIVE_AGENT_RUN.submitApplicationTxDigest,
       mandateId: receipt.mandateId,
       listingObjectId: receipt.listingId,
       submittedAtMs: receipt.submittedAtMs,
       accessExpiresAtMs: receipt.accessExpiresAtMs,
-      // The blob is a labeled mock, so the hash-of-ciphertext check is skipped
-      // rather than silently passed.
-      blobVerification: "skipped-mock",
     });
 
-    expect((await getApplication(request, application.id)).status).toBe("accepted");
+    const readBack = await getApplication(request, application.id);
+    expect(readBack.status).toBe("accepted");
+    expect(readBack.receipt).toEqual(accepted.receipt);
 
     // …and the provider dashboard shows it as accepted, linked to the receipt
     // object on chain. This is Step 8 of docs/demo-script.md.

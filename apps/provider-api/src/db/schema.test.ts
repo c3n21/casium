@@ -65,4 +65,21 @@ describe("provider database schema", () => {
     expect(rows[0]).toMatchObject({ provider_listing_id: "listing_1", walrus_blob_id: "blob_second" });
     expect(rows[1]).toMatchObject({ provider_listing_id: "listing_2", walrus_blob_id: "blob_third" });
   });
+
+  it("stores receipt access expiry for provider read paths", () => {
+    const db = newDb();
+    db.public.none(migrationSql);
+
+    db.public.none(`
+      insert into listings (id, sui_listing_id, external_listing_id, provider_sui_address, landlord_sui_address, municipality_code, monthly_rent_eur, bedrooms)
+      values ('listing_1', '0xlisting', 'demo-1', '0xprovider', '0xlandlord', 1, 1700, 2);
+      insert into applications (id, listing_id, mandate_id, agent_sui_address, agent_evm_address, human_id_hash, walrus_blob_id, packet_hash, status, idempotency_key)
+      values ('app_1', 'listing_1', '0xmandate', '0xagent', '0xevm', 'sha256:human', 'mock:blob', '0xhash', 'accepted', 'idem-1');
+      insert into sui_receipts (receipt_id, application_id, tx_digest, mandate_id, listing_object_id, submitted_at_ms, access_expires_at_ms, raw_object)
+      values ('0xreceipt', 'app_1', 'tx_1', '0xmandate', '0xlisting', 1784962851988, 1790000000000, '{}');
+    `);
+
+    const [row] = db.public.many("select access_expires_at_ms from sui_receipts where receipt_id = '0xreceipt'");
+    expect(row).toMatchObject({ access_expires_at_ms: 1_790_000_000_000 });
+  });
 });

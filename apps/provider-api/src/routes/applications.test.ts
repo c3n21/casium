@@ -140,11 +140,31 @@ describe("application reservation routes", () => {
     });
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toMatchObject({
+    const accepted = await response.json();
+    expect(accepted).toMatchObject({
       id: "app_1",
       status: "accepted",
-      receipt: { receiptId: "0xcafe", txDigest: "tx_1" },
+      receipt: {
+        receiptId: "0xcafe",
+        txDigest: "tx_1",
+        mandateId: reserveRequest.mandateId,
+        listingObjectId: reserveRequest.listingObjectId,
+        submittedAtMs: 1_784_962_851_988,
+        accessExpiresAtMs: 1_790_000_000_000,
+      },
     });
+    expect(accepted.receipt).not.toHaveProperty("rawObject");
+    expect(accepted.receipt).not.toHaveProperty("blobVerification");
+
+    const single = await app.request("/applications/app_1");
+    expect(single.status).toBe(200);
+    expect(await single.json()).toMatchObject({ receipt: accepted.receipt });
+
+    const collection = await app.request("/applications");
+    expect(collection.status).toBe(200);
+    const { applications } = await collection.json();
+    expect(applications).toHaveLength(1);
+    expect(applications[0]).toMatchObject({ receipt: accepted.receipt });
   });
 
   it("rejects invalid receipts and duplicate tx digests", async () => {

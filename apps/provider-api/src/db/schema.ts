@@ -60,6 +60,7 @@ export const suiReceipts = pgTable(
     mandateId: text("mandate_id").notNull(),
     listingObjectId: text("listing_object_id").notNull(),
     submittedAtMs: bigint("submitted_at_ms", { mode: "number" }).notNull(),
+    accessExpiresAtMs: bigint("access_expires_at_ms", { mode: "number" }).notNull(),
     rawObject: jsonb("raw_object").notNull(),
     verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull().defaultNow(),
   },

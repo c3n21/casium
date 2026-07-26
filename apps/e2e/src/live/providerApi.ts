@@ -55,7 +55,6 @@ export type ReservedApplication = {
     listingObjectId: string;
     submittedAtMs: number;
     accessExpiresAtMs: number;
-    blobVerification: "skipped-mock" | "verified";
   };
 };
 

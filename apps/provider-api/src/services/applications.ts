@@ -36,8 +36,13 @@ export type ReservedApplication = {
     listingObjectId: string;
     agentSuiAddress: string;
   };
-  receipt?: VerifiedReceipt;
+  receipt?: ApplicationReceiptSummary;
 };
+
+export type ApplicationReceiptSummary = Pick<
+  VerifiedReceipt,
+  "receiptId" | "txDigest" | "mandateId" | "listingObjectId" | "submittedAtMs" | "accessExpiresAtMs"
+>;
 
 export type AccessGrant = {
   id: string;
@@ -104,11 +109,12 @@ export function createApplicationService(
       .select()
       .from(applicationsTable)
       .leftJoin(listingsTable, eq(applicationsTable.listingId, listingsTable.id))
+      .leftJoin(suiReceiptsTable, eq(applicationsTable.id, suiReceiptsTable.applicationId))
       .where(eq(applicationsTable.id, id));
     if (!rows.length || !rows[0]) return null;
-    const { applications: app, listings: listing } = rows[0];
+    const { applications: app, listings: listing, sui_receipts: receipt } = rows[0];
     if (!app) return null;
-    return {
+    const application: ReservedApplication = {
       id: app.id,
       listingId: app.listingId,
       listingObjectId: listing?.suiListingId ?? "",
@@ -128,6 +134,8 @@ export function createApplicationService(
         app.agentSuiAddress,
       ),
     };
+    if (receipt) application.receipt = toReceiptSummary(receipt);
+    return application;
   }
 
   // ------- Internal shared get -------
@@ -400,6 +408,7 @@ export function createApplicationService(
           .select()
           .from(applicationsTable)
           .leftJoin(listingsTable, eq(applicationsTable.listingId, listingsTable.id))
+          .leftJoin(suiReceiptsTable, eq(applicationsTable.id, suiReceiptsTable.applicationId))
           .where(conditions.length > 0 ? and(...conditions) : undefined);
 
         return rows
@@ -407,7 +416,7 @@ export function createApplicationService(
           .map((r) => {
             const app = r.applications;
             const listing = r.listings;
-            return {
+            const application: ReservedApplication = {
               id: app.id,
               listingId: app.listingId,
               listingObjectId: listing?.suiListingId ?? "",
@@ -427,6 +436,8 @@ export function createApplicationService(
                 app.agentSuiAddress,
               ),
             };
+            if (r.sui_receipts) application.receipt = toReceiptSummary(r.sui_receipts);
+            return application;
           });
       }
 
@@ -479,10 +490,11 @@ export function createApplicationService(
         return { ok: false, error: verified.error ?? ERROR_CODES.RECEIPT_INVALID };
       }
 
+      const receipt = toPublicReceipt(verified.value);
       const accepted: ReservedApplication = {
         ...application,
         status: "accepted",
-        receipt: verified.value,
+        receipt,
       };
 
       if (db) {
@@ -497,6 +509,7 @@ export function createApplicationService(
           mandateId: verified.value.mandateId,
           listingObjectId: verified.value.listingObjectId,
           submittedAtMs: verified.value.submittedAtMs,
+          accessExpiresAtMs: verified.value.accessExpiresAtMs,
           rawObject: verified.value.rawObject as Record<string, unknown>,
         });
       } else {
@@ -595,6 +608,30 @@ export function createApplicationService(
       }
       return accessGrantsMap.get(id) ?? [];
     },
+  };
+}
+
+type DbReceipt = typeof suiReceiptsTable.$inferSelect;
+
+function toPublicReceipt(receipt: VerifiedReceipt): ApplicationReceiptSummary {
+  return {
+    receiptId: receipt.receiptId,
+    txDigest: receipt.txDigest,
+    mandateId: receipt.mandateId,
+    listingObjectId: receipt.listingObjectId,
+    submittedAtMs: receipt.submittedAtMs,
+    accessExpiresAtMs: receipt.accessExpiresAtMs,
+  };
+}
+
+function toReceiptSummary(receipt: DbReceipt): ApplicationReceiptSummary {
+  return {
+    receiptId: receipt.receiptId,
+    txDigest: receipt.txDigest,
+    mandateId: receipt.mandateId,
+    listingObjectId: receipt.listingObjectId,
+    submittedAtMs: receipt.submittedAtMs,
+    accessExpiresAtMs: receipt.accessExpiresAtMs,
   };
 }
 

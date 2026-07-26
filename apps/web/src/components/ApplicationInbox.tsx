@@ -19,7 +19,14 @@ export type ReservedApplication = {
   packetHash: string;
   status: "reserved" | "accepted" | "withdrawn";
   idempotencyKey: string;
-  receipt?: { receiptId: string; txDigest: string };
+  receipt?: {
+    receiptId: string;
+    txDigest: string;
+    mandateId: string;
+    listingObjectId: string;
+    submittedAtMs: number;
+    accessExpiresAtMs: number;
+  };
 };
 
 type ApplicationInboxProps = {
