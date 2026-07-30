@@ -205,6 +205,15 @@ export default defineConfig({
     },
     // RD-143/RD-150 add the `wallet` project here: persistent context on
     // .playwright-wallet-profile, workers: 1, trace/video off.
+    {
+      // RD-214. Reusable before/after screenshot harness for the Tailwind +
+      // shadcn restyle. Runs against the same stubbed webServer as `stubbed`
+      // (see `webServer` below, which is not per-project) but is scoped to
+      // its own spec so it never affects what `pnpm test:e2e` selects.
+      name: "screenshots",
+      testMatch: /screenshots\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"] },
+    },
   ],
 
   webServer: LIVE ? [providerApiServer, agentServer, webServer] : webServer,

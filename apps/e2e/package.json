@@ -9,6 +9,7 @@
     "e2e:live": "E2E_TIER=live playwright test --project=live-services",
     "e2e:ui": "playwright test --project=stubbed --ui",
     "e2e:live:ui": "E2E_TIER=live playwright test --project=live-services --ui",
+    "e2e:shots": "playwright test --project=screenshots",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

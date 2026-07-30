@@ -15,6 +15,10 @@ apps/e2e/test-results/
 apps/e2e/playwright-report/
 apps/e2e/blob-report/
 
+# RD-214 screenshot harness output (not test-results/: Playwright wipes that
+# directory at the start of every run, which would destroy a "before" set)
+apps/e2e/screenshots/
+
 # Local environment and secrets
 .env
 .env.*
