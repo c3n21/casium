@@ -13,7 +13,10 @@ export type WalrusCliAdapterOptions = {
 };
 
 export function createWalrusCliAdapter(options: WalrusCliAdapterOptions = {}): WalrusAdapter {
-  const walrusBin = options.walrusBin ?? process.env.WALRUS_BIN ?? `${process.env.HOME}/.local/bin/walrus`;
+  // Bare "walrus" relies on execvp/PATH lookup (spawnFile uses child_process.spawn
+  // without shell: true) — put it on PATH yourself, e.g. via `nix develop` or
+  // `PATH="$HOME/.local/bin:$PATH"`. No automatic ~/.local/bin discovery.
+  const walrusBin = options.walrusBin ?? "walrus";
   const epochs = options.epochs ?? Number(process.env.WALRUS_EPOCHS ?? 1);
 
   return {

@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "description": "Casium monorepo for scoped rental application agents on Sui and World.",
-  "packageManager": "pnpm@11.3.0",
+  "packageManager": "pnpm@11.17.0",
   "engines": {
     "node": ">=22"
   },

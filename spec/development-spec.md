@@ -879,7 +879,6 @@ AGENT_SERVER_PORT=4022
 MANDATE_ID=0x...                        # per-run input, or supplied by POST /runs
 AGENT_CAP_ID=0x...                      # optional override; discovered by default after RD-112
 WALRUS_MODE=cli                         # mock | http | cli
-WALRUS_BIN=/home/<user>/.local/bin/walrus
 ```
 
 Agent private keys are testnet-only secrets and must come from the process environment or a local uncommitted `.env` file. They must never be committed, logged, or derived from the renter wallet. The derived signer address must match `AGENT_SUI_ADDRESS` before submitting any Sui transaction.

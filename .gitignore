@@ -42,3 +42,9 @@ client.yaml
 
 apps/web/.next-e2e/
 apps/web/.next-e2e-live/
+
+# Nix
+result
+result-*
+.direnv/
+.nix/

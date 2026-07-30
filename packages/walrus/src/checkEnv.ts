@@ -6,13 +6,15 @@
  */
 import { spawnFile } from "./process.js";
 
-const WALRUS_BIN = `${process.env["HOME"]}/.local/bin/walrus`;
+// Bare "walrus" — resolved via PATH by child_process.spawn (no shell). Put walrus on PATH
+// yourself (e.g. `nix develop`, or `PATH="$HOME/.local/bin:$PATH"`) before running this check.
+const walrusBin = "walrus";
 const CHECK_SIZE_BYTES = 51200; // ~50 KB
 const CHECK_EPOCHS = 5;
 
 async function runWalrus(args: string[]): Promise<{ ok: boolean; stdout: string; stderr: string }> {
   try {
-    const result = await spawnFile(WALRUS_BIN, args);
+    const result = await spawnFile(walrusBin, args);
     return { ok: result.code === 0, stdout: result.stdout, stderr: result.stderr };
   } catch (err) {
     return { ok: false, stdout: "", stderr: String(err) };
@@ -38,14 +40,16 @@ function getNestedString(obj: unknown, ...keys: string[]): string | null {
 
 async function main(): Promise<void> {
   console.log("=== Walrus preflight check ===\n");
-  console.log(`Binary: ${WALRUS_BIN}`);
+  console.log(`Binary: ${walrusBin}`);
 
   // 1. Verify binary exists with --version
   const versionResult = await runWalrus(["--version"]);
   if (!versionResult.ok) {
-    console.error(`\nERROR: Walrus binary not found or not executable at ${WALRUS_BIN}`);
+    console.error(`\nERROR: Walrus binary not found or not executable at ${walrusBin}`);
     console.error(`  ${versionResult.stderr || versionResult.stdout}`);
-    console.error("\nFix: install walrus to ~/.local/bin/walrus or set WALRUS_BIN env var.");
+    console.error(
+      "\nFix: run inside `nix develop` (walrus is on PATH there), or put a walrus binary on PATH yourself.",
+    );
     process.exit(1);
   }
   console.log(`Version: ${versionResult.stdout.trim()}`);

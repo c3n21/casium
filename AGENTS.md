@@ -32,9 +32,16 @@ The full set is `plan/rules/global.md`. These four are the ones that ruin work i
 
 ## Environment
 
-- Arch Linux inside distrobox. **Not** NixOS; no Nix flakes.
-- `sui` and `walrus` are installed in `~/.local/bin/` and are deliberately **not** on
-  `PATH`. Invoke them by full path. Do not export `PATH` or edit shell startup files.
+- NixOS. `nix develop` (see `docs/nix.md`) is the preferred way to set up a working
+  environment — it provides `sui` 1.76.0, `walrus` 1.52.1, `node`, `pnpm`, `git`, `docker` +
+  `docker compose`, `psql`, and `caddy`, all pinned via `flake.nix`/`flake.lock`.
+- Inside `nix develop`, `sui` and `walrus` are regular `PATH` members — invoke them as bare
+  commands (`sui move build --path packages/move`).
+- **Outside** `nix develop`, the old rule still holds: `sui` and `walrus` live in
+  `~/.local/bin/` and are **not** on `PATH`. Invoke them by full path
+  (`~/.local/bin/sui ...`), or use `nix run .#sui -- ...` / `nix run .#walrus -- ...` without
+  entering the shell. Do not export `~/.local/bin` into `PATH` and do not edit shell startup
+  files to work around this.
 - Browser access comes from the agent harness, not this repo — read `docs/browser-testing.md`
   before any UI, wallet, or Seal work. Claude Code uses the `claude-in-chrome` skill;
   opencode uses the Playwright MCP in `opencode.json`. They do not share wallet state.
@@ -75,8 +82,10 @@ pnpm -r --if-present build
 pnpm -r --if-present test
 pnpm backlog                 # validate the backlog
 pnpm demo:duplicate-human
-~/.local/bin/sui move build --path packages/move
-~/.local/bin/sui move test  --path packages/move
+sui move build --path packages/move   # inside `nix develop`
+sui move test  --path packages/move   # inside `nix develop`
+~/.local/bin/sui move build --path packages/move   # outside the devShell
+~/.local/bin/sui move test  --path packages/move   # outside the devShell
 ```
 
 ## Skills

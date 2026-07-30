@@ -27,9 +27,15 @@ Apply to every ticket. Violating one fails the ticket regardless of the code.
 
 ## Environment
 
-- Arch Linux inside distrobox. Not NixOS, no Nix flakes.
-- `sui` and `walrus` live in `~/.local/bin/` and are **not** on `PATH`. Invoke them by
-  full path. Do not export `PATH` globally and do not edit shell startup files.
+- NixOS. `nix develop` (see `docs/nix.md`) is the preferred setup — it puts `sui` 1.76.0 and
+  `walrus` 1.52.1 (plus node/pnpm/docker/postgres/caddy) on `PATH`, pinned via `flake.nix`.
+  Invoke them as bare commands inside the shell.
+- Outside `nix develop`, `sui` and `walrus` live in `~/.local/bin/` and are **not** on `PATH`.
+  Invoke them by full path. Do not export `~/.local/bin` globally and do not edit shell
+  startup files to work around this.
+- `WALRUS_MODE=cli` (`createWalrusCliAdapter`) spawns a bare `walrus` command resolved via
+  `PATH` — there is no automatic `~/.local/bin` fallback in code. Outside the devShell, put
+  `walrus` on `PATH` yourself for that invocation if you need CLI mode.
 
 ## Ticket discipline
 

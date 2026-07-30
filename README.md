@@ -59,13 +59,22 @@ docs/
 
 ## Prerequisites
 
+**Preferred (NixOS):** `nix develop` gives you `sui` 1.76.0, `walrus` 1.52.1, `node`, `pnpm`,
+`git`, `docker` + `docker compose`, `psql`, and `caddy` on `PATH`, all pinned via `flake.nix`.
+See `docs/nix.md` for the required host config (`programs.nix-ld.enable`, etc.) and how
+Playwright's browsers run under nix-ld.
+
+**Fallback (manual install):**
+
 | Tool | Version | Notes |
 |---|---|---|
 | Node.js | ≥ 22 | `node --version` |
 | pnpm | 11 | `pnpm --version` |
 | Sui CLI | testnet-compatible | `~/.local/bin/sui --version` |
 
-Do **not** export `~/.local/bin` to `PATH` for this repo. Use full paths.
+Do **not** export `~/.local/bin` to `PATH` for this repo. Use full paths. (This constraint
+applies outside `nix develop`; inside the devShell, `sui` and `walrus` are pinned `PATH`
+members by design — see `docs/nix.md`.)
 
 ## Install
 
@@ -224,8 +233,10 @@ pnpm -r --if-present build
 pnpm -r --if-present test
 
 # Move tests
-~/.local/bin/sui move build --path packages/move
-~/.local/bin/sui move test --path packages/move
+sui move build --path packages/move                # inside `nix develop`
+sui move test  --path packages/move                # inside `nix develop`
+~/.local/bin/sui move build --path packages/move   # outside the devShell
+~/.local/bin/sui move test  --path packages/move   # outside the devShell
 ```
 
 ## Contributing

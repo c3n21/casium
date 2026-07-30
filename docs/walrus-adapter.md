@@ -40,9 +40,13 @@ Default testnet endpoints (from `testnet.json`):
 
 ### `cli`
 
-`createWalrusCliAdapter()` spawns `~/.local/bin/walrus` via Node.js `child_process`. It requires
-a Walrus client configuration file at `~/.config/walrus/client_config.yaml` and a funded wallet
-with WAL and SUI. This mode is **not** browser-compatible.
+`createWalrusCliAdapter()` spawns a bare `walrus` command via Node.js `child_process` (PATH
+lookup, no shell — pass `walrusBin` to the adapter for a non-default binary). Inside `nix
+develop` this is satisfied automatically (see `docs/nix.md`); outside the devShell you must put
+`walrus` on `PATH` yourself for that invocation, e.g. `PATH="$HOME/.local/bin:$PATH"` — there is
+no automatic `~/.local/bin` discovery. It also requires a Walrus client configuration file at
+`~/.config/walrus/client_config.yaml` and a funded wallet with WAL and SUI. This mode is **not**
+browser-compatible.
 
 The adapter uses:
 
