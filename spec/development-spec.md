@@ -19,13 +19,14 @@ Non-goals: lease signing, rent/deposit payments, legal identity verification, cr
 
 | Source | Use |
 |---|---|
-| `plan/backlog.md` | Index, work lanes, dependency graph, parallel execution plan, file-ownership rules. |
-| `plan/backlog-completion.md` | Epic C tickets — RD-109 … RD-118. |
-| `plan/backlog-walrus.md` | Epic W tickets — RD-121 … RD-126. |
-| `plan/backlog-seal.md` | Epic S tickets — RD-131 … RD-138. |
-| `plan/backlog-identity.md` | Epic I tickets — RD-161 … RD-167. Agent identity binding and live-demo mandate handoff UX. |
+| `plan/START.md` | How to pick up a ticket. Read this before anything else in `plan/`. |
+| `plan/tickets/RD-xxx.md` | One file per ticket — the source of truth for scope, deps, and acceptance. |
+| `plan/state.md` | Generated status board and ready list. Do not edit by hand. |
+| `plan/rules/*.md` | Binding constraints, loaded per ticket via its `rules:` field. |
+| `plan/epics/<letter>.md` | Why an epic exists. Background; not required to execute a ticket. |
+| `plan/backlog.md` | Path map, lane ownership, and where the system actually stands. |
 | `plan/backlog-archive.md` | Completed RD-001 … RD-108. Evidence trail; do not edit. |
-| `AGENTS.md` | Current repo state, environment constraints, coordination rules. |
+| `AGENTS.md` | Repo orientation, environment constraints, hard constraints. |
 | `spec/development-spec.md` | Interface and implementation contract for builders. |
 
 Critical ticket order for remaining work:
@@ -486,7 +487,7 @@ sequenceDiagram
 | Provider verification | Hono middleware using AgentKit hooks or low-level verifier. |
 | Human ID handling | Hash immediately; never store raw human ID. |
 | Duplicate prevention | Enforce `primary key (listing_id, human_id_hash)` in `human_listing_usage`. |
-| Downtime behavior | Return 503/401-style failure; do not bypass verification in sponsor demo. |
+| Downtime behavior | Return 503/401-style failure; do not bypass verification in demo. |
 
 Required demo cases:
 
@@ -606,12 +607,12 @@ One `WALRUS_MODE` / `NEXT_PUBLIC_WALRUS_MODE` selects the backend everywhere (RD
 | `http` | `createWalrusHttpAdapter` | Node + browser | The shipped renter path. Publisher/aggregator HTTP API; no `node:` imports may reach the browser bundle. |
 | `cli` | `createWalrusCliAdapter` | Node only | Server-side and scripted uploads. Spawns `~/.local/bin/walrus`; never export that directory into `PATH`. |
 
-Labeling rules, which are sponsor-integrity requirements and not cosmetics:
+Labeling rules, which are integration-integrity requirements and not cosmetics:
 
 | Rule | Reason |
 |---|---|
 | A blob ID prefixed `mock:` must never render as live, and a real blob ID must never render as mock | A component prop default must not be able to disagree with the ciphertext. |
-| The README sponsor table may claim a live Walrus integration only after RD-123 actually succeeded | Fallback level in §19 governs the claim. |
+| The README integration table may claim a live Walrus integration only after RD-123 actually succeeded | Fallback level in §19 governs the claim. |
 | `/health` reports the active mode | Makes the running configuration checkable rather than assumed. |
 
 ### 10.5 Blob Lifecycle
@@ -625,7 +626,7 @@ Labeling rules, which are sponsor-integrity requirements and not cosmetics:
 
 ## 11. Seal Access Control Spec
 
-Seal is required scope (Epic S, `plan/backlog-seal.md`). It replaces the current dead end where the
+Seal is required scope (Epic S, `plan/epics/S.md`). It replaces the current dead end where the
 AES-GCM key exists only in the renter's React state and is never transmitted, leaving the on-chain
 `access_expires_at_ms` grant authorizing access to something nobody can decrypt.
 
@@ -957,7 +958,7 @@ Log fields:
 | Receipt | `ApplicationReceipt` exists and provider verifies it; pre-seeded receipts satisfy current demo evidence, while autonomous agent-created receipts require RD-108. |
 | Walrus | Real encrypted blob upload works or mock is clearly labeled. |
 | Revocation | Renter revokes mandate; later submission fails. |
-| Documentation | README includes setup, sponsor mapping, limitations, tx links, and synthetic-data disclaimer. |
+| Documentation | README includes setup, integration mapping, limitations, tx links, and synthetic-data disclaimer. |
 
 All of §17.1 is satisfied as of 2026-07-25.
 
@@ -977,7 +978,7 @@ The bar for the complete application, beyond the core demo. Each row names the t
 | Full agent story in browser | Scope, per-rule evaluation, refusal, submission, receipt, and verification are all visible without a terminal. | RD-116 |
 | Revocability | Mandate revocation and application withdrawal both work end to end, and both revoke document access. | RD-117, RD-132 |
 | Traceability | One agent run is traceable by a single correlation ID across agent logs, provider logs, and the stored row. | RD-118 |
-| Honest claims | Every README sponsor row is backed by something actually run, with the achieved §19 fallback level stated. | RD-138 |
+| Honest claims | Every README integration row is backed by something actually run, with the achieved §19 fallback level stated. | RD-138 |
 
 ### 17.2 Required Demo Failure Cases
 
@@ -1002,7 +1003,7 @@ The bar for the complete application, beyond the core demo. Each row names the t
 | No plaintext document upload | Walrus adapter accepts encrypted bytes only from the UI flow. |
 | No raw World human ID storage | Middleware hashes before DB write. |
 | No renter wallet custody | Agent app requires its own Sui key and `AgentCap`. |
-| No fake sponsor integrations | Sui, AgentKit, Walrus, and Seal must all be real in the final claimed demo. A mock is permitted only as a labeled fallback, labeled at *every* surface including the README, and it downgrades the claimable level in §19. |
+| No fake integrations | Sui, AgentKit, Walrus, and Seal must all be real in the final claimed demo. A mock is permitted only as a labeled fallback, labeled at *every* surface including the README, and it downgrades the claimable level in §19. |
 | No Seal backup key retention | The symmetric backup key from `encrypt()` bypasses the policy entirely; discard it immediately — never persist, log, or return it. |
 | No plaintext outside the browser | Decrypted packets stay in browser memory: never persisted, never logged, never sent to the provider. |
 | No secrets in repo | `.gitignore` must exclude `.env`, wallet files, generated keys. |
@@ -1011,10 +1012,10 @@ The bar for the complete application, beyond the core demo. Each row names the t
 
 | Level | Contents | Claim allowed | Requires |
 |---|---|---|---|
-| A | Sui, AgentKit, live Walrus, Seal policy access, durable provider, live-data UI, agent service | Full sponsor story: policy-controlled document access enforced by Move. | All of Epics C, W, S |
+| A | Sui, AgentKit, live Walrus, Seal policy access, durable provider, live-data UI, agent service | Full integration story: policy-controlled document access enforced by Move. | All of Epics C, W, S |
 | B | Sui, AgentKit, live Walrus, AES-GCM with manual key exchange | Strong Sui/World/Walrus. **Seal not claimed** — label "Seal fallback mode". | Epics C and W |
 | C | Sui, AgentKit, mock blob adapter | Sui/World only; Walrus clearly labeled mock everywhere. | Epic C |
-| D | Sui mandate enforcement, provider listing objects, AgentKit verification, duplicate-human rejection, receipt, UI | Minimum core sponsor demo. | Satisfied today |
+| D | Sui mandate enforcement, provider listing objects, AgentKit verification, duplicate-human rejection, receipt, UI | Minimum core demo. | Satisfied today |
 
 The repo currently sits at **level D**, with the honest caveats that provider state is not durable and
 the Walrus integration has never touched the network. Level A is the target of the three active epics.

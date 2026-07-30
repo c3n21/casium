@@ -354,7 +354,7 @@ This path uses the completion epics added after the original core demo.
 
 ---
 
-## Sponsor Proof Checklist
+## Integration Proof Checklist
 
 | Claim | Evidence |
 |---|---|

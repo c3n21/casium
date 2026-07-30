@@ -15,10 +15,15 @@
     "db:down": "docker compose down",
     "db:migrate": "pnpm --filter @casium/provider-api db:migrate",
     "db:reset": "docker compose down -v && docker compose up -d postgres && sleep 3 && pnpm db:migrate",
-    "test": "pnpm -r --if-present test",
+    "test": "node scripts/backlog.mjs check && pnpm -r --if-present test",
     "test:e2e": "pnpm --filter @casium/e2e e2e:stubbed",
     "test:e2e:live": "pnpm --filter @casium/e2e e2e:live",
     "test:e2e:ui": "pnpm --filter @casium/e2e e2e:ui",
-    "lint:object-ids": "node scripts/check-object-ids.mjs"
+    "lint:object-ids": "node scripts/check-object-ids.mjs",
+    "backlog": "node scripts/backlog.mjs check",
+    "backlog:gen": "node scripts/backlog.mjs gen",
+    "backlog:next": "node scripts/backlog.mjs next",
+    "backlog:show": "node scripts/backlog.mjs show",
+    "backlog:new": "node scripts/backlog.mjs new"
   }
 }

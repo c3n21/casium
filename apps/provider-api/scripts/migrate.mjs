@@ -4,7 +4,7 @@
  *
  * Idempotent: a ledger table records what has run, so re-running is a no-op and
  * a half-set-up database can be brought forward without dropping it. That matters
- * on demo day, where the failure mode to avoid is "did I already run this?".
+ * on the day of a live demo, where the failure mode to avoid is "did I already run this?".
  *
  *   pnpm db:migrate                     # from the repo root
  *   DATABASE_URL=postgres://… node apps/provider-api/scripts/migrate.mjs

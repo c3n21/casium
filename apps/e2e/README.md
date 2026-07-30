@@ -1,6 +1,6 @@
 # @casium/e2e
 
-Playwright end-to-end tests for the demo flows. Plan and tickets: `plan/backlog-e2e.md`.
+Playwright end-to-end tests for the demo flows. Plan and tickets: `plan/epics/E.md`.
 
 ## Run
 

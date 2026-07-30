@@ -1,392 +1,66 @@
-# Casium Backlog — Index
+# Casium Backlog
 
 Core product message: **World limits who the agent represents. Sui limits what the agent can do.**
 
-This file is the coordination surface: where tickets live, who owns what, what can run in parallel.
-Ticket detail lives in the epic files. `spec/development-spec.md` is the implementation contract.
+**Picking up work? Read `plan/START.md`, not this file.**
 
-## Where Tickets Live
-
-| File | Range | Status |
-|---|---|---|
-| `plan/backlog-archive.md` | RD-001 … RD-108 | Complete and frozen. Read for evidence; do not edit. |
-| `plan/backlog-completion.md` | RD-109 … RD-118 | **Epic C — Close The Loop.** Active. |
-| `plan/backlog-walrus.md` | RD-121 … RD-126 | **Epic W — Live Walrus Storage.** Active. |
-| `plan/backlog-seal.md` | RD-131 … RD-138 | **Epic S — Seal Access Control.** Active. |
-| `plan/backlog-e2e.md` | RD-141 … RD-152 | **Epic E — Playwright E2E Tests.** Active. Not front-to-back: start with Phase 1 (RD-141 → RD-144 → RD-147, RD-145, RD-146, RD-149), which needs no wallet. See that file's *Recommended Order*. |
-| `plan/backlog-identity.md` | RD-161 … RD-167 | **Epic I — Agent Identity Binding.** Active. Closes the gap where the renter hand-types the agent's Sui and EVM addresses and nothing ever reads `agent_evm`; RD-167 removes the legacy smoke mandate as the live-demo default. Start with RD-167 if rehearsing the real testnet flow. |
-| `plan/backlog-deploy.md` | RD-171 … RD-179 | **Epic D — Demo Deployment.** Active. Hosting the three services on the NixOS VPS so a judge can open a URL. Everything runs on `localhost` today and there is no Dockerfile in the repo. Start with RD-171 (a decision the user must make) ‖ RD-172. |
-| `plan/backlog-landlord.md` | RD-181 … RD-188 | **Epic L — The Landlord Is A Real Party.** Active. RD-181, RD-183, and RD-184 are DONE (2026-07-26): the landlord decrypts real applications in-browser and the wrong wallet is denied by name. Remaining: RD-182 (a distinct landlord wallet exists and owns the seeded Lisbon listing, but it is still the same browser wallet the renter uses), RD-185 server-side scoping, RD-186 access grants, RD-187 E2E + docs, RD-188 address validation. Start with RD-188 ‖ RD-185. |
-| `plan/backlog-stretch.md` | RD-202, RD-203 | Optional. RD-201 superseded by Epic S. |
-
-## ⚠️ Open Thread — RD-180 AgentKit Mode Mismatch (deferred to last)
-
-**Status: OPEN, deliberately deferred.** Fix this *after* the epics above, but before any demo that
-claims live World verification. It is not in an epic because it belongs to none — it is a
-configuration-consistency bug on the demo path.
-
-**Symptom.** Run `pnpm demo:up`, upload a packet, click *Start run*:
-
-```
-Run failed: Provider API /listings/listing_lisbon_eligible/applications
-returned 401: AGENTKIT_UNVERIFIED
+```bash
+node scripts/backlog.mjs next          # what is ready to start
+node scripts/backlog.mjs show RD-xxx   # a ticket + exactly which files to load
 ```
 
-with the `/agent` page showing `agentkit: mock` when real mode was expected.
+## Where things live
 
-**Diagnosis — the shipped `.env.example` is internally inconsistent.** Copy it to `.env` verbatim
-and you get exactly this failure:
-
-| Line in `.env.example` | Effect |
+| Path | What |
 |---|---|
-| `AGENTKIT_MODE=real` (set) | Provider selects the **real** verifier, which requires an `agentkit` header (`packages/agentkit/src/server.ts:118`). |
-| `# AGENT_EVM_PRIVATE_KEY=0x...` (**commented out**) | `createAgentkitSigner()` returns `null` (`apps/agent/src/agentkitSigner.ts:42`), so the agent cannot mint a header. |
-| `AGENTKIT_DEMO_*` (set) | The agent falls through to mock `x-demo-*` headers (`apps/agent/src/providerClient.ts:51-58`). |
+| `plan/START.md` | How to pick up a ticket. Start here. |
+| `plan/tickets/RD-xxx.md` | One file per ticket. **The source of truth.** |
+| `plan/state.md` | Generated status board and ready list. Do not edit. |
+| `plan/rules/*.md` | Binding constraints, loaded per ticket via its `rules:` field. |
+| `plan/epics/<letter>.md` | Why an epic exists. Background; not needed to execute. |
+| `plan/evidence/RD-xxx.md` | What was actually verified for a completed ticket. |
+| `plan/backlog-archive.md` | RD-001 … RD-108. Frozen. Read for history, do not edit. |
+| `spec/development-spec.md` | Implementation contract for schemas, endpoints, and Move. |
 
-The agent sends the header set the real verifier ignores, and the real verifier finds no `agentkit`
-header at all. Neither side logs the disagreement unless `AGENTKIT_DEBUG=1`. The agent *does* print
-`AgentKit:  [MOCK] demo headers — rejected by a provider in AGENTKIT_MODE=real` at startup
-(`apps/agent/src/server.ts:57`), which is accurate but scrolls past in `.demo-logs/agent.log`.
+Epics: **C** close the loop · **W** live Walrus · **S** Seal access control ·
+**E** E2E tests · **I** agent identity binding · **D** deployment ·
+**L** the landlord is a real party · **O** conversational renter experience ·
+**X** unscheduled (includes RD-180).
 
-**Fix direction** (for whoever picks this up — do not treat as settled):
+## Ownership by path
 
-1. Make `.env.example` self-consistent. Either default `AGENTKIT_MODE=mock` to match the credentials
-   it actually ships, or keep `real` and make the missing `AGENT_EVM_PRIVATE_KEY` a startup failure
-   rather than a silent downgrade. The second is more honest; the first is friendlier to a first run.
-   Whichever is chosen, the file must not ship a mode it cannot satisfy.
-2. Make the mismatch self-diagnosing at the point of failure, not only at startup — the 401 response
-   or the agent's error should name both modes.
-3. Provide the real-mode path a working default: registering an agent EVM key in AgentBook is a
-   user action (`pnpm dlx @worldcoin/agentkit-cli register …`), so the docs must say so where the
-   operator hits the wall.
+Two agents must not hold the same path. A ticket's `owns:` field is authoritative; this is
+the map for planning who can run concurrently. Useful concurrency is about three.
 
-**Cross-references.** RD-177 (Epic D) detects this class at startup and will refuse to deploy a
-mismatched stack — but detection is not a fix, and RD-179's live run will fail the same way until
-this is resolved. Epic I's RD-164 adds two more 403s to the same reserve path; whoever fixes this
-should read that ticket first so the error surfaces do not conflict.
+| Lane | Primary paths |
+|---|---|
+| `project` | root, `scripts/`, `deploy/`, `packages/contracts-config/` |
+| `move` | `packages/move/` |
+| `sui-ts` | `packages/sui-client/` |
+| `provider-api` | `apps/provider-api/` |
+| `agentkit` | `packages/agentkit/`, provider middleware |
+| `walrus` | `packages/walrus/`, packet flow |
+| `seal` | `packages/seal/`, Move policy |
+| `frontend` | `apps/web/` |
+| `agent` | `apps/agent/` |
+| `llm` | `packages/llm/`, `apps/web/app/api/` |
+| `e2e` | `apps/e2e/` |
+| `docs` | `README.md`, `docs/`, `plan/` |
 
-## Current State
+## Where the system actually stands
 
-Everything in the workspace builds and all tests pass (7 packages, 57 passed / 3 skipped, plus 21
-Move tests). The Move package is live on testnet and an agent-signed `submit_application` has been
-executed for real. **The remaining work is not repair — it is wiring, live storage, and access
-control.** Each stage of the system works in isolation and is joined to the next by hand-edited
-environment variables and hardcoded fixtures rather than by code.
+Not a repair list — each stage works in isolation and is joined to the next by hand-edited
+environment variables and fixtures rather than by code.
 
 | Area | Real today | Missing |
 |---|---|---|
-| Sui Move | Published testnet package, 6 functions, live agent submission, live Move-enforced rejection | `seal_approve` policy function (RD-132) |
-| World AgentKit | Real signature/message verification | Live same-human/two-agent proof (RD-014, still open); the mandate's `agent_evm` is recorded but never read by anything (Epic I) |
-| Provider API | AgentKit middleware, real Sui receipt verification | Durable storage — state is in `Map`s (RD-109); application listing, withdraw, access grants (RD-110); reserve never checks the mandate's on-chain identity pair (RD-164) |
-| Agent | Deterministic rules, real signing, receipt parsing | Service mode and cap discovery — mandate and cap come from env (RD-112, RD-113) |
-| Web | Wallet connect, mandate/listing PTBs, packet encryption UI | Live data — pages read hardcoded fixtures (RD-114); `/agent` route does not exist (RD-116) |
-| Walrus | Adapter interface, mock, CLI adapter | Any byte ever reaching the network; a browser-usable adapter (Epic W) |
-| Seal | `seal_approve_packet` deployed and tested; renter encryption; landlord decrypts real applications in-browser, wrong wallet denied by name (RD-184, 2026-07-26) | Renter and landlord are still one browser wallet, so the denial half is proven with a wrong *receipt* rather than a second signer; no automated coverage of the decrypt path (RD-187) |
+| Sui Move | Published testnet package, live agent submission, live Move-enforced rejection, `seal_approve_packet` deployed | — |
+| World AgentKit | Real signature and message verification for one registered agent | Live same-human/two-agent proof (RD-014, still PARTIAL); RD-180 makes the default `.env` fail |
+| Provider API | Durable storage, AgentKit middleware, real Sui receipt verification | Server-side scoping and access grants (Epic L) |
+| Agent | Deterministic rules, real signing, receipt parsing, service mode | — |
+| Web | Wallet connect, mandate/listing PTBs, packet encryption, landlord decrypt | Forms instead of a conversation; packet still carries identity (Epic O) |
+| Walrus | HTTP adapter verified byte-identical on testnet | CLI adapter implemented but never live-run |
+| Seal | Policy live; landlord decrypts real applications in-browser, wrong wallet denied | Renter and landlord are still one browser wallet (RD-182) |
 
-## Coordination Rules
-
-| Rule | Requirement |
-|---|---|
-| Ticket ownership | One agent owns one ticket at a time and updates the `Status` field in that ticket's epic file. |
-| Dependency respect | Do not start a ticket until its `Dependencies` are complete or explicitly mocked. |
-| Interfaces first | Cross-team interfaces land before dependent app work. |
-| Sponsor integrity | Never fake Sui, World, Walrus, or Seal. A mock must be labeled at every surface that displays it, including the README. Seal and Walrus are no longer exempt from this — they are claimed scope now. |
-| Evidence discipline | A claim is only as strong as its `Verification` field. A fixture proof must say it is a fixture proof. |
-| Privacy | Synthetic documents only. Never commit real personal data, wallet seeds, private keys, or mnemonics. |
-| Live-spend gate | Tickets marked as spending live WAL or SUI need the user's explicit go-ahead before running: RD-123, RD-124, RD-133. |
-| Browser verification | A ticket with a `Browser verification` row is not done until that row is satisfied. Read `docs/browser-testing.md` first — browser access comes from your agent harness, not from this repo, and the two supported paths do not share wallet state. Wallet re-authentication is the user's action, never an agent's. |
-| Working order | Prefer a complete working path over feature breadth. |
-
-## Work Lanes
-
-| Lane | Owner profile | Primary paths | Active epic tickets |
-|---|---|---|---|
-| L0 Project setup | DevOps/full-stack | root, `scripts/`, `deploy/`, `packages/contracts-config/` | RD-115, RD-133, RD-171 … RD-177, RD-182 |
-| L1 Sui Move | Move engineer | `packages/move/` | RD-132, RD-133 |
-| L2 Sui TS | Full-stack Sui | `packages/sui-client/` | RD-112, RD-162 |
-| L3 Provider API | Backend | `apps/provider-api/` | RD-109, RD-110, RD-117, RD-118, RD-126, RD-164, RD-181, RD-185, RD-186, RD-188 |
-| L4 World AgentKit | World specialist | `packages/agentkit/`, provider middleware | RD-014 follow-up only |
-| L5 Walrus/privacy | Storage engineer | `packages/walrus/`, packet flow | RD-111, RD-121 … RD-126, RD-135 |
-| L6 Seal | Privacy engineer | `packages/seal/`, Move policy | RD-131 … RD-137, RD-184 |
-| L7 Frontend | Frontend | `apps/web/` | RD-114, RD-116, RD-117, RD-135, RD-136, RD-142, RD-163, RD-183, RD-184, RD-186 |
-| L8 Agent | Agent/full-stack | `apps/agent/` | RD-111, RD-112, RD-113, RD-161 |
-| L9 Demo/docs | Writer | `README.md`, `docs/`, `plan/` | RD-138, RD-152, RD-165, RD-178, RD-187 |
-| L10 QA/E2E | Test engineer | `apps/e2e/` | RD-141, RD-143 … RD-151, RD-166, RD-179, RD-187 |
-
-## Dependency Graph
-
-```mermaid
-flowchart TD
-  subgraph done[Archived — complete]
-    P0[RD-001…RD-014 P0]
-    P1[RD-101…RD-108 P1]
-  end
-
-  P1 --> C115[RD-115 Canonical IDs]
-  P1 --> C109[RD-109 Postgres persistence]
-
-  C109 --> C110[RD-110 List/withdraw/grants]
-  C109 --> C111[RD-111 Packet handoff]
-  C109 --> C112[RD-112 Mandate + cap discovery]
-  C109 --> C118[RD-118 Correlation IDs]
-  C110 --> C113[RD-113 Agent run service]
-  C112 --> C113
-  C110 --> C114[RD-114 Frontend live data]
-  C112 --> C114
-  C113 --> C114
-  C113 --> C116[RD-116 /agent route]
-  C114 --> C116
-  C110 --> C117[RD-117 Withdraw E2E]
-  C114 --> C117
-
-  P1 --> W121[RD-121 Walrus preflight]
-  W121 --> W122[RD-122 HTTP adapter]
-  W121 --> W123[RD-123 Live upload smoke]
-  W122 --> W123
-  W123 --> W124[RD-124 Blob lifecycle]
-  W122 --> W125[RD-125 Mode labeling]
-  W123 --> W126[RD-126 Blob verification]
-  C110 --> W126
-  W122 --> C111
-
-  S131[RD-131 Identity scheme] --> S132[RD-132 Move seal_approve]
-  S131 --> S134[RD-134 Seal client]
-  S132 --> S133[RD-133 Package upgrade]
-  S133 --> S135[RD-135 Renter Seal encryption]
-  S134 --> S135
-  W122 --> S135
-  C111 --> S135
-  S135 --> S136[RD-136 Landlord decrypt UI]
-  C114 --> S136
-  C110 --> S136
-  S136 --> S137[RD-137 Denial matrix]
-  C117 --> S137
-  W124 --> S136
-
-  S137 --> D138[RD-138 Docs and evidence]
-  W126 --> D138
-  W123 --> D138
-
-  I161[RD-161 Agent identity endpoint] --> I163[RD-163 Agent card]
-  I162[RD-162 Parse agent_evm] --> I164[RD-164 Provider enforces pair]
-  I163 --> I165[RD-165 Identity docs]
-  I164 --> I165
-  C110 --> I164
-```
-
-Epic I (RD-161…RD-167) hangs off the completed Epic C work and is otherwise independent — it shares no
-files with Epic W or Epic S. Detail and its own graph live in `plan/backlog-identity.md`.
-
-Epic L (RD-181…RD-188) hangs off Epic S and the completed Epic C work: it consumes `seal_approve_packet`
-(RD-132) and the live-data dashboards (RD-114) rather than changing either. Its only Move-adjacent
-dependency is a landlord wallet its own RD-182 owner creates. Detail and its own graph live in
-`plan/backlog-landlord.md`.
-
-Epic D (RD-171…RD-179) is deliberately absent from the graph above: it depends on no feature ticket and
-blocks none. It packages and hosts whatever is on `main` at deploy time, so it can run concurrently with
-any other epic. Its only cross-epic contact points are `apps/agent/src/server.ts` (RD-161) and the
-health-payload shape — see its own Contended Files table. Detail lives in `plan/backlog-deploy.md`.
-
-## Parallel Execution Evaluation
-
-### Is splitting the backlog useful?
-
-**Yes, and it has been done — but the file split is the smaller half of the win.**
-
-The single 779-line file had two distinct problems, and only one of them was about conflicts:
-
-| Problem | Severity | Fix |
-|---|---|---|
-| 413 of 779 lines were completed P0/P1 tickets that no agent needs to write to, but every agent had to read past to find live work | **High.** This was the real cost — context burned on frozen history, and a live ticket's `Status` sitting 500 lines below the index. | `plan/backlog-archive.md` |
-| Concurrent `Status` edits by agents in different lanes land in one file | **Moderate.** Different hunks in one file usually auto-merge; it is an occasional annoyance, not a blocker. | Per-epic files |
-
-Per-**epic** files, not per-**ticket** files. Twenty-four active tickets would mean twenty-four files,
-and since a lane generally owns a whole epic, the epic is the natural unit of ownership — an agent
-working Seal never opens the completion file. Per-ticket granularity would buy a marginal reduction
-in an already-minor conflict rate at the cost of making the backlog unreadable as a whole.
-
-### The real constraint is code file ownership, not the backlog file
-
-Splitting the backlog does not raise the parallelism ceiling. Three serial chains do, because each
-runs through one file that cannot have two concurrent writers:
-
-| Chain | Serialized through | Order |
-|---|---|---|
-| Provider | `apps/provider-api/src/services/applications.ts` | RD-109 → RD-110 → RD-117/RD-126 |
-| Web | `apps/web/app/**` and `PacketBuilder.tsx` | RD-114 → RD-116/RD-117/RD-136; RD-111 → RD-125 → RD-135 |
-| Agent | `apps/agent/src/index.ts` | RD-112 → RD-111 → RD-113 |
-
-**Useful concurrency is therefore about three agents, occasionally four** — not the six or seven the
-lane count suggests. Adding more agents past that produces merge conflicts, not throughput. The
-genuinely independent early work is in the leaf packages: `packages/move`, `packages/walrus`, and
-`packages/seal` have no shared files with each other or with the apps.
-
-### Contended files
-
-| File | Wanted by | Rule |
-|---|---|---|
-| `apps/provider-api/src/services/applications.ts` | RD-109, RD-110, RD-117, RD-126, RD-164, RD-181, RD-185 | One owner at a time, in dependency order. |
-| `apps/web/src/components/PacketBuilder.tsx` | RD-111, RD-125, RD-135 | Same owner should take all three. |
-| `apps/web/src/components/MandateForm.tsx` | RD-163 | Sole owner; announce if any other L7 work is live. |
-| `apps/web/app/agent/page.tsx` | RD-142, RD-163 | RD-163's edit is one shared-constant import — announce, do not serialize. |
-| `apps/agent/src/server.ts` | RD-161, RD-175 (public-agent case only) | RD-161 first; RD-175's token is deferrable. |
-| `apps/agent/src/checkEnv.ts` | RD-177 | Sole owner. |
-| `deploy/Dockerfile`, `deploy/docker-compose.yml` | RD-172, RD-173, RD-175, RD-177 | RD-172 creates both; the rest extend distinct sections. Announce, do not serialize. |
-| `apps/web/app/landlord/page.tsx` | RD-114, RD-136, RD-184, RD-185 | RD-114 lands first, always. RD-184 owns it within Epic L. |
-| `apps/web/src/components/ApplicationInbox.tsx` | RD-183, RD-184, RD-186 | Same owner takes all three, in that order. |
-| `.playwright-wallet-profile/` | RD-150, RD-187 | One run at a time — a single shared browser profile. Wallet re-authentication is the user's action, never an agent's. |
-| `apps/agent/src/index.ts` | RD-111, RD-112, RD-113, RD-115, RD-124 | RD-115 first (mechanical), then one owner for the rest. |
-| `packages/move/sources/rental.move` | RD-132, RD-202 | Single owner; RD-133 deploys it. |
-| `packages/contracts-config/testnet.json` | RD-115, RD-123, RD-133, RD-179 | Append-only blocks; announce before writing. |
-
-### Suggested waves
-
-| Wave | Parallel agents | Tickets | Notes |
-|---|---:|---|---|
-| 0 | 2 | RD-115, RD-131 | RD-115 touches many files shallowly, so it must land before lanes diverge. RD-131 is a decision plus one small module — zero overlap. |
-| 1 | 3 | **A** RD-109 · **B** RD-121 → RD-122 · **C** RD-132 | Provider, Walrus package, and Move package share no files. The cleanest wave in the plan. |
-| 2 | 4 | **A** RD-110 → RD-118 · **B** RD-112 · **C** RD-134 · **D** RD-133 | RD-133 is a live deploy: announce it, and it changes IDs other lanes read. |
-| 3 | 3 | **A** RD-111 → RD-113 · **B** RD-123 → RD-125 · **C** RD-114 | RD-123 needs the live-spend go-ahead. A and C both touch `apps/web` — keep A's edits to `PacketBuilder.tsx` and C's to `app/**`. |
-| 4 | 3 | **A** RD-116 → RD-117 · **B** RD-124 → RD-126 · **C** RD-135 | Web, Walrus, and Seal encryption. |
-| 5 | 1 | RD-136 → RD-137 | Landlord decrypt then denial matrix. Sequential by nature; needs the whole stack live. |
-| 6 | 1 | RD-138 | Docs and evidence, last, once claims are settled. |
-
-## Shared Interfaces
-
-### Host Setup Boundary
-
-The user is on Arch Linux inside distrobox. Do not assume Nix or Ubuntu package commands.
-
-Sui and Walrus are installed in `~/.local/bin/`, but that directory must not be exported into `PATH`.
-Call `~/.local/bin/sui` and `~/.local/bin/walrus` directly. Do not edit shell startup files.
-
-User-provisioned, not agent-installable without permission:
-
-| Item | Why |
-|---|---|
-| Postgres server | Required from RD-109 onward; `psql` is installed but the server was never verified running. |
-| Fresh Sui testnet wallets for renter, agent, provider | Avoid the auto-generated key that printed a recovery phrase. |
-| ~~Landlord wallet~~ — **delegated to the agent, 2026-07-26** | RD-182's owner creates and faucet-funds the landlord Sui address itself. Narrow grant: that one address, testnet only, address exported to config, key never committed. Scope and rationale in `plan/backlog-landlord.md` → *Wallet Provisioning*. It must be a **Sui** address with its key in `sui.keystore` — the landlord signs a Seal `SessionKey` in the browser, and `receipt.landlord` is compared against `tx_context::sender()`. An EVM account cannot fill this role. |
-| Sui testnet gas | Required for the RD-133 upgrade and all transactions. |
-| **Testnet WAL tokens** | Required for RD-123/RD-124. The Walrus epic cannot complete without them. |
-| World/AgentKit registration access | User-controlled World flow. |
-| Second EVM agent for the same World human | The remaining RD-014 gap. |
-
-### Municipality Codes
-
-| Code | Municipality |
-|---:|---|
-| 1 | Lisbon |
-| 2 | Oeiras |
-| 3 | Cascais |
-| 4 | Amadora |
-| 5 | Almada |
-| 6 | Porto — intentionally ineligible demo listing |
-
-### Permission Flags
-
-| Flag | Value | Meaning |
-|---|---:|---|
-| `ACTION_SUBMIT_DOCS` | `1` | Agent may submit an encrypted document packet. |
-| `ACTION_WITHDRAW` | `2` | Agent may withdraw, if implemented. |
-
-Lease signing and fund transfer are not flags. They are impossible in the Move module.
-
-### Core IDs
-
-| ID | Meaning |
-|---|---|
-| `mandateId` | Sui `RentalMandate` object ID. |
-| `ownerCapId` | Renter-owned `OwnerCap` object ID. |
-| `agentCapId` | Agent-owned `AgentCap` object ID — per mandate, discovered not configured (RD-112). |
-| `listingObjectId` | Sui `RentalListing` object ID. |
-| `receiptId` | Sui `ApplicationReceipt` object ID. |
-| `applicationId` | Provider DB application ID. |
-| `txDigest` | Sui transaction digest. |
-| `walrusBlobId` | Walrus blob ID, or `mock:...` in mock mode. |
-| `sealIdentity` | `bcs(mandateId) ‖ bcs(listingObjectId)`, namespaced by package ID (RD-131). |
-| `humanIdHash` | SHA-256 or HMAC hash of the AgentKit human ID. The raw ID is never stored. |
-
-All object ID literals live in `packages/contracts-config` (RD-115). Nowhere else.
-
-### Provider Application Reserve Request
-
-```json
-{
-  "mandateId": "0x...",
-  "listingObjectId": "0x...",
-  "agentSuiAddress": "0x...",
-  "agentEvmAddress": "0x...",
-  "walrusBlobId": "blob...",
-  "packetHash": "0x...",
-  "accessExpiresAtMs": 1790000000000,
-  "idempotencyKey": "uuid-v4"
-}
-```
-
-### Receipt Verify Request
-
-```json
-{
-  "applicationId": "app_...",
-  "txDigest": "...",
-  "receiptId": "0x..."
-}
-```
-
-## Integration Contracts Between Agents
-
-| Producer | Artifact | Consumer |
-|---|---|---|
-| Move | Package ID (original and upgraded), function names, struct fields, abort codes | Sui TS, frontend, backend, agent, Seal |
-| Move | `seal_approve_packet` signature and abort codes | Seal client, landlord UI |
-| Backend | Route docs, error codes, health shape, AgentKit header path | Frontend, agent |
-| Backend | Packet-record and access-grant endpoint shapes | Frontend, agent, Seal |
-| World | Registered demo EVM addresses, verification result shape, human ID hash function | Backend, agent |
-| Walrus | Adapter interface, active mode, blob lifetime | Frontend, agent, provider, Seal |
-| Seal | Identity derivation, key server set, threshold, session TTL | Frontend, Move policy, docs |
-
-## Definition Of Done — Full Application
-
-The core demo definition is in `plan/backlog-archive.md` and is already satisfied. This is the bar for
-the *complete* application.
-
-| Requirement | Done when |
-|---|---|
-| Durable state | Provider survives restart with applications, receipts, and human/listing uniqueness intact. |
-| No env-edit seams | A mandate created in the browser is actionable by the agent with no `.env` change and no restart. |
-| Renter's own packet | The blob ID in the on-chain receipt is the one the renter's browser produced. |
-| Live storage | A real Walrus blob is uploaded, certified, and read back byte-identical, with the blob outliving its access grant. |
-| Policy-controlled access | An authorized landlord decrypts in the browser; every unauthorized path is denied by a Move abort surfaced to the user. |
-| Live data UI | No page renders a hardcoded object ID outside a labeled evidence panel. |
-| Revocability | Mandate revocation and application withdrawal both work end to end and both revoke document access. |
-| Honest claims | Every sponsor row in the README is backed by something that was actually run, with the fallback level from spec §19 stated. |
-
-## Known High-Risk Dependencies
-
-| Risk | Owner | Mitigation |
-|---|---|---|
-| No testnet WAL means Epic W cannot finish | L5 | Confirm funding via RD-121 before starting RD-122. If unfunded, the README keeps saying mock. |
-| Package upgrade (RD-133) breaks existing objects or IDs other lanes read | L1/L0 | Dry-run first; verify a pre-upgrade listing still works; record both package IDs; announce before running. |
-| Seal identity chosen wrong (RD-131) makes ciphertext permanently unreadable | L6 | Decide and document before any encryption ships; single shared derivation function. |
-| Seal key server availability or API drift | L6 | `threshold >= 2` across independent servers; keep the labeled fallback mode. |
-| Provider, landlord, and agent are one address in every fixture, so `ESEAL_WRONG_SENDER` can never fire on the demo path | L0/L6 | RD-182 creates a distinct landlord **Sui** wallet under the standing grant — no external dependency, so this is now a scheduling risk rather than a blocking one. Until it lands, the strongest guarantee in the system is proven only by Move tests, and `docs/seal.md` must say so. |
-| `suiAddressSchema` has no length bound, so an EVM address in a Sui field validates and fails later as a misleading Seal denial | L3 | RD-188 bounds the length and names the EVM/Sui confusion in the error. Land it before seeding any new address. |
-| AgentKit same-human two-agent proof is hard to stage | L4 | Fixture proof exists and is labeled; ask sponsor mentors early. |
-| Postgres unavailable in the demo environment | L3 | Durable embedded fallback behind the same drizzle schema — never a `Map`. |
-| Sui shared-object contention during the demo | L2 | One demo path, fresh object refs, retry with backoff. |
-| Testnet RPC instability | L0 | Fallback RPC configured; tx links pre-recorded. |
-
-## Cut List
-
-| Item | Reason |
-|---|---|
-| Lease signing | Legal and safety risk. |
-| Rent or deposit payments | Unnecessary and dangerous. |
-| Real identity or financial documents | Privacy risk. Synthetic data only. |
-| Credit scoring | Regulated and out of scope. |
-| Production tenant screening | Unsupported legal/compliance scope. |
-| Arbitrary real-estate scraping | Fragile and not sponsor-critical. |
-| General-purpose agent passport | Dilutes the focused rental mandate story. |
-| Cross-provider duplicate-human federation | Too broad. |
-| Multi-agent wallet routing | Out of scope; single stable agent identity by design. |
+**Six tickets in Epic I are marked done with no evidence recorded.** See
+`plan/evidence/RD-16*.md`. Treat those claims as unproven until someone re-runs them.
