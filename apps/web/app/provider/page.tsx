@@ -11,17 +11,17 @@ import {
   SMOKE,
   LIVE_AGENT_RUN,
 } from "@casium/contracts-config";
+import { MUNICIPALITIES, MUNICIPALITY_LABELS } from "@casium/shared";
 
 const PROVIDER_API = process.env.NEXT_PUBLIC_PROVIDER_API_URL ?? "http://localhost:4021";
 
-const MUNICIPALITY_LABELS: Record<number, string> = {
-  1: "Lisbon",
-  2: "Oeiras",
-  3: "Cascais",
-  4: "Amadora",
-  5: "Almada",
-  6: "Porto (ineligible demo)",
-};
+// The demo-ineligible municipality (code 6) must still render with the "(ineligible demo)"
+// suffix that apps/e2e/specs/provider-dashboard.spec.ts asserts on; the shared constant's
+// label is deliberately plain ("Porto"), so the suffix is derived here at the render site.
+function municipalityLabel(code: number): string {
+  const base = MUNICIPALITY_LABELS[code as keyof typeof MUNICIPALITY_LABELS] ?? `Code ${code}`;
+  return code === MUNICIPALITIES.PORTO_INELIGIBLE_DEMO ? `${base} (ineligible demo)` : base;
+}
 
 type ProviderListing = {
   id: string;
@@ -141,7 +141,7 @@ export default function ProviderPage() {
                 </tr>
               )}
               {listings.map((listing) => {
-                const ineligible = listing.municipalityCode === 6;
+                const ineligible = listing.municipalityCode === MUNICIPALITIES.PORTO_INELIGIBLE_DEMO;
                 return (
                   <tr key={listing.id} data-testid={`listing-row-${listing.id}`}>
                     <td>{listing.id}</td>
@@ -153,7 +153,7 @@ export default function ProviderPage() {
                       </a>
                     </td>
                     <td>
-                      {MUNICIPALITY_LABELS[listing.municipalityCode] ?? `Code ${listing.municipalityCode}`}
+                      {municipalityLabel(listing.municipalityCode)}
                     </td>
                     <td>€{listing.monthlyRentEur}</td>
                     <td>{listing.bedrooms}</td>

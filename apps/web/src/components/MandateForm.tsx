@@ -2,7 +2,7 @@
 
 import { useCurrentAccount, useCurrentClient, useDAppKit } from "@mysten/dapp-kit-react";
 import { ConnectButton } from "@mysten/dapp-kit-react/ui";
-import { CreateMandateSchema } from "@casium/shared";
+import { CreateMandateSchema, MUNICIPALITIES, MUNICIPALITY_LABELS } from "@casium/shared";
 import { createCasiumClient } from "@casium/sui-client";
 import { useState, useEffect } from "react";
 import { EXPLORER_TX, PACKAGE_ID } from "@/lib/constants";
@@ -13,13 +13,11 @@ import type { AgentIdentity } from "@/lib/agentApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-const MUNICIPALITIES = [
-  { code: 1, label: "Lisbon" },
-  { code: 2, label: "Oeiras" },
-  { code: 3, label: "Cascais" },
-  { code: 4, label: "Amadora" },
-  { code: 5, label: "Almada" },
-];
+// Code 6 (PORTO_INELIGIBLE_DEMO) is a deliberately-ineligible demo municipality and must
+// never be offered as a selectable mandate target.
+export const MANDATE_MUNICIPALITIES = Object.values(MUNICIPALITIES)
+  .filter((code) => code !== MUNICIPALITIES.PORTO_INELIGIBLE_DEMO)
+  .map((code) => ({ code, label: MUNICIPALITY_LABELS[code] }));
 
 type CreatedMandate = {
   mandateId: string;
@@ -270,7 +268,7 @@ export function MandateForm({ onCreated }: MandateFormProps) {
 
       <fieldset className="rounded-md border border-solid border-line p-3">
         <legend>Allowed municipalities</legend>
-        {MUNICIPALITIES.map(({ code, label }) => (
+        {MANDATE_MUNICIPALITIES.map(({ code, label }) => (
           <label key={code} className="mb-1 flex items-center gap-2">
             <input
               type="checkbox"

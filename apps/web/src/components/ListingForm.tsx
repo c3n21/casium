@@ -2,7 +2,7 @@
 
 import { useCurrentAccount, useCurrentClient, useDAppKit } from "@mysten/dapp-kit-react";
 import { ConnectButton } from "@mysten/dapp-kit-react/ui";
-import { normalizeSuiAddress } from "@casium/shared";
+import { normalizeSuiAddress, MUNICIPALITIES, MUNICIPALITY_LABELS } from "@casium/shared";
 import { createCasiumClient } from "@casium/sui-client";
 import { useState } from "react";
 import { EXPLORER_TX, PACKAGE_ID } from "@/lib/constants";
@@ -12,14 +12,13 @@ import { Input } from "@/components/ui/input";
 
 const PROVIDER_API = process.env.NEXT_PUBLIC_PROVIDER_API_URL ?? "http://localhost:4021";
 
-const MUNICIPALITY_LABELS: Record<number, string> = {
-  1: "Lisbon",
-  2: "Oeiras",
-  3: "Cascais",
-  4: "Amadora",
-  5: "Almada",
-  6: "Porto (ineligible demo)",
-};
+// Code 6 (PORTO_INELIGIBLE_DEMO) must remain visible/selectable here since providers create
+// listings for the demo-ineligible municipality too; the suffix is derived at the render site
+// so the shared constant doesn't have to carry presentation text.
+function municipalitySelectLabel(code: number): string {
+  const base = MUNICIPALITY_LABELS[code as keyof typeof MUNICIPALITY_LABELS] ?? `Code ${code}`;
+  return code === MUNICIPALITIES.PORTO_INELIGIBLE_DEMO ? `${base} (ineligible demo)` : base;
+}
 
 export function ListingForm({ onCreated }: { onCreated?: (listingId: string, txDigest: string) => void }) {
   const account = useCurrentAccount();
@@ -117,8 +116,8 @@ export function ListingForm({ onCreated }: { onCreated?: (listingId: string, txD
       <label>
         Municipality
         <select value={fields.municipality} onChange={(e) => setFields((f) => ({ ...f, municipality: Number(e.target.value) }))}>
-          {Object.entries(MUNICIPALITY_LABELS).map(([code, label]) => (
-            <option key={code} value={code}>{label}</option>
+          {Object.values(MUNICIPALITIES).map((code) => (
+            <option key={code} value={code}>{municipalitySelectLabel(code)}</option>
           ))}
         </select>
       </label>

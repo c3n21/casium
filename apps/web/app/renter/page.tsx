@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { SMOKE, EXPLORER_OBJECT } from "@casium/contracts-config";
 import { demoSession, type StoredListing } from "@/lib/demoSession";
 import { EXPLORER_TX } from "@/lib/constants";
+import { MUNICIPALITY_LABELS } from "@casium/shared";
 
 const PROVIDER_API = process.env.NEXT_PUBLIC_PROVIDER_API_URL ?? "http://localhost:4021";
 
@@ -44,15 +45,6 @@ type ProviderListing = {
 };
 
 type PacketCompleteResult = { walrusBlobId: string; packetHash: string; sizeBytes: number };
-
-const MUNICIPALITY_LABELS: Record<number, string> = {
-  1: "Lisbon",
-  2: "Oeiras",
-  3: "Cascais",
-  4: "Amadora",
-  5: "Almada",
-  6: "Porto (ineligible)",
-};
 
 /** Handoff shape written to localStorage for the `/agent` page. */
 function toStoredListing(listing: ProviderListing): StoredListing {
@@ -360,8 +352,9 @@ export default function RenterPage() {
                           <span>
                             <strong>{listing.externalListingId}</strong>
                             <br />
-                            {MUNICIPALITY_LABELS[listing.municipalityCode] ??
-                              `Code ${listing.municipalityCode}`}
+                            {MUNICIPALITY_LABELS[
+                              listing.municipalityCode as keyof typeof MUNICIPALITY_LABELS
+                            ] ?? `Code ${listing.municipalityCode}`}
                             {" — "}
                             €{listing.monthlyRentEur}/mo
                             {" — "}
