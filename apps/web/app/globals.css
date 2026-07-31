@@ -1,3 +1,58 @@
+/* RD-214 U1: Tailwind v4 wired in without Preflight.
+   Reason: this file already hand-styles bare elements (body, a, button, input,
+   select, textarea, table, th/td, label) and the app has plain <p>/<h2>/<ul>
+   elements outside the .card/.hero classes that rely on browser default
+   margins. Preflight's universal margin reset and native
+   button/input-appearance strip would reflow those elements and break the
+   "materially unchanged" visual gate. So: theme + utilities layers only, no
+   preflight/base layer. Consequence for the next unit: shadcn primitives
+   must set border-style (and any other property preflight would normally
+   normalize) explicitly, since browsers default border-style to `none`. */
+@import "tailwindcss/theme" layer(theme);
+@import "tailwindcss/utilities" layer(utilities);
+@import "tw-animate-css";
+
+@theme {
+  /* App palette, exposed as Tailwind utilities (bg-ink, text-muted-ink, border-line, ...).
+     These reference the existing :root variables below — the variables
+     themselves are untouched. */
+  --color-ink: var(--ink);
+  --color-muted-ink: var(--muted);
+  --color-faint: var(--faint);
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-panel: var(--panel);
+  --color-line: var(--line);
+  --color-blue: var(--blue);
+  --color-blue-deep: var(--blue-deep);
+  --color-mint: var(--mint);
+  --color-amber: var(--amber);
+  --color-red: var(--red);
+
+  /* shadcn semantic tokens, mapped onto the app palette above under NEW
+     names. Never repurposes the app's own variable names (--ink, --muted,
+     --radius, ...) which keep their original values below. */
+  --color-background: var(--paper);
+  --color-foreground: var(--ink);
+  --color-card: var(--panel);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--panel);
+  --color-popover-foreground: var(--ink);
+  --color-primary: var(--ink);
+  --color-primary-foreground: var(--paper);
+  --color-secondary: var(--paper-2);
+  --color-secondary-foreground: var(--ink);
+  --color-muted: var(--paper-2);
+  --color-muted-foreground: var(--muted);
+  --color-accent: var(--blue);
+  --color-accent-foreground: var(--paper);
+  --color-destructive: var(--red);
+  --color-destructive-foreground: var(--paper);
+  --color-border: var(--line);
+  --color-input: var(--line);
+  --color-ring: var(--blue);
+}
+
 * { box-sizing: border-box; }
 
 :root {
