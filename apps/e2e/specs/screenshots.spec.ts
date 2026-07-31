@@ -40,6 +40,9 @@ const ROUTES = [
   { path: "/renter", file: "renter", waitFor: "developer-evidence" },
   { path: "/provider", file: "provider", waitFor: "listing-row-listing_lisbon_eligible" },
   { path: "/landlord", file: "landlord", waitFor: "landlord-page-title" },
+  // /agent carries the largest concentration of markup in the app, so it is
+  // worth capturing even though the demo script does not lead with it.
+  { path: "/agent", file: "agent", waitFor: "agent-health-status" },
 ] as const;
 
 for (const { path: route, file, waitFor } of ROUTES) {
