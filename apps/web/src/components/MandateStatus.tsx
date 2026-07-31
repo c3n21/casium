@@ -31,11 +31,11 @@ export function MandateStatus({ mandateId, ownerCapId, agentCapId, createTxDiges
   if (!mandateId) return null;
 
   return (
-    <section className="card" data-testid="mandate-panel" style={{ marginTop: "1.5rem" }}>
+    <section className="card mt-6" data-testid="mandate-panel">
       <div className="split">
         <div>
           <p className="eyebrow">On-chain permission rail</p>
-          <h3 style={{ marginTop: 0 }}>Mandate</h3>
+          <h3 className="mt-0">Mandate</h3>
         </div>
         {mandate && (
           <span className={mandate.revoked ? "badge danger" : "badge success"} data-testid="mandate-status">
@@ -44,19 +44,19 @@ export function MandateStatus({ mandateId, ownerCapId, agentCapId, createTxDiges
         )}
       </div>
 
-      {isLoading && <p style={{ color: "#64748b" }}>Loading mandate from testnet…</p>}
-      {error && <p style={{ color: "#dc2626" }}>Error reading mandate: {error instanceof Error ? error.message : "unknown"}</p>}
+      {isLoading && <p className="text-muted-ink">Loading mandate from testnet…</p>}
+      {error && <p className="text-red">Error reading mandate: {error instanceof Error ? error.message : "unknown"}</p>}
 
       {mandate && (
         <div className="table-shell">
-        <table style={{ fontSize: "0.9rem" }}>
+        <table className="text-sm">
           <tbody>
             <Row label="Object ID" value={<ObjectLink id={mandateId} />} />
             <Row label="Status" value={mandate.revoked ? "Revoked" : "Active"} />
             <Row label="Remaining applications" value={<span data-testid="mandate-remaining-apps">{mandate.remainingApplications}</span>} />
             <Row label="Max rent" value={<span data-testid="mandate-max-rent">€{mandate.maxMonthlyRentEur} / month</span>} />
             <Row label="Min bedrooms" value={String(mandate.minBedrooms)} />
-            <Row label="Agent Sui address" value={<code style={{ wordBreak: "break-all" }}>{mandate.agentSui}</code>} />
+            <Row label="Agent Sui address" value={<code className="break-all">{mandate.agentSui}</code>} />
             {ownerCapId && <Row label="OwnerCap" value={<ObjectLink id={ownerCapId} />} />}
             {agentCapId && <Row label="AgentCap" value={<ObjectLink id={agentCapId} />} />}
             {createTxDigest && <Row label="Create tx" value={<TxLink digest={createTxDigest} />} />}
@@ -71,8 +71,8 @@ export function MandateStatus({ mandateId, ownerCapId, agentCapId, createTxDiges
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <tr>
-      <td style={{ fontWeight: 600, paddingBottom: 8, paddingRight: 16, whiteSpace: "nowrap" }}>{label}</td>
-      <td style={{ paddingBottom: 8, wordBreak: "break-all" }}>{value}</td>
+      <td className="pr-4 pb-2 font-semibold whitespace-nowrap">{label}</td>
+      <td className="pb-2 break-all">{value}</td>
     </tr>
   );
 }
@@ -80,7 +80,7 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 function ObjectLink({ id }: { id: string }) {
   return (
     <a href={EXPLORER_OBJECT(id)} target="_blank" rel="noreferrer">
-      <code style={{ fontSize: "0.8rem" }}>{id.slice(0, 16)}…</code>
+      <code className="text-[0.8rem]">{id.slice(0, 16)}…</code>
     </a>
   );
 }
@@ -88,7 +88,7 @@ function ObjectLink({ id }: { id: string }) {
 function TxLink({ digest }: { digest: string }) {
   return (
     <a href={EXPLORER_TX(digest)} target="_blank" rel="noreferrer">
-      <code style={{ fontSize: "0.8rem" }}>{digest.slice(0, 16)}…</code>
+      <code className="text-[0.8rem]">{digest.slice(0, 16)}…</code>
     </a>
   );
 }

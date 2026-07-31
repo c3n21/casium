@@ -10,6 +10,8 @@ import { signAndExecuteWithExplicitGas } from "@/lib/walletTransaction";
 import type { CreateMandateInput } from "@casium/sui-client";
 import { AGENT_API, fetchAgentIdentity } from "@/lib/agentApi";
 import type { AgentIdentity } from "@/lib/agentApi";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const MUNICIPALITIES = [
   { code: 1, label: "Lisbon" },
@@ -158,22 +160,22 @@ export function MandateForm({ onCreated }: MandateFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="stack">
-      <h2 style={{ marginTop: 0 }}>Create Rental Mandate</h2>
+      <h2 className="mt-0">Create Rental Mandate</h2>
 
       {/* ── Agent identity card ── */}
-      <div className={identityState.status === "loaded" ? "alert success" : identityState.status === "error" ? "alert error" : "alert"} style={{ fontSize: "0.9rem" }}>
+      <div className={`${identityState.status === "loaded" ? "alert success" : identityState.status === "error" ? "alert error" : "alert"} text-sm`}>
         {identityState.status === "loading" && (
-          <span style={{ color: "#94a3b8" }}>Connecting to agent…</span>
+          <span className="text-muted-ink">Connecting to agent…</span>
         )}
 
         {identityState.status === "error" && (
-          <span style={{ color: "#dc2626" }}>
+          <span className="text-red">
             Agent offline: {identityState.reason}
             {" — "}
             <button
               type="button"
               onClick={() => setShowOverride(true)}
-              style={{ background: "none", border: "none", color: "#2563eb", cursor: "pointer", textDecoration: "underline", padding: 0 }}
+              className="cursor-pointer border-0 bg-transparent p-0 text-blue underline"
             >
               enter addresses manually
             </button>
@@ -182,30 +184,19 @@ export function MandateForm({ onCreated }: MandateFormProps) {
 
         {identityState.status === "loaded" && (
           <>
-            <div style={{ marginBottom: "0.5rem" }}>
+            <div className="mb-2">
               <strong>Agent</strong>
               {" "}
               <span
-                style={{
-                  display: "inline-block",
-                  padding: "0.1rem 0.4rem",
-                  borderRadius: 4,
-                  fontSize: "0.75rem",
-                  background: identityState.identity.agentkitMode === "mock"
-                    ? "#fef3c7"
-                    : "#dbeafe",
-                  color: identityState.identity.agentkitMode === "mock"
-                    ? "#92400e"
-                    : "#1e40af",
-                }}
+                className={`badge ${identityState.identity.agentkitMode === "mock" ? "warn" : "info"}`}
               >
                 {identityState.identity.agentkitMode}
               </span>
             </div>
-            <table style={{ width: "100%", fontSize: "0.85rem", borderCollapse: "collapse" }}>
+            <table className="text-[0.85rem]">
               <tbody>
                 <tr>
-                  <td style={{ paddingRight: "0.5rem", color: "#64748b", whiteSpace: "nowrap" }}>Sui address</td>
+                  <td className="pr-2 whitespace-nowrap text-muted-ink">Sui address</td>
                   <td>
                     <code title={identityState.identity.agentSuiAddress}>
                       {truncate(identityState.identity.agentSuiAddress)}
@@ -213,21 +204,21 @@ export function MandateForm({ onCreated }: MandateFormProps) {
                   </td>
                 </tr>
                 <tr>
-                  <td style={{ paddingRight: "0.5rem", color: "#64748b", whiteSpace: "nowrap" }}>EVM address</td>
+                  <td className="pr-2 whitespace-nowrap text-muted-ink">EVM address</td>
                   <td>
                     {identityState.identity.agentEvmAddress ? (
                       <code title={identityState.identity.agentEvmAddress}>
                         {truncate(identityState.identity.agentEvmAddress)}
                       </code>
                     ) : (
-                      <span style={{ color: "#dc2626" }}>not registered with World</span>
+                      <span className="text-red">not registered with World</span>
                     )}
                   </td>
                 </tr>
               </tbody>
             </table>
             {!identityState.identity.agentEvmAddress && (
-              <p style={{ margin: "0.5rem 0 0", fontSize: "0.8rem", color: "#dc2626" }}>
+              <p className="mx-0 mt-2 mb-0 text-[0.8rem] text-red">
                 Cannot create mandate: the agent has no World EVM address configured.
                 Set <code>AGENTKIT_DEMO_AGENT_EVM_ADDRESS</code> (mock) or{" "}
                 <code>AGENT_EVM_PRIVATE_KEY</code> (live) in the agent&apos;s environment.
@@ -239,32 +230,30 @@ export function MandateForm({ onCreated }: MandateFormProps) {
 
       {/* ── Advanced override (dev / multi-agent) ── */}
       <details open={showOverride} onToggle={(e) => setShowOverride((e.target as HTMLDetailsElement).open)}>
-        <summary style={{ cursor: "pointer", fontSize: "0.85rem", color: "#64748b" }}>
+        <summary className="text-[0.85rem]">
           Advanced: enter addresses manually (unverified)
         </summary>
-        <div style={{ marginTop: "0.5rem", padding: "0.75rem", border: "1px solid #fde68a", borderRadius: 4, background: "#fffbeb", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-          <p style={{ margin: 0, fontSize: "0.8rem", color: "#92400e" }}>
+        <div className="alert warn stack mt-2">
+          <p className="m-0 text-[0.8rem]">
             These addresses are not verified against the agent service. Use only for development
             or when running a different agent instance.
           </p>
           <label>
             Agent Sui address (unverified)
-            <input
+            <Input
               type="text"
               value={fields.agentSuiAddress}
               onChange={(e) => setFields((f) => ({ ...f, agentSuiAddress: e.target.value }))}
               placeholder="0x…"
-              style={inputStyle}
             />
           </label>
           <label>
             Agent EVM address (unverified — registered AgentBook address)
-            <input
+            <Input
               type="text"
               value={fields.agentEvmAddress}
               onChange={(e) => setFields((f) => ({ ...f, agentEvmAddress: e.target.value }))}
               placeholder="0x…"
-              style={inputStyle}
             />
           </label>
         </div>
@@ -272,18 +261,17 @@ export function MandateForm({ onCreated }: MandateFormProps) {
 
       <label>
         Max monthly rent (EUR)
-        <input
+        <Input
           type="number"
           value={fields.maxMonthlyRentEur}
           onChange={(e) => setFields((f) => ({ ...f, maxMonthlyRentEur: Number(e.target.value) }))}
-          style={inputStyle}
         />
       </label>
 
-      <fieldset style={{ border: "1px solid #e2e8f0", borderRadius: 4, padding: "0.75rem" }}>
+      <fieldset className="rounded-md border border-solid border-line p-3">
         <legend>Allowed municipalities</legend>
         {MUNICIPALITIES.map(({ code, label }) => (
-          <label key={code} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+          <label key={code} className="mb-1 flex items-center gap-2">
             <input
               type="checkbox"
               checked={fields.allowedMunicipalities.includes(code)}
@@ -296,36 +284,34 @@ export function MandateForm({ onCreated }: MandateFormProps) {
 
       <label>
         Min bedrooms
-        <input
+        <Input
           type="number"
           value={fields.minBedrooms}
           onChange={(e) => setFields((f) => ({ ...f, minBedrooms: Number(e.target.value) }))}
-          style={inputStyle}
         />
       </label>
 
       <label>
         Remaining applications
-        <input
+        <Input
           type="number"
           value={fields.remainingApplications}
           onChange={(e) => setFields((f) => ({ ...f, remainingApplications: Number(e.target.value) }))}
-          style={inputStyle}
         />
       </label>
 
       {/* Block submit with a specific reason when agent is not ready. */}
       {submitBlockReason && !showOverride && (
-        <p role="alert" style={{ color: "#dc2626", margin: 0, fontSize: "0.9rem" }}>
+        <p role="alert" className="m-0 text-sm text-red">
           {submitBlockReason}
         </p>
       )}
 
-      {error && <p role="alert" style={{ color: "#dc2626", margin: 0 }}>{error}</p>}
+      {error && <p role="alert" className="m-0 text-red">{error}</p>}
 
-      <button type="submit" disabled={submitDisabled} data-ui="button" style={buttonStyle}>
+      <Button type="submit" disabled={submitDisabled}>
         {busy ? "Sending transaction…" : "Create mandate on testnet"}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -370,23 +356,3 @@ function parseCreatedMandate(
 
   return { mandateId, ownerCapId, agentCapId };
 }
-
-const inputStyle: React.CSSProperties = {
-  display: "block",
-  width: "100%",
-  marginTop: 4,
-  padding: "0.5rem",
-  border: "1px solid #cbd5e1",
-  borderRadius: 4,
-  fontSize: "inherit",
-};
-
-const buttonStyle: React.CSSProperties = {
-  padding: "0.7rem 1.2rem",
-  background: "#2563eb",
-  color: "#fff",
-  border: "none",
-  borderRadius: 4,
-  fontSize: "inherit",
-  cursor: "pointer",
-};

@@ -7,6 +7,8 @@ import { createCasiumClient } from "@casium/sui-client";
 import { useState } from "react";
 import { EXPLORER_TX, PACKAGE_ID } from "@/lib/constants";
 import { signAndExecuteWithExplicitGas } from "@/lib/walletTransaction";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const PROVIDER_API = process.env.NEXT_PUBLIC_PROVIDER_API_URL ?? "http://localhost:4021";
 
@@ -100,21 +102,21 @@ export function ListingForm({ onCreated }: { onCreated?: (listingId: string, txD
 
   return (
     <form onSubmit={handleSubmit} className="stack">
-      <h3 style={{ marginTop: 0 }}>Create Listing</h3>
+      <h3 className="mt-0">Create Listing</h3>
 
       <label>
         External listing ID
-        <input type="text" value={fields.externalId} onChange={(e) => setFields((f) => ({ ...f, externalId: e.target.value }))} style={inputStyle} />
+        <Input type="text" value={fields.externalId} onChange={(e) => setFields((f) => ({ ...f, externalId: e.target.value }))} />
       </label>
 
       <label>
         Landlord Sui address (leave blank to use your address)
-        <input type="text" value={fields.landlordAddress} onChange={(e) => setFields((f) => ({ ...f, landlordAddress: e.target.value }))} placeholder={account.address} style={inputStyle} />
+        <Input type="text" value={fields.landlordAddress} onChange={(e) => setFields((f) => ({ ...f, landlordAddress: e.target.value }))} placeholder={account.address} />
       </label>
 
       <label>
         Municipality
-        <select value={fields.municipality} onChange={(e) => setFields((f) => ({ ...f, municipality: Number(e.target.value) }))} style={inputStyle}>
+        <select value={fields.municipality} onChange={(e) => setFields((f) => ({ ...f, municipality: Number(e.target.value) }))}>
           {Object.entries(MUNICIPALITY_LABELS).map(([code, label]) => (
             <option key={code} value={code}>{label}</option>
           ))}
@@ -123,19 +125,19 @@ export function ListingForm({ onCreated }: { onCreated?: (listingId: string, txD
 
       <label>
         Monthly rent (EUR)
-        <input type="number" value={fields.monthlyRentEur} onChange={(e) => setFields((f) => ({ ...f, monthlyRentEur: Number(e.target.value) }))} style={inputStyle} />
+        <Input type="number" value={fields.monthlyRentEur} onChange={(e) => setFields((f) => ({ ...f, monthlyRentEur: Number(e.target.value) }))} />
       </label>
 
       <label>
         Bedrooms
-        <input type="number" value={fields.bedrooms} onChange={(e) => setFields((f) => ({ ...f, bedrooms: Number(e.target.value) }))} style={inputStyle} />
+        <Input type="number" value={fields.bedrooms} onChange={(e) => setFields((f) => ({ ...f, bedrooms: Number(e.target.value) }))} />
       </label>
 
-      {error && <p role="alert" style={{ color: "#dc2626", margin: 0 }}>{error}</p>}
+      {error && <p role="alert" className="m-0 text-red">{error}</p>}
 
-      <button type="submit" disabled={busy} data-ui="button" style={buttonStyle}>
+      <Button type="submit" disabled={busy}>
         {busy ? "Sending…" : "Create listing on testnet"}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -184,6 +186,3 @@ function parseSuiAddressField(address: string): string {
   }
   return normalizeSuiAddress(address);
 }
-
-const inputStyle: React.CSSProperties = { display: "block", width: "100%", marginTop: 4, padding: "0.5rem", border: "1px solid #cbd5e1", borderRadius: 4, fontSize: "inherit" };
-const buttonStyle: React.CSSProperties = { padding: "0.7rem 1.2rem", background: "#2563eb", color: "#fff", border: "none", borderRadius: 4, fontSize: "inherit", cursor: "pointer" };
