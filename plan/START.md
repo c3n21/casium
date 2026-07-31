@@ -38,8 +38,20 @@ Everything above totals roughly 3k tokens. The rest of your context is for sourc
 1. Set `status:` in your ticket's frontmatter (`todo` → `done`, or `partial` / `blocked`).
 2. Write what you actually verified to `plan/evidence/RD-xxx.md`. Claims without evidence
    are why six tickets in this repo are marked complete and unproven.
-3. Run `node scripts/backlog.mjs check` — it must exit clean.
-4. Run `node scripts/backlog.mjs gen` to refresh `plan/state.md`.
+3. **If you introduced a library, a tool, or a constraint that outlives your ticket, write it
+   down where the next agent will actually read it — without being asked.** Evidence files are
+   only read when auditing a finished ticket, so a fact left there is a fact the next agent
+   rediscovers the hard way.
+   - A binding constraint on future work → the matching `plan/rules/*.md`. That is what gets
+     loaded per ticket.
+   - A new dependency, command, or repo-shape change → `AGENTS.md`, and `README.md` if it
+     changes how the thing is set up or run.
+   - Work your ticket revealed but did not do → a new ticket via `backlog.mjs new`, not a
+     comment and not a line in your evidence file.
+   RD-214 is the cautionary case: it added Tailwind with Preflight switched off, and because
+   nothing recorded that, later units shipped invisible borders twice before anyone noticed.
+4. Run `node scripts/backlog.mjs check` — it must exit clean.
+5. Run `node scripts/backlog.mjs gen` to refresh `plan/state.md`.
 
 ## Adding work
 
