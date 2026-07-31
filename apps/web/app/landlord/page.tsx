@@ -10,7 +10,7 @@ import {
   RPC_URL as RPC_URL_TESTNET,
   SMOKE,
   LIVE_AGENT_RUN,
-  PUBLISHER_ADDRESS,
+  LANDLORD_ADDRESS,
 } from "@casium/contracts-config";
 import { ApplicationInbox, type ReservedApplication } from "@/components/ApplicationInbox";
 import { ApplicationPacketAccess } from "@/components/ApplicationPacketAccess";
@@ -24,7 +24,11 @@ const E2E_STUB_SUI = process.env.NEXT_PUBLIC_E2E_STUB_SUI === "1";
 export default function LandlordPage() {
   const suiClient = useCurrentClient();
   const account = useCurrentAccount();
-  const connectedAddress = account?.address ?? (E2E_STUB_SUI ? PUBLISHER_ADDRESS : null);
+  // The stubbed tier has no wallet, so it stands in a known address. It must be
+  // the LANDLORD's: this page filters applications by landlordSuiAddress, and
+  // standing in the publisher (the provider) matched nothing, so the inbox
+  // rendered empty and the role-scoping spec could never see a card.
+  const connectedAddress = account?.address ?? (E2E_STUB_SUI ? LANDLORD_ADDRESS : null);
 
   // Fetch smoke receipt for the demo evidence panel
   const { data: smokeReceipt, isLoading: smokeLoading, error: smokeError } = useQuery({
