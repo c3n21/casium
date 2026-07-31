@@ -33,10 +33,7 @@ export function MandateStatus({ mandateId, ownerCapId, agentCapId, createTxDiges
   if (!mandateId) return null;
 
   return (
-    <Card
-      className="mt-6 rounded-[22px] px-5 py-5 shadow-[0_24px_80px_rgba(31,24,13,0.14)]"
-      data-testid="mandate-panel"
-    >
+    <Card className="mt-6" data-testid="mandate-panel">
       <div className="split">
         <div>
           <p className="eyebrow">On-chain permission rail</p>
