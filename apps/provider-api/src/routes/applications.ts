@@ -24,11 +24,14 @@ export function createApplicationRoutes(applicationService: ApplicationService) 
     const listingId = c.req.query("listingId");
     const mandateId = c.req.query("mandateId");
     const status = c.req.query("status");
+    const landlord = c.req.query("landlord");
 
-    const filters: { listingId?: string; mandateId?: string; status?: string } = {};
+    const filters: { listingId?: string; mandateId?: string; status?: string; landlord?: string } =
+      {};
     if (listingId !== undefined) filters.listingId = listingId;
     if (mandateId !== undefined) filters.mandateId = mandateId;
     if (status !== undefined) filters.status = status;
+    if (landlord !== undefined) filters.landlord = landlord;
 
     const applications = await applicationService.listAll(filters);
 

@@ -1,5 +1,10 @@
 import { ERROR_CODES } from "@casium/shared";
-import { DEMO_LISTING_OBJECT_ID } from "@casium/contracts-config";
+import {
+  DEMO_LISTING_OBJECT_ID,
+  INELIGIBLE_LISTING_OBJECT_ID,
+  LANDLORD_ADDRESS,
+  PUBLISHER_ADDRESS,
+} from "@casium/contracts-config";
 import type { RentalMandate } from "@casium/sui-client";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../app.js";
@@ -276,6 +281,85 @@ describe("on-chain mandate identity enforcement (RD-164)", () => {
     // Replayed requests return early from the idempotency map before reaching the
     // mandate fetch, so getMandate should still be 1.
     expect(getMandate_calls).toBe(1);
+  });
+});
+
+// ── RD-185: server-side landlord filter (memory mode) ───────────────────────
+describe("GET /applications landlord filter (memory mode)", () => {
+  async function seedTwoLandlords() {
+    const app = createApp();
+
+    const lisbon = await reserve(app, reserveRequest);
+    expect(lisbon.status).toBe(202);
+
+    const porto = await app.request("/listings/listing_porto_ineligible/applications", {
+      method: "POST",
+      headers: mockHeaders,
+      body: JSON.stringify({
+        ...reserveRequest,
+        listingObjectId: INELIGIBLE_LISTING_OBJECT_ID,
+        idempotencyKey: "123e4567-e89b-12d3-a456-426614174020",
+      }),
+    });
+    expect(porto.status).toBe(202);
+
+    return app;
+  }
+
+  it("returns only applications on that landlord's listings", async () => {
+    const app = await seedTwoLandlords();
+
+    const lisbonOnly = await app.request(`/applications?landlord=${LANDLORD_ADDRESS}`);
+    expect(lisbonOnly.status).toBe(200);
+    const { applications: lisbonApps } = await lisbonOnly.json();
+    expect(lisbonApps).toHaveLength(1);
+    expect(lisbonApps[0]).toMatchObject({ listingId: "listing_lisbon_eligible" });
+
+    const portoOnly = await app.request(`/applications?landlord=${PUBLISHER_ADDRESS}`);
+    expect(portoOnly.status).toBe(200);
+    const { applications: portoApps } = await portoOnly.json();
+    expect(portoApps).toHaveLength(1);
+    expect(portoApps[0]).toMatchObject({ listingId: "listing_porto_ineligible" });
+  });
+
+  it("is case-insensitive when comparing the landlord address", async () => {
+    const app = await seedTwoLandlords();
+
+    const response = await app.request(`/applications?landlord=${LANDLORD_ADDRESS.toUpperCase()}`);
+    expect(response.status).toBe(200);
+    const { applications } = await response.json();
+    expect(applications).toHaveLength(1);
+    expect(applications[0]).toMatchObject({ listingId: "listing_lisbon_eligible" });
+  });
+
+  it("returns an empty array (not 404) for an address with no listings", async () => {
+    const app = await seedTwoLandlords();
+
+    const response = await app.request(
+      "/applications?landlord=0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    );
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ applications: [] });
+  });
+
+  it("still supports the three existing filters, and no params returns all", async () => {
+    const app = await seedTwoLandlords();
+
+    const all = await app.request("/applications");
+    expect(all.status).toBe(200);
+    expect((await all.json()).applications).toHaveLength(2);
+
+    const byListing = await app.request("/applications?listingId=listing_porto_ineligible");
+    expect((await byListing.json()).applications).toHaveLength(1);
+
+    const byMandate = await app.request(`/applications?mandateId=${reserveRequest.mandateId}`);
+    expect((await byMandate.json()).applications).toHaveLength(2);
+
+    const byStatus = await app.request("/applications?status=reserved");
+    expect((await byStatus.json()).applications).toHaveLength(2);
+
+    const byStatusMismatch = await app.request("/applications?status=accepted");
+    expect((await byStatusMismatch.json()).applications).toHaveLength(0);
   });
 });
 

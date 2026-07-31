@@ -2,7 +2,7 @@ import { ERROR_CODES, ReserveApplicationSchema, VerifyReceiptSchema } from "@cas
 import type { ErrorCode } from "@casium/shared";
 import type { AgentKitContext } from "@casium/agentkit";
 import type { CasiumClient } from "@casium/sui-client";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import {
   applications as applicationsTable,
@@ -391,6 +391,7 @@ export function createApplicationService(
       listingId?: string;
       mandateId?: string;
       status?: string;
+      landlord?: string;
     }): Promise<ReservedApplication[]> {
       if (db) {
         const conditions = [];
@@ -402,6 +403,11 @@ export function createApplicationService(
         }
         if (filters?.status) {
           conditions.push(eq(applicationsTable.status, filters.status));
+        }
+        if (filters?.landlord) {
+          conditions.push(
+            sql`lower(${listingsTable.landlordSuiAddress}) = lower(${filters.landlord})`,
+          );
         }
 
         const rows = await db
@@ -451,6 +457,10 @@ export function createApplicationService(
       }
       if (filters?.status) {
         results = results.filter((a) => a.status === filters.status);
+      }
+      if (filters?.landlord) {
+        const landlord = filters.landlord.toLowerCase();
+        results = results.filter((a) => a.landlordSuiAddress.toLowerCase() === landlord);
       }
       return results;
     },
