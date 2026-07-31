@@ -4,7 +4,12 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const alertVariants = cva(
-  "group/alert relative grid w-full gap-0.5 rounded-xl border border-solid border-line px-[14px] py-3 text-left has-data-[slot=alert-action]:relative has-data-[slot=alert-action]:pr-18 has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:gap-x-2.5 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-current *:[svg:not([class*='size-'])]:size-4",
+  // RD-219: block, not grid. Legacy .alert was a plain block box and every call
+  // site passes loose inline children, which grid auto-placed onto separate rows
+  // — it split "Agent online — 0x371… agentkit: mock" into three stacked lines.
+  // The grid layout is restored only when an icon is present, which is what it
+  // was actually there for.
+  "group/alert relative block w-full gap-0.5 rounded-xl border border-solid border-line px-[14px] py-3 text-left has-data-[slot=alert-action]:relative has-data-[slot=alert-action]:pr-18 has-[>svg]:grid has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:gap-x-2.5 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-current *:[svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {

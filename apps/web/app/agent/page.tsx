@@ -11,6 +11,9 @@ import { createCasiumClient } from "@casium/sui-client";
 import { AGENT_API } from "@/lib/agentApi";
 import { PACKAGE_ID, RPC_URL_TESTNET } from "@/lib/constants";
 import { demoSession, type StoredListing } from "@/lib/demoSession";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 
 const PROVIDER_API = process.env.NEXT_PUBLIC_PROVIDER_API_URL ?? "http://localhost:4021";
 const E2E_STUB_SUI = process.env.NEXT_PUBLIC_E2E_STUB_SUI === "1";
@@ -69,14 +72,14 @@ type Stage = (typeof ALL_STAGES)[number];
 function StageList({ currentStage }: { currentStage: Stage | null }) {
   const currentIdx = currentStage ? ALL_STAGES.indexOf(currentStage) : -1;
   return (
-    <ol className="pipeline">
+    <ol className="list-none p-0 my-4 grid gap-2">
       {ALL_STAGES.map((stage, i) => {
         const done = currentIdx > i;
         const active = currentIdx === i;
         return (
           <li
             key={stage}
-            className={done ? "text-mint" : active ? "text-blue" : "text-faint"}
+            className={`border border-solid border-line rounded-[14px] bg-white/50 px-3 py-2.5 font-[750] ${done ? "text-mint" : active ? "text-blue" : "text-faint"}`}
           >
             {done ? "✓ " : active ? "▶ " : "○ "}
             {stage}
@@ -119,8 +122,9 @@ function ResultPanel({
     isMandateEvmMismatch(result.error) || isMandateEvmMismatch(result.reason);
 
   return (
-    <div
-      className={`mt-4 ${result.status === "complete" ? "alert success" : result.status === "ineligible" ? "alert warn" : "alert error"}`}
+    <Alert
+      variant={result.status === "complete" ? "success" : result.status === "ineligible" ? "warn" : "error"}
+      className="mt-4"
       data-testid="run-results"
     >
       <p className="mx-0 mt-0 mb-2 font-semibold" data-testid="run-status" data-status={result.status}>
@@ -191,7 +195,7 @@ function ResultPanel({
           ))}
         </div>
       )}
-    </div>
+    </Alert>
   );
 }
 
@@ -368,31 +372,28 @@ function RunSection({
   const evmMismatchError = isMandateEvmMismatch(error) || isMandateEvmMismatch(runRecord?.error);
 
   return (
-    <section
-      className="card mb-8"
+    <Card
+      className="mb-8"
       data-testid={title.startsWith("Smoke") ? undefined : "active-run-section"}
     >
-      <h3 className="mt-0">{title}</h3>
+      <div>
+      <h3>{title}</h3>
       {description && <p className="text-muted-ink text-[0.9rem]">{description}</p>}
 
       {smokeWarning && (
-        <div
-          className="alert warn text-[0.8rem] mb-3"
-        >
+        <Alert variant="warn" className="text-[0.8rem] mb-3">
           Archived smoke mandate — <code>agent_evm</code> is <code>null</code> and will fail{" "}
           <code>MANDATE_EVM_MISMATCH</code> on the live provider. Use for on-chain inspection only.
-        </div>
+        </Alert>
       )}
 
       <div className="mb-3">
         <label className="block text-[0.85rem] mb-1">
           Mandate ID
           {mandateSource && (
-            <span
-              className="badge info ml-2"
-            >
+            <Badge variant="info" className="ml-2">
               {mandateSource}
-            </span>
+            </Badge>
           )}
         </label>
         <input
@@ -431,7 +432,7 @@ function RunSection({
       )}
 
       {error && !evmMismatchError && (
-        <p role="alert" className="alert error mt-2" data-testid="run-error-alert">
+        <Alert variant="error" className="mt-2" data-testid="run-error-alert">
           {error}
           {packetMissing && (
             <>
@@ -442,16 +443,21 @@ function RunSection({
               , then come back.
             </>
           )}
-        </p>
+        </Alert>
       )}
 
       {evmMismatchError && (
-        <p role="alert" className="alert error mt-2" data-testid="run-error-alert" data-error-code="MANDATE_EVM_MISMATCH">
+        <Alert
+          variant="error"
+          className="mt-2"
+          data-testid="run-error-alert"
+          data-error-code="MANDATE_EVM_MISMATCH"
+        >
           <strong>Mandate EVM mismatch.</strong> This mandate was not created for the current
           agent EVM signer. Create a fresh mandate on the{" "}
           <a href="/renter">Renter page</a> after confirming the agent identity, upload a packet,
           and return here.
-        </p>
+        </Alert>
       )}
 
       {stage && <StageList currentStage={stage} />}
@@ -462,7 +468,8 @@ function RunSection({
           Run failed: {runRecord.error}
         </p>
       )}
-    </section>
+      </div>
+    </Card>
   );
 }
 
@@ -529,8 +536,9 @@ export default function AgentPage() {
       </p>
 
       {/* Health status */}
-      <div
-        className={`mb-6 text-[0.9rem] ${health ? "alert success" : healthError ? "alert error" : "alert"}`}
+      <Alert
+        variant={health ? "success" : healthError ? "error" : "default"}
+        className="mb-6 text-[0.9rem]"
         data-testid="agent-health-status"
       >
         {health ? (
@@ -543,11 +551,11 @@ export default function AgentPage() {
         ) : (
           <span className="text-faint">Connecting to agent…</span>
         )}
-      </div>
+      </Alert>
 
       {/* Selected listings display (from renter page handoff) */}
       {selectedListings.length > 0 && (
-        <div className="alert cluster mb-4 text-[0.9rem]">
+        <Alert className="cluster mb-4 text-[0.9rem]">
           <strong>Targets:</strong>{" "}
           <span>{selectedListings.map(listingLabel).join(", ")}</span>
           <button
@@ -559,7 +567,7 @@ export default function AgentPage() {
           >
             [clear]
           </button>
-        </div>
+        </Alert>
       )}
 
       {/* Live run — mandate from URL/localStorage, listings from the renter handoff */}
@@ -577,7 +585,10 @@ export default function AgentPage() {
       />
 
       {/* ── Archived evidence ── */}
-      <details className="evidence-panel mt-4" data-testid="developer-evidence">
+      <details
+        className="mt-4 border border-solid border-line rounded-[var(--radius)] bg-[rgba(246,239,225,0.72)] shadow-none p-4"
+        data-testid="developer-evidence"
+      >
         <summary
           className="text-[0.9rem]"
         >
