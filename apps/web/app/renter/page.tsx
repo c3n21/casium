@@ -6,6 +6,7 @@ import { MandateStatus } from "@/components/MandateStatus";
 import { RevokeButton } from "@/components/RevokeButton";
 import { PacketBuilder } from "@/components/PacketBuilder";
 import { WithdrawButton } from "@/components/WithdrawButton";
+import { Button } from "@/components/ui/button";
 import { SMOKE, EXPLORER_OBJECT } from "@casium/contracts-config";
 import { demoSession, type StoredListing } from "@/lib/demoSession";
 import { EXPLORER_TX } from "@/lib/constants";
@@ -92,45 +93,28 @@ function ApplicationsSection({
     void fetchApplications();
   }, [fetchApplications]);
 
-  if (loading) return <p style={{ color: "#64748b" }}>Loading applications…</p>;
-  if (error) return <p style={{ color: "#dc2626" }}>Error fetching applications: {error}</p>;
-  if (!applications.length) return <p style={{ color: "#64748b" }}>No submitted applications yet.</p>;
+  if (loading) return <p className="text-muted-ink">Loading applications…</p>;
+  if (error) return <p className="text-red">Error fetching applications: {error}</p>;
+  if (!applications.length) return <p className="text-muted-ink">No submitted applications yet.</p>;
 
   return (
     <div>
       {applications.map((app) => (
         <div
           key={app.id}
-          style={{
-            marginBottom: "0.75rem",
-            padding: "0.75rem",
-            border: "1px solid #e2e8f0",
-            borderRadius: 6,
-            fontSize: "0.9rem",
-          }}
+          className="mb-3 p-3 border border-solid border-line rounded-[6px] text-[0.9rem]"
         >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div className="split">
             <div>
-              <code style={{ fontSize: "0.8rem" }}>{app.id}</code>
+              <code className="text-[0.8rem]">{app.id}</code>
               <span
-                style={{
-                  marginLeft: "0.5rem",
-                  padding: "0.1rem 0.4rem",
-                  borderRadius: 3,
-                  fontSize: "0.75rem",
-                  background:
-                    app.status === "accepted"
-                      ? "#dcfce7"
-                      : app.status === "withdrawn"
-                        ? "#f1f5f9"
-                        : "#fef9c3",
-                  color:
-                    app.status === "accepted"
-                      ? "#166534"
-                      : app.status === "withdrawn"
-                        ? "#64748b"
-                        : "#713f12",
-                }}
+                className={`ml-2 ${
+                  app.status === "accepted"
+                    ? "badge success"
+                    : app.status === "withdrawn"
+                      ? "badge neutral"
+                      : "badge warn"
+                }`}
               >
                 {app.status}
               </span>
@@ -146,7 +130,7 @@ function ApplicationsSection({
             )}
           </div>
           {app.listingObjectId && (
-            <p style={{ margin: "0.25rem 0 0", color: "#64748b" }}>
+            <p className="mx-0 mt-1 mb-0 text-muted-ink">
               Listing:{" "}
               <a href={EXPLORER_OBJECT(app.listingObjectId)} target="_blank" rel="noreferrer">
                 <code>{app.listingObjectId.slice(0, 20)}…</code>
@@ -155,20 +139,9 @@ function ApplicationsSection({
           )}
         </div>
       ))}
-      <button
-        onClick={fetchApplications}
-        style={{
-          padding: "0.3rem 0.75rem",
-          background: "transparent",
-          border: "1px solid #cbd5e1",
-          borderRadius: 4,
-          cursor: "pointer",
-          fontSize: "0.85rem",
-          color: "#64748b",
-        }}
-      >
+      <Button variant="secondary" size="sm" onClick={fetchApplications}>
         Refresh
-      </button>
+      </Button>
     </div>
   );
 }
@@ -291,7 +264,7 @@ export default function RenterPage() {
           <span className="step-num">1</span>
           <div>
           {revoked && (
-            <div className="alert success" style={{ marginBottom: "1rem" }}>
+            <div className="alert success mb-4">
               Mandate revoked.{" "}
               {revokeTxDigest && (
                 <>
@@ -360,8 +333,8 @@ export default function RenterPage() {
             <section className="step-card" data-testid="renter-step-listings">
               <span className="step-num">{mandate ? "3" : "2"}</span>
               <div>
-                <h2 style={{ marginBottom: "0.5rem" }}>Select target listings</h2>
-                <p className="muted" style={{ fontSize: "0.9rem", marginTop: 0 }}>
+                <h2 className="mb-2">Select target listings</h2>
+                <p className="muted text-[0.9rem] mt-0">
                   Agent will evaluate each selected listing and apply only where eligible.
                 </p>
 
@@ -370,7 +343,7 @@ export default function RenterPage() {
               ) : listings.length === 0 ? (
                 <p className="faint">Loading listings…</p>
               ) : (
-                <div className="listing-grid" style={{ marginBottom: "1rem" }}>
+                <div className="listing-grid mb-4">
                   {listings
                     .filter((l) => l.active)
                     .map((listing) => (
@@ -401,14 +374,14 @@ export default function RenterPage() {
               )}
 
               {selectedListings.length > 0 && (
-                <div style={{ marginTop: "0.5rem" }}>
-                  <div className="alert" style={{ marginBottom: "1rem" }}>
+                <div className="mt-2">
+                  <div className="alert mb-4">
                     <strong>Batch run setup.</strong> Create one encrypted packet per selected listing.
                     The agent run will evaluate the selected batch and apply only where the mandate allows.
                   </div>
 
-                  <div className="card" data-testid="packet-batch-card" style={{ marginBottom: "1.5rem", boxShadow: "none" }}>
-                    <div className="cluster" style={{ marginBottom: "1rem" }}>
+                  <div className="card mb-6" data-testid="packet-batch-card">
+                    <div className="cluster mb-4">
                       {selectedListings.map((listing) => {
                         const uploaded = packetResults.has(listing.id);
                         const active = nextPacketListing?.id === listing.id;
@@ -426,8 +399,8 @@ export default function RenterPage() {
 
                     {nextPacketListing ? (
                       <div data-testid={`packet-card-${nextPacketListing.id}`}>
-                        <h3 style={{ marginTop: 0 }}>Packet for {nextPacketListing.externalListingId}</h3>
-                        <p className="muted" style={{ marginTop: 0 }}>
+                        <h3 className="mt-0">Packet for {nextPacketListing.externalListingId}</h3>
+                        <p className="muted mt-0">
                           This single form is reused for each selected listing so the page stays focused.
                         </p>
                         <PacketBuilder
@@ -452,7 +425,7 @@ export default function RenterPage() {
                     ) : (
                       <div className="alert success" data-testid="all-packets-uploaded">
                         <strong>All selected listings have encrypted packets.</strong> You can start the batch agent run.
-                        <div className="stack" style={{ marginTop: "1rem", gap: 8 }}>
+                        <div className="stack mt-4">
                           {selectedListings.map((listing) => {
                             const result = packetResults.get(listing.id);
                             if (!result) return null;
@@ -465,7 +438,7 @@ export default function RenterPage() {
                             );
                           })}
                         </div>
-                        <p data-testid="privacy-confirmation" style={{ marginBottom: 0, marginTop: 8 }}>
+                        <p data-testid="privacy-confirmation" className="mb-0 mt-2">
                           Only ciphertext was uploaded. Plaintext never sent to provider API.
                         </p>
                       </div>
@@ -473,7 +446,7 @@ export default function RenterPage() {
                   </div>
 
                   {packetResults.size === selectedListings.length ? (
-                    <p style={{ marginTop: "0.5rem" }}>
+                    <p className="mt-2">
                         <a
                           href={`/agent?mandateId=${encodeURIComponent(packetMandateId)}`}
                           data-testid="start-agent-run-link"
@@ -483,7 +456,7 @@ export default function RenterPage() {
                         </a>
                     </p>
                   ) : packetResults.size > 0 ? (
-                    <p className="muted" data-testid="batch-run-disabled" style={{ marginTop: "0.5rem" }}>
+                    <p className="muted mt-2" data-testid="batch-run-disabled">
                       Upload packets for all selected listings to continue.
                     </p>
                   ) : null}
@@ -496,39 +469,31 @@ export default function RenterPage() {
       )}
 
       {/* ── Archived evidence ── */}
-      <details className="evidence-panel" data-testid="developer-evidence" style={{ marginTop: "2.5rem" }}>
-        <summary style={{ cursor: "pointer", color: "#64748b", fontSize: "0.85rem" }}>
+      <details className="evidence-panel mt-10" data-testid="developer-evidence">
+        <summary className="text-[0.85rem]">
           Archived evidence (known testnet objects)
         </summary>
         <div
-          style={{
-            marginTop: "0.5rem",
-            padding: "0.75rem",
-            border: "1px solid #e2e8f0",
-            borderRadius: 4,
-            fontSize: "0.85rem",
-            color: "#64748b",
-            background: "#f8fafc",
-          }}
+          className="mt-2 p-3 border border-solid border-line rounded text-[0.85rem] text-muted-ink bg-paper-2"
         >
-          <p style={{ margin: "0 0 6px", color: "#92400e" }}>
+          <p className="mx-0 mt-0 mb-1.5 text-amber">
             <strong>Note:</strong> These smoke objects predate agent EVM binding (RD-164).
             Their <code>agent_evm</code> is <code>null</code> and will be rejected by the live
             provider with <code>MANDATE_EVM_MISMATCH</code>. Use them only to inspect on-chain state.
           </p>
-          <p style={{ margin: "0 0 4px" }}>
+          <p className="mx-0 mt-0 mb-1">
             Smoke mandate:{" "}
             <a href={EXPLORER_OBJECT(SMOKE.mandateId)} target="_blank" rel="noreferrer">
               <code>{SMOKE.mandateId.slice(0, 20)}…</code>
             </a>
           </p>
-          <p style={{ margin: "0 0 4px" }}>
+          <p className="mx-0 mt-0 mb-1">
             OwnerCap:{" "}
             <a href={EXPLORER_OBJECT(SMOKE.ownerCapId)} target="_blank" rel="noreferrer">
               <code>{SMOKE.ownerCapId.slice(0, 20)}…</code>
             </a>
           </p>
-          <p style={{ margin: 0 }}>
+          <p className="m-0">
             AgentCap:{" "}
             <a href={EXPLORER_OBJECT(SMOKE.agentCapId)} target="_blank" rel="noreferrer">
               <code>{SMOKE.agentCapId.slice(0, 20)}…</code>

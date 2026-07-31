@@ -82,19 +82,19 @@ export default function LandlordPage() {
       </p>
 
       {/* Live-data section: wallet-connected landlord view */}
-      <section className="card" style={{ marginBottom: "2rem" }}>
+      <section className="card mb-8">
         <h2>Your Applications</h2>
         {!connectedAddress ? (
-          <p style={{ color: "#64748b" }}>Connect your wallet to see applications for your listings.</p>
+          <p className="text-muted-ink">Connect your wallet to see applications for your listings.</p>
         ) : (
           <>
-            <p style={{ color: "#64748b", fontSize: "0.85rem", marginTop: 0 }}>
+            <p className="text-muted-ink text-[0.85rem] mt-0">
               Showing applications where landlord address is{" "}
-              <code style={{ fontSize: "0.8rem" }}>{connectedAddress.slice(0, 20)}…</code>
+              <code className="text-[0.8rem]">{connectedAddress.slice(0, 20)}…</code>
             </p>
-            {appsLoading && <p style={{ color: "#64748b" }}>Loading applications…</p>}
+            {appsLoading && <p className="text-muted-ink">Loading applications…</p>}
             {appsError && (
-              <p style={{ color: "#dc2626" }}>
+              <p className="text-red">
                 Error: {appsError instanceof Error ? appsError.message : "unknown"}
               </p>
             )}
@@ -113,8 +113,8 @@ export default function LandlordPage() {
       </section>
 
       {/* Demo evidence panel — explicitly labeled known testnet objects */}
-      <details className="evidence-panel" data-testid="developer-evidence" style={{ marginTop: "1rem" }}>
-        <summary data-testid="demo-evidence-summary" style={{ fontSize: "0.9rem" }}>
+      <details className="evidence-panel mt-4" data-testid="developer-evidence">
+        <summary data-testid="demo-evidence-summary" className="text-[0.9rem]">
           Demo evidence (known testnet receipts)
         </summary>
 
@@ -128,7 +128,7 @@ export default function LandlordPage() {
         */}
         <p
           data-testid="demo-evidence-storage-note"
-          style={{ fontSize: "0.8rem", color: "#64748b", margin: "0.75rem 0 0" }}
+          className="text-[0.8rem] text-muted-ink mt-3 mb-0"
         >
           Archived receipts from 2026-07-25, kept as fixed evidence. They predate live Walrus
           storage, so their blob IDs are <code>mock:</code> and cannot be decrypted — the blob ID is
@@ -136,20 +136,20 @@ export default function LandlordPage() {
           blobs.
         </p>
 
-        <div style={{ marginTop: "1rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <div className="mt-4 flex flex-col gap-4">
           {/* Smoke receipt */}
-          <section className="card" data-testid="receipt-panel-smoke" style={{ boxShadow: "none" }}>
-            <h3 style={{ marginTop: 0, fontSize: "1rem" }}>Smoke receipt (testnet)</h3>
-            <p style={{ fontSize: "0.85rem", color: "#64748b", margin: "0 0 0.5rem" }}>
+          <section className="card" data-testid="receipt-panel-smoke">
+            <h3 className="mt-0 text-base">Smoke receipt (testnet)</h3>
+            <p className="text-[0.85rem] text-muted-ink mx-0 mt-0 mb-2">
               Object:{" "}
               <a href={EXPLORER_OBJECT(SMOKE_RECEIPT_ID)} target="_blank" rel="noreferrer">
                 <code>{SMOKE_RECEIPT_ID.slice(0, 20)}…</code>
               </a>
             </p>
 
-            {smokeLoading && <p style={{ color: "#64748b", fontSize: "0.85rem" }}>Loading from testnet…</p>}
+            {smokeLoading && <p className="text-muted-ink text-[0.85rem]">Loading from testnet…</p>}
             {smokeError && (
-              <p style={{ color: "#dc2626", fontSize: "0.85rem" }}>
+              <p className="text-red text-[0.85rem]">
                 Error: {smokeError instanceof Error ? smokeError.message : "unknown"}
               </p>
             )}
@@ -160,9 +160,9 @@ export default function LandlordPage() {
           </section>
 
           {/* Live agent receipt */}
-          <section className="card" data-testid="receipt-panel-live" style={{ boxShadow: "none" }}>
-            <h3 style={{ marginTop: 0, fontSize: "1rem" }}>Live agent receipt (RD-108, testnet)</h3>
-            <p style={{ fontSize: "0.85rem", color: "#64748b", margin: "0 0 0.5rem" }}>
+          <section className="card" data-testid="receipt-panel-live">
+            <h3 className="mt-0 text-base">Live agent receipt (RD-108, testnet)</h3>
+            <p className="text-[0.85rem] text-muted-ink mx-0 mt-0 mb-2">
               Object:{" "}
               <a href={EXPLORER_OBJECT(LIVE_RECEIPT_ID)} target="_blank" rel="noreferrer">
                 <code>{LIVE_RECEIPT_ID.slice(0, 20)}…</code>
@@ -224,7 +224,7 @@ function ReceiptTable({ receipt }: { receipt: ReceiptData }) {
 
   return (
     <div className="table-shell">
-    <table style={{ fontSize: "0.9rem" }}>
+    <table className="text-sm">
       <tbody>
         <Row
           label="Status"
@@ -250,10 +250,10 @@ function ReceiptTable({ receipt }: { receipt: ReceiptData }) {
             </a>
           }
         />
-        <Row label="Agent" value={<code style={{ wordBreak: "break-all", fontSize: "0.8rem" }}>{receipt.agent}</code>} />
+        <Row label="Agent" value={<code className="break-all text-[0.8rem]">{receipt.agent}</code>} />
         <Row
           label="Provider"
-          value={<code style={{ wordBreak: "break-all", fontSize: "0.8rem" }}>{receipt.provider}</code>}
+          value={<code className="break-all text-[0.8rem]">{receipt.provider}</code>}
         />
         <Row label="Submitted" value={new Date(receipt.submittedAtMs).toISOString()} />
         <Row label="Access expires" value={accessExpiry.toISOString()} />
@@ -262,7 +262,7 @@ function ReceiptTable({ receipt }: { receipt: ReceiptData }) {
           <Row
             label="Blob expiry (est.)"
             value={
-              <span style={{ color: mismatch ? "#dc2626" : undefined }}>
+              <span className={mismatch ? "text-red" : undefined}>
                 {blobExpiryEstimate.toISOString()}
                 {` (~${WALRUS_CONFIGURED_EPOCHS} epochs)`}
                 {mismatch && " ⚠ Blob expires before access window"}
@@ -279,8 +279,8 @@ function ReceiptTable({ receipt }: { receipt: ReceiptData }) {
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <tr>
-      <td style={{ fontWeight: 600, paddingBottom: 8, paddingRight: 16, whiteSpace: "nowrap" }}>{label}</td>
-      <td style={{ paddingBottom: 8 }}>{value}</td>
+      <td className="font-semibold pb-2 pr-4 whitespace-nowrap">{label}</td>
+      <td className="pb-2">{value}</td>
     </tr>
   );
 }

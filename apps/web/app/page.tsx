@@ -10,7 +10,7 @@ export default function Home() {
           <p className="lede" data-testid="core-message">
             World limits who the agent represents. Sui limits what the agent can do.
           </p>
-          <div className="cluster" style={{ marginTop: 28 }}>
+          <div className="cluster mt-7">
             <Link href="/renter" className="btn" data-testid="role-renter-link">
               Start as renter
             </Link>
@@ -32,14 +32,14 @@ export default function Home() {
               <span className="step-num">{num}</span>
               <div>
                 <h3>{title}</h3>
-                <p className="muted" style={{ margin: 0 }}>{copy}</p>
+                <p className="muted m-0">{copy}</p>
               </div>
             </div>
           ))}
         </aside>
       </section>
 
-      <section className="grid cards" style={{ marginTop: 24 }} aria-label="Role dashboards">
+      <section className="grid cards mt-6" aria-label="Role dashboards">
         <RoleCard href="/renter" title="Renter" testId="role-renter-card" copy="Create a bounded mandate and prepare synthetic application packets." />
         <RoleCard href="/provider" title="Provider" testId="role-provider-card" copy="Publish listings, reserve applications, and verify Sui receipts." />
         <RoleCard href="/landlord" title="Landlord" testId="role-landlord-card" copy="Review accepted receipts and request document access." />
@@ -50,8 +50,8 @@ export default function Home() {
 
 function RoleCard({ href, title, copy, testId }: { href: string; title: string; copy: string; testId: string }) {
   return (
-    <Link href={href} className="card" data-testid={testId} style={{ color: "inherit" }}>
-      <p className="eyebrow" style={{ marginBottom: 8 }}>{title}</p>
+    <Link href={href} className="card text-inherit!" data-testid={testId}>
+      <p className="eyebrow mb-2">{title}</p>
       <h2>{title} dashboard</h2>
       <p className="muted">{copy}</p>
       <span>Open {title.toLowerCase()} flow</span>

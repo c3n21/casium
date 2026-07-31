@@ -76,11 +76,7 @@ function StageList({ currentStage }: { currentStage: Stage | null }) {
         return (
           <li
             key={stage}
-            style={{
-              padding: "0.3rem 0",
-              color: done ? "#16a34a" : active ? "#2563eb" : "#94a3b8",
-              fontWeight: active ? 600 : undefined,
-            }}
+            className={done ? "text-mint" : active ? "text-blue" : "text-faint"}
           >
             {done ? "✓ " : active ? "▶ " : "○ "}
             {stage}
@@ -124,20 +120,19 @@ function ResultPanel({
 
   return (
     <div
-      className={result.status === "complete" ? "alert success" : result.status === "ineligible" ? "alert warn" : "alert error"}
-      style={{ marginTop: "1rem" }}
+      className={`mt-4 ${result.status === "complete" ? "alert success" : result.status === "ineligible" ? "alert warn" : "alert error"}`}
       data-testid="run-results"
     >
-      <p style={{ margin: "0 0 0.5rem", fontWeight: 600 }} data-testid="run-status" data-status={result.status}>
+      <p className="mx-0 mt-0 mb-2 font-semibold" data-testid="run-status" data-status={result.status}>
         Status: {result.status}
       </p>
       {result.reason && !evmMismatch && (
-        <p style={{ margin: "0 0 0.5rem", color: "#92400e" }}>
+        <p className="mx-0 mt-0 mb-2 text-amber">
           Reason: {result.reason}
         </p>
       )}
       {evmMismatch && (
-        <p style={{ margin: "0 0 0.5rem", color: "#dc2626" }}>
+        <p className="mx-0 mt-0 mb-2 text-red">
           <strong>Mandate EVM mismatch.</strong> This mandate was not created for the current
           agent EVM signer — its <code>agent_evm</code> does not match the verified World
           identity. Create a fresh mandate on the{" "}
@@ -146,12 +141,12 @@ function ResultPanel({
         </p>
       )}
       {result.error && !evmMismatch && (
-        <p style={{ margin: "0 0 0.5rem", color: "#dc2626" }}>
+        <p className="mx-0 mt-0 mb-2 text-red">
           Error: {result.error}
         </p>
       )}
       {result.txDigest && (
-        <p style={{ margin: "0 0 0.25rem" }}>
+        <p className="mx-0 mt-0 mb-1">
           Tx:{" "}
           <a href={EXPLORER_TX(result.txDigest)} target="_blank" rel="noreferrer">
             <code>{result.txDigest.slice(0, 20)}…</code>
@@ -159,7 +154,7 @@ function ResultPanel({
         </p>
       )}
       {result.receiptId && (
-        <p style={{ margin: "0 0 0.25rem" }}>
+        <p className="mx-0 mt-0 mb-1">
           Receipt:{" "}
           <a href={EXPLORER_OBJECT(result.receiptId)} target="_blank" rel="noreferrer">
             <code>{result.receiptId.slice(0, 20)}…</code>
@@ -167,28 +162,22 @@ function ResultPanel({
         </p>
       )}
       {result.applicationId && (
-        <p style={{ margin: "0 0 0.25rem" }}>
+        <p className="mx-0 mt-0 mb-1">
           Application ID: <code>{result.applicationId}</code>
         </p>
       )}
       {result.blobId && (
-        <p style={{ margin: result.targets && result.targets.length > 0 ? "0 0 0.5rem" : 0 }}>
+        <p className={result.targets && result.targets.length > 0 ? "mx-0 mt-0 mb-2" : "m-0"}>
           Blob ID: <code>{result.blobId}</code>
         </p>
       )}
       {result.targets && result.targets.length > 0 && (
-        <div style={{ marginTop: "0.5rem" }}>
-          <p style={{ margin: "0 0 0.4rem", fontWeight: 600 }}>Per-listing results:</p>
+        <div className="mt-2">
+          <p className="mx-0 mt-0 mb-1.5 font-semibold">Per-listing results:</p>
           {result.targets.map((t) => (
             <div
               key={t.providerListingId}
-              style={{
-                padding: "0.4rem 0.6rem",
-                marginBottom: "0.3rem",
-                background: "rgba(255,255,255,0.6)",
-                borderRadius: 4,
-                fontSize: "0.875rem",
-              }}
+              className="py-[0.4rem] px-[0.6rem] mb-1 bg-white/60 rounded text-sm"
             >
               <code>{labels.get(t.providerListingId) ?? t.providerListingId}</code> — {t.status}
               {t.txDigest && (
@@ -380,36 +369,27 @@ function RunSection({
 
   return (
     <section
-      className="card"
+      className="card mb-8"
       data-testid={title.startsWith("Smoke") ? undefined : "active-run-section"}
-      style={{ marginBottom: "2rem" }}
     >
-      <h3 style={{ marginTop: 0 }}>{title}</h3>
-      {description && <p style={{ color: "#64748b", fontSize: "0.9rem" }}>{description}</p>}
+      <h3 className="mt-0">{title}</h3>
+      {description && <p className="text-muted-ink text-[0.9rem]">{description}</p>}
 
       {smokeWarning && (
         <div
-          className="alert warn"
-          style={{ fontSize: "0.8rem", marginBottom: "0.75rem" }}
+          className="alert warn text-[0.8rem] mb-3"
         >
           Archived smoke mandate — <code>agent_evm</code> is <code>null</code> and will fail{" "}
           <code>MANDATE_EVM_MISMATCH</code> on the live provider. Use for on-chain inspection only.
         </div>
       )}
 
-      <div style={{ marginBottom: "0.75rem" }}>
-        <label style={{ display: "block", fontSize: "0.85rem", marginBottom: 4 }}>
+      <div className="mb-3">
+        <label className="block text-[0.85rem] mb-1">
           Mandate ID
           {mandateSource && (
             <span
-              style={{
-                marginLeft: "0.5rem",
-                padding: "0.1rem 0.4rem",
-                borderRadius: 3,
-                fontSize: "0.75rem",
-                background: "#dbeafe",
-                color: "#1e40af",
-              }}
+              className="badge info ml-2"
             >
               {mandateSource}
             </span>
@@ -420,20 +400,12 @@ function RunSection({
           onChange={(e) => setMandateInput(e.target.value)}
           disabled={busy}
           placeholder="0x… paste mandate ID or create one on the Renter page"
-          style={{
-            width: "100%",
-            fontFamily: "monospace",
-            fontSize: "0.8rem",
-            padding: "0.4rem",
-            border: "1px solid #cbd5e1",
-            borderRadius: 4,
-            boxSizing: "border-box",
-          }}
+          className="font-mono! text-[0.8rem]!"
         />
       </div>
 
       {listingObjectId && (
-        <p style={{ fontSize: "0.85rem", color: "#64748b", margin: "0 0 0.75rem" }}>
+        <p className="text-[0.85rem] text-muted-ink mx-0 mt-0 mb-3">
           Listing:{" "}
           <a href={EXPLORER_OBJECT(listingObjectId)} target="_blank" rel="noreferrer">
             <code>{listingObjectId.slice(0, 20)}…</code>
@@ -442,7 +414,7 @@ function RunSection({
       )}
 
       {noMandate ? (
-        <p className="muted" data-testid="no-mandate-empty" style={{ fontSize: "0.9rem", margin: "0 0 0.5rem" }}>
+        <p className="muted text-[0.9rem] mx-0 mt-0 mb-2" data-testid="no-mandate-empty">
           No active mandate.{" "}
           <a href="/renter">Create a mandate on the Renter page</a> and upload a packet, then
           return here — the mandate will be auto-filled.
@@ -453,14 +425,13 @@ function RunSection({
           disabled={busy || agentIdentityLoading}
             data-testid="agent-start-run-button"
             data-ui="button"
-            style={{ background: busy || agentIdentityLoading ? "#94a3b8" : undefined }}
         >
           {busy ? "Running…" : agentIdentityLoading ? "Connecting agent…" : "Start run"}
         </button>
       )}
 
       {error && !evmMismatchError && (
-        <p role="alert" className="alert error" data-testid="run-error-alert" style={{ marginTop: 8 }}>
+        <p role="alert" className="alert error mt-2" data-testid="run-error-alert">
           {error}
           {packetMissing && (
             <>
@@ -475,7 +446,7 @@ function RunSection({
       )}
 
       {evmMismatchError && (
-        <p role="alert" className="alert error" data-testid="run-error-alert" data-error-code="MANDATE_EVM_MISMATCH" style={{ marginTop: 8 }}>
+        <p role="alert" className="alert error mt-2" data-testid="run-error-alert" data-error-code="MANDATE_EVM_MISMATCH">
           <strong>Mandate EVM mismatch.</strong> This mandate was not created for the current
           agent EVM signer. Create a fresh mandate on the{" "}
           <a href="/renter">Renter page</a> after confirming the agent identity, upload a packet,
@@ -487,7 +458,7 @@ function RunSection({
 
       {result && <ResultPanel result={result} labels={targetLabels} />}
       {runRecord?.status === "failed" && !result && (
-        <p style={{ color: "#dc2626", marginTop: "0.5rem" }}>
+        <p className="text-red mt-2">
           Run failed: {runRecord.error}
         </p>
       )}
@@ -559,9 +530,8 @@ export default function AgentPage() {
 
       {/* Health status */}
       <div
-        className={health ? "alert success" : healthError ? "alert error" : "alert"}
+        className={`mb-6 text-[0.9rem] ${health ? "alert success" : healthError ? "alert error" : "alert"}`}
         data-testid="agent-health-status"
-        style={{ marginBottom: "1.5rem", fontSize: "0.9rem" }}
       >
         {health ? (
           <>
@@ -569,15 +539,15 @@ export default function AgentPage() {
             <span className="muted" data-testid="agentkit-mode">agentkit: {health.agentkitMode}</span>
           </>
         ) : healthError ? (
-          <span style={{ color: "#dc2626" }}>Agent offline: {healthError}</span>
+          <span className="text-red">Agent offline: {healthError}</span>
         ) : (
-          <span style={{ color: "#94a3b8" }}>Connecting to agent…</span>
+          <span className="text-faint">Connecting to agent…</span>
         )}
       </div>
 
       {/* Selected listings display (from renter page handoff) */}
       {selectedListings.length > 0 && (
-        <div className="alert cluster" style={{ marginBottom: "1rem", fontSize: "0.9rem" }}>
+        <div className="alert cluster mb-4 text-[0.9rem]">
           <strong>Targets:</strong>{" "}
           <span>{selectedListings.map(listingLabel).join(", ")}</span>
           <button
@@ -585,15 +555,7 @@ export default function AgentPage() {
               demoSession.clearListings();
               setSelectedListings([]);
             }}
-            style={{
-              background: "none",
-              border: "none",
-              color: "#2563eb",
-              cursor: "pointer",
-              fontSize: "0.9rem",
-              textDecoration: "underline",
-              padding: 0,
-            }}
+            className="bg-transparent border-0 text-blue cursor-pointer text-[0.9rem] underline p-0"
           >
             [clear]
           </button>
@@ -615,22 +577,16 @@ export default function AgentPage() {
       />
 
       {/* ── Archived evidence ── */}
-      <details className="evidence-panel" data-testid="developer-evidence" style={{ marginTop: "1rem" }}>
+      <details className="evidence-panel mt-4" data-testid="developer-evidence">
         <summary
-          style={{ cursor: "pointer", color: "#64748b", fontSize: "0.9rem", fontWeight: 600 }}
+          className="text-[0.9rem]"
         >
           Archived evidence (smoke runs)
         </summary>
         <div
-          style={{
-            marginTop: "0.75rem",
-            padding: "0.75rem",
-            border: "1px solid #e2e8f0",
-            borderRadius: 4,
-            background: "#f8fafc",
-          }}
+          className="mt-3 p-3 border border-solid border-line rounded bg-paper-2"
         >
-          <p style={{ margin: "0 0 1rem", fontSize: "0.85rem", color: "#64748b" }}>
+          <p className="mx-0 mt-0 mb-4 text-[0.85rem] text-muted-ink">
             The runs below use archived smoke mandate objects whose <code>agent_evm</code> is{" "}
             <code>null</code>. They are retained as historical evidence of the eligible/ineligible
             path logic. They will be rejected by the live provider with{" "}
