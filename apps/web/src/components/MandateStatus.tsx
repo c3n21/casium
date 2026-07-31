@@ -4,6 +4,8 @@ import { useCurrentClient } from "@mysten/dapp-kit-react";
 import { createCasiumClient } from "@casium/sui-client";
 import { useQuery } from "@tanstack/react-query";
 import { EXPLORER_OBJECT, EXPLORER_TX, PACKAGE_ID } from "@/lib/constants";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 type MandateStatusProps = {
   mandateId: string;
@@ -31,16 +33,19 @@ export function MandateStatus({ mandateId, ownerCapId, agentCapId, createTxDiges
   if (!mandateId) return null;
 
   return (
-    <section className="card mt-6" data-testid="mandate-panel">
+    <Card
+      className="mt-6 rounded-[22px] px-5 py-5 shadow-[0_24px_80px_rgba(31,24,13,0.14)]"
+      data-testid="mandate-panel"
+    >
       <div className="split">
         <div>
           <p className="eyebrow">On-chain permission rail</p>
           <h3 className="mt-0">Mandate</h3>
         </div>
         {mandate && (
-          <span className={mandate.revoked ? "badge danger" : "badge success"} data-testid="mandate-status">
+          <Badge variant={mandate.revoked ? "danger" : "success"} data-testid="mandate-status">
             {mandate.revoked ? "Revoked" : "Active"}
-          </span>
+          </Badge>
         )}
       </div>
 
@@ -48,7 +53,7 @@ export function MandateStatus({ mandateId, ownerCapId, agentCapId, createTxDiges
       {error && <p className="text-red">Error reading mandate: {error instanceof Error ? error.message : "unknown"}</p>}
 
       {mandate && (
-        <div className="table-shell">
+        <div className="overflow-x-auto rounded-[18px] border border-solid bg-[rgba(255,255,255,0.54)]">
         <table className="text-sm">
           <tbody>
             <Row label="Object ID" value={<ObjectLink id={mandateId} />} />
@@ -64,7 +69,7 @@ export function MandateStatus({ mandateId, ownerCapId, agentCapId, createTxDiges
         </table>
         </div>
       )}
-    </section>
+    </Card>
   );
 }
 
