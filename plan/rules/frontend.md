@@ -33,6 +33,22 @@ its variant — legacy CSS and call sites depend on that. Note shadcn now genera
 not Radix. The palette lives in `globals.css` `:root`; expose new tokens through `@theme`
 rather than editing those values.
 
+Alert and Badge carry variants named for the legacy modifiers (`success`, `warn`, `error` /
+`info`, `neutral`, `danger`), and Alert, Badge and Card have had their base geometry matched
+to the classes they replace — so a faithful migration needs **no geometry overrides**. If you
+find yourself adding `rounded-[22px]` or a shadow to make a primitive match a legacy box,
+stop: the primitive is already correct and something else is wrong.
+
+Two Card rules, both learned by shipping the bug: use **flat children** (its root pads on
+both axes, so `CardHeader`/`CardContent` double the inset), and give it **one child** if the
+children carry their own margins (it injects `gap-(--card-spacing)` between top-level
+children, which legacy `.card` did not).
+
+**When you remove a legacy class, check `globals.css` for DESCENDANT rules keyed off it** —
+they vanish silently and, with Preflight off, fall back to large browser defaults. The live
+ones are `.card h2, .card h3, .step-card h2, .step-card h3` (heading margin and letter
+spacing), `.table-shell table` (min-width), and `.pipeline li` (the entire item style).
+
 `globals.css` also still carries ~29 in-use semantic classes (`.card`, `.stack`, `.badge`,
 `.alert`, …), several composed dynamically (`` `badge ${mode}` ``). A plain reference scan
 will call them dead. They are not.
