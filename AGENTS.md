@@ -54,6 +54,8 @@ The full set is `plan/rules/global.md`. These four are the ones that ruin work i
 ```
 apps/
   web/            Next.js 16 + Sui dApp Kit frontend (renter, provider, landlord, agent)
+                  Tailwind v4 + shadcn primitives — read plan/rules/frontend.md before
+                  touching styling; Preflight is off and that has sharp edges
   provider-api/   Hono API — listings, application reservation, receipt verification
   agent/          Deterministic Node.js agent — mandate-scoped, AgentKit-authenticated
   e2e/            Playwright, three tiers (stubbed / live / wallet)
@@ -99,9 +101,6 @@ vendored from `mystenlabs/skills`, plus this repo's own `backlog` skill sourced 
 hand** — `npx skills add` does it. Before running any `skills` command, read
 `docs/skills.md`: the CLI has several silent failure modes, including one that wipes
 `skills-lock.json`.
-
-Vendored skills may not be registered with the runtime `skill` tool — find them by file
-search and read `SKILL.md` directly. **Repo rules above override skill docs.**
 
 Vendored skills may not be registered with the runtime `skill` tool — find them by file
 search and read `SKILL.md` directly. **Repo rules above override skill docs.**
