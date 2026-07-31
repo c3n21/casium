@@ -51,7 +51,9 @@ export function MandateStatus({ mandateId, ownerCapId, agentCapId, createTxDiges
 
       {mandate && (
         <div className="overflow-x-auto rounded-[18px] border border-solid bg-[rgba(255,255,255,0.54)]">
-        <table className="text-sm">
+        {/* RD-219 U3b: legacy `.table-shell table { min-width: 640px }` (globals.css:165)
+            was dropped when this table-shell was converted; restore it here. */}
+        <table className="min-w-[640px] text-sm">
           <tbody>
             <Row label="Object ID" value={<ObjectLink id={mandateId} />} />
             <Row label="Status" value={mandate.revoked ? "Revoked" : "Active"} />

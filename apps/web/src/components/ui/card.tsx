@@ -26,7 +26,19 @@ function Card({
         // own px-(--card-spacing) on top of the root's, doubling the inset. No caller does
         // that today (grep confirms Card is only ever used with plain children), so it's
         // left as a follow-up rather than solved speculatively here.
-        "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-[var(--radius)] border border-solid border-line bg-card px-(--card-spacing) py-(--card-spacing) text-sm text-card-foreground shadow-[var(--shadow)] [--card-spacing:20px] has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(4)] *:[img:first-child]:rounded-t-[var(--radius)] *:[img:last-child]:rounded-b-[var(--radius)]",
+        // RD-219 U3b: legacy `.card h2, .card h3 { margin: 0 0 8px; letter-spacing: -.025em; }`
+        // (globals.css:133) targeted any h2/h3 descendant of `.card`. Reproduced here once,
+        // centrally, as descendant arbitrary variants so no call site needs its own override.
+        // tracking-tight is Tailwind's default -0.025em, an exact match; mb-2 is 8px.
+        // RD-219 U3b: dropped `text-sm` from the root. `.card` (globals.css) never set a
+        // font-size, so its content inherited the body's browser-default 16px; `text-sm`
+        // silently shrank every Card descendant to 14px instead. Visible proof: the demo-flow
+        // step-card copy on `/` wraps to two lines at after-221's 16px but fits on one line
+        // at 14px, and nearly every call site (MandateStatus, ApplicationInbox,
+        // provider/page.tsx) already layers its own explicit text-[0.85rem]/text-[0.9rem]/
+        // text-sm downscaling on specific lines — which only makes sense against a 16px
+        // ambient, not an already-14px one. text-card-foreground (color) is unaffected.
+        "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-[var(--radius)] border border-solid border-line bg-card px-(--card-spacing) py-(--card-spacing) text-card-foreground shadow-[var(--shadow)] [--card-spacing:20px] has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(4)] *:[img:first-child]:rounded-t-[var(--radius)] *:[img:last-child]:rounded-b-[var(--radius)] [&_h2]:m-0 [&_h2]:mb-2 [&_h2]:tracking-tight [&_h3]:m-0 [&_h3]:mb-2 [&_h3]:tracking-tight",
         className
       )}
       {...props}

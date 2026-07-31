@@ -4,6 +4,8 @@ import { useState } from "react";
 import { EXPLORER_TX, EXPLORER_OBJECT } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 const PROVIDER_API_BASE = process.env.NEXT_PUBLIC_PROVIDER_API_URL ?? "http://localhost:4021";
 
@@ -86,7 +88,11 @@ export function ApplicationInbox({
   return (
     <div className="stack">
       {applications.map((a) => (
-        <div key={a.id} className="card" data-testid={`application-card-${a.id}`}>
+        // Card is flex column with a 20px gap between every top-level child; wrapping
+        // in a single div keeps the original margin-driven rhythm (mt-2, mb-1, ...)
+        // from being stacked on top of that gap.
+        <Card key={a.id} data-testid={`application-card-${a.id}`}>
+        <div>
           <div className="split mb-2">
             <strong className="font-mono text-sm">{a.id}</strong>
             <StatusBadge status={a.status} />
@@ -156,24 +162,20 @@ export function ApplicationInbox({
 
           {renderPacketAccess?.(a)}
         </div>
+        </Card>
       ))}
     </div>
   );
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const colors: Record<string, string> = {
-    reserved: "#f59e0b",
-    accepted: "#16a34a",
-    withdrawn: "#94a3b8",
-  };
   return (
-    <span
-      className={status === "accepted" ? "badge success" : status === "reserved" ? "badge warn" : "badge neutral"}
+    <Badge
+      variant={status === "accepted" ? "success" : status === "reserved" ? "warn" : "neutral"}
       data-testid="application-status"
       data-status={status}
     >
       {status}
-    </span>
+    </Badge>
   );
 }

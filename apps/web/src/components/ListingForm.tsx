@@ -9,6 +9,7 @@ import { EXPLORER_TX, PACKAGE_ID } from "@/lib/constants";
 import { signAndExecuteWithExplicitGas } from "@/lib/walletTransaction";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
 
 const PROVIDER_API = process.env.NEXT_PUBLIC_PROVIDER_API_URL ?? "http://localhost:4021";
 
@@ -39,10 +40,12 @@ export function ListingForm({ onCreated }: { onCreated?: (listingId: string, txD
 
   if (!account) {
     return (
-      <div className="card">
-        <p>Connect your Sui wallet to create a listing.</p>
-        <ConnectButton />
-      </div>
+      <Card>
+        <div>
+          <p>Connect your Sui wallet to create a listing.</p>
+          <ConnectButton />
+        </div>
+      </Card>
     );
   }
 

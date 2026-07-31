@@ -5,6 +5,9 @@ import { useQuery } from "@tanstack/react-query";
 import { ListingForm } from "@/components/ListingForm";
 import { ApplicationInbox, type ReservedApplication } from "@/components/ApplicationInbox";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Alert } from "@/components/ui/alert";
 import {
   EXPLORER_OBJECT,
   EXPLORER_TX,
@@ -79,7 +82,12 @@ export default function ProviderPage() {
         Create listings, review applications with AgentKit uniqueness proof, and verify Sui receipts.
       </p>
 
-      <section className="card mb-8">
+      {/* Card is flex column with a 20px gap between every top-level child; the legacy
+          .card was a plain block box, and this section's rhythm comes from each child's
+          own margin utility (mt-4, mt-2, ...). A single wrapper div keeps Card to one
+          child so no extra gap stacks on top of those margins. */}
+      <Card className="mb-8">
+        <div>
         <div className="split">
           <h2 className="m-0">Listings</h2>
           <Button variant="secondary" onClick={() => setShowForm((v) => !v)}>
@@ -100,16 +108,16 @@ export default function ProviderPage() {
         )}
 
         {createdTx && (
-          <p className="alert success mt-2">
+          <Alert variant="success" className="mt-2">
             Listing created.{" "}
             <a href={EXPLORER_TX(createdTx)} target="_blank" rel="noreferrer">
               View tx
             </a>
-          </p>
+          </Alert>
         )}
 
-        <div className="table-shell mt-4">
-          <table className="text-sm">
+        <div className="mt-4 overflow-x-auto rounded-[18px] border border-solid border-line bg-[rgba(255,255,255,0.54)]">
+          <table className="min-w-[640px] text-sm">
             <thead>
               <tr>
                 {["ID", "Object", "Municipality", "Rent", "Bedrooms", "Status"].map((h) => (
@@ -159,11 +167,11 @@ export default function ProviderPage() {
                     <td>{listing.bedrooms}</td>
                     <td>
                       {!listing.active ? (
-                        <span className="badge neutral" data-testid="listing-status" data-status="inactive">Inactive</span>
+                        <Badge variant="neutral" data-testid="listing-status" data-status="inactive">Inactive</Badge>
                       ) : ineligible ? (
-                        <span className="badge warn" data-testid="listing-status" data-status="ineligible">Ineligible</span>
+                        <Badge variant="warn" data-testid="listing-status" data-status="ineligible">Ineligible</Badge>
                       ) : (
-                        <span className="badge success" data-testid="listing-status" data-status="active">Active</span>
+                        <Badge variant="success" data-testid="listing-status" data-status="active">Active</Badge>
                       )}
                     </td>
                   </tr>
@@ -172,9 +180,11 @@ export default function ProviderPage() {
             </tbody>
           </table>
         </div>
-      </section>
+        </div>
+      </Card>
 
-      <section className="card">
+      <Card>
+        <div>
         <h2>Applications</h2>
         <p className="muted text-[0.9rem] mt-0">
           Each application shows World AgentKit human hash (uniqueness proof) and Sui receipt verification.
@@ -190,7 +200,10 @@ export default function ProviderPage() {
           <ApplicationInbox role="provider" applications={applications} onRefetch={() => void refetch()} />
         )}
 
-        <details className="evidence-panel mt-8" data-testid="developer-evidence">
+        <details
+          className="mt-8 rounded-[var(--radius)] border border-solid border-line bg-[rgba(246,239,225,0.72)] p-4"
+          data-testid="developer-evidence"
+        >
           <summary className="text-[0.85rem]">
             Demo evidence (known testnet receipts)
           </summary>
@@ -215,7 +228,8 @@ export default function ProviderPage() {
             </p>
           </div>
         </details>
-      </section>
+        </div>
+      </Card>
     </main>
   );
 }
