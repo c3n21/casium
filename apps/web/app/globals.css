@@ -126,7 +126,6 @@ code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; fo
 .hero h1, .page-title { margin: 0; font-size: clamp(2.3rem, 7vw, 5.8rem); line-height: .88; letter-spacing: -.08em; }
 .page-title { font-size: clamp(2.2rem, 6vw, 4.4rem); }
 .lede { color: var(--muted); font-size: clamp(1.02rem, 2vw, 1.25rem); line-height: 1.6; max-width: 720px; }
-.thesis { display: inline-flex; gap: 10px; flex-wrap: wrap; align-items: center; padding: 10px 14px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.5); color: var(--ink); font-weight: 800; }
 .grid { display: grid; gap: 18px; }
 .grid.cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -150,7 +149,9 @@ code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; fo
 .alert.success { background: #f0fdf4; border-color: #86efac; color: #14532d; }
 .alert.warn { background: #fffbeb; border-color: #fcd34d; color: #78350f; }
 .alert.error { background: #fef2f2; border-color: #fca5a5; color: #991b1b; }
-.field, input, select, textarea { border: 1px solid rgba(23,33,29,.18); border-radius: 14px; background: rgba(255,255,255,.72); color: var(--ink); padding: .72rem .8rem; width: 100%; }
+/* Bare-element styling, still load-bearing: Tailwind Preflight is not imported,
+   so nothing else resets or styles these. */
+input, select, textarea { border: 1px solid rgba(23,33,29,.18); border-radius: 14px; background: rgba(255,255,255,.72); color: var(--ink); padding: .72rem .8rem; width: 100%; }
 input[type="checkbox"], input[type="radio"] { width: auto; flex: 0 0 auto; padding: 0; }
 input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible { outline: 3px solid rgba(37,99,235,.28); outline-offset: 2px; }
 label { color: var(--ink); font-weight: 750; }
