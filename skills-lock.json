@@ -5,7 +5,12 @@
       "source": "mystenlabs/skills",
       "sourceType": "github",
       "skillPath": "accessing-data/SKILL.md",
-      "computedHash": "6c90b8118b35f864eca3d515f9bfc9fd47941bbd6a2f8969e05215fca256c8ba"
+      "computedHash": "f7d20b5335aae007c4b5098e91869ae9d657f306ee07c646c6f01abd1c4986f2"
+    },
+    "backlog": {
+      "source": "/home/zhifan/Downloads/github/eth-lisbona-2026/skills/backlog",
+      "sourceType": "local",
+      "computedHash": "34b5b37795517421a8109ade26b376fd930adfc85d912fa985c7a73962043927"
     },
     "composable-move-functions": {
       "source": "mystenlabs/skills",
@@ -17,13 +22,7 @@
       "source": "mystenlabs/skills",
       "sourceType": "github",
       "skillPath": "frontend-apps/SKILL.md",
-      "computedHash": "5d9b6268583a4f80f2aec1fe9eadc07554971ac7bff28a791e7183f17a1c4323"
-    },
-    "generate-sui-agent-config": {
-      "source": "mystenlabs/skills",
-      "sourceType": "github",
-      "skillPath": "generate-sui-agent-config/SKILL.md",
-      "computedHash": "207d8ddf0b222e7b1d25c236b6676642161d5a177054f4f29ff3da7f1cfcd81e"
+      "computedHash": "7c55d7a69621ec4037ce800cf357581f8671041233f6da842c4c81a05a7de531"
     },
     "modern-move-syntax": {
       "source": "mystenlabs/skills",
@@ -107,19 +106,7 @@
       "source": "mystenlabs/skills",
       "sourceType": "github",
       "skillPath": "sui-sdks/SKILL.md",
-      "computedHash": "ac0ec7b8928cab22eac3541f56d02b529b3ce5893abdb40ab7b2f0b300fb1c03"
-    },
-    "walrus-sites": {
-      "source": "mystenlabs/skills",
-      "sourceType": "github",
-      "skillPath": "walrus-sites/SKILL.md",
-      "computedHash": "e3ab2e09bafeb835b5b52a7ee3e732a4c98e1e0ca1bdefee6e338c76883fcb4e"
-    },
-    "your-skill-name": {
-      "source": "mystenlabs/skills",
-      "sourceType": "github",
-      "skillPath": "template/SKILL.md",
-      "computedHash": "cb3f72b6ece2a3b88c4f0034acb63e1f540c3b6768c1626c8cf21595cd7a9d9e"
+      "computedHash": "68d0c6dfe490b5837c2cd43901e2ff5a7972c5e9b6a5e8c10616d06cff9cc4c7"
     }
   }
 }

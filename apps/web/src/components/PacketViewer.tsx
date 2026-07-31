@@ -21,6 +21,7 @@ import { createWalrusHttpAdapter } from "@casium/walrus/http";
 import type { ApplicationReceipt } from "@casium/sui-client";
 import type { PacketDocument } from "@casium/shared";
 import { Transaction } from "@mysten/sui/transactions";
+import { Button } from "@/components/ui/button";
 
 // ---------------------------------------------------------------------------
 // Browser Walrus adapter — mirrors PacketBuilder.tsx
@@ -284,29 +285,29 @@ export function PacketViewer({ receipt }: PacketViewerProps) {
     !isMockBlob && blobExpiryEstimate !== null && blobExpiryEstimate < accessExpiry;
 
   return (
-    <div data-testid="packet-panel" style={{ marginTop: "1rem", borderTop: "1px dashed #e2e8f0", paddingTop: "1rem" }}>
-      <strong style={{ fontSize: "0.9rem" }}>Encrypted application packet</strong>
+    <div data-testid="packet-panel" className="mt-4 border-t border-dashed border-line pt-4">
+      <strong className="text-sm">Encrypted application packet</strong>
 
       {/* Three key facts */}
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem", marginTop: 8 }}>
+      <table className="mt-2 text-[0.85rem]">
         <tbody>
           <tr>
-            <td style={tdLabel}>Session TTL</td>
-            <td style={tdValue}>
+            <td className="pr-3 pb-1.5 font-semibold whitespace-nowrap align-top">Session TTL</td>
+            <td className="pb-1.5">
               {ttlDisplay ?? "No active session"}
             </td>
           </tr>
           <tr>
-            <td style={tdLabel}>On-chain access expiry</td>
-            <td style={tdValue}>{accessExpiry.toISOString()}</td>
+            <td className="pr-3 pb-1.5 font-semibold whitespace-nowrap align-top">On-chain access expiry</td>
+            <td className="pb-1.5">{accessExpiry.toISOString()}</td>
           </tr>
           <tr>
-            <td style={tdLabel}>Walrus blob lifetime (est.)</td>
-            <td style={tdValue}>
+            <td className="pr-3 pb-1.5 font-semibold whitespace-nowrap align-top">Walrus blob lifetime (est.)</td>
+            <td className="pb-1.5">
               {isMockBlob ? (
-                <span data-testid="blob-mode-badge" data-mode="mock" style={{ color: "#f59e0b" }}>Mock blob — no real storage</span>
+                <span data-testid="blob-mode-badge" data-mode="mock" className="text-amber">Mock blob — no real storage</span>
               ) : blobExpiryEstimate ? (
-                <span style={{ color: blobMismatch ? "#dc2626" : undefined }}>
+                <span className={blobMismatch ? "text-red" : undefined}>
                   ~{blobExpiryEstimate.toISOString()} ({WALRUS_CONFIGURED_EPOCHS} epochs)
                   {blobMismatch && " ⚠ Blob expires before access window"}
                 </span>
@@ -316,9 +317,9 @@ export function PacketViewer({ receipt }: PacketViewerProps) {
             </td>
           </tr>
           <tr>
-            <td style={tdLabel}>Walrus blob ID</td>
-            <td style={tdValue}>
-              <code style={{ wordBreak: "break-all", fontSize: "0.8rem" }}>
+            <td className="pr-3 pb-1.5 font-semibold whitespace-nowrap align-top">Walrus blob ID</td>
+            <td className="pb-1.5">
+              <code className="break-all text-[0.8rem]">
                 {walrusBlobId.slice(0, 40)}{walrusBlobId.length > 40 ? "…" : ""}
               </code>
             </td>
@@ -328,7 +329,7 @@ export function PacketViewer({ receipt }: PacketViewerProps) {
 
       {/* Seal fallback banner */}
       {!useSeal && (
-        <div role="alert" data-testid="seal-mode-alert" data-mode="fallback" style={fallbackBannerStyle}>
+        <div role="alert" data-testid="seal-mode-alert" data-mode="fallback" className="alert warn mt-2 text-[0.85rem]">
           ⚠ Seal fallback mode: The packet uses AES-GCM encryption. Seal key servers are unavailable
           or not configured. Manual key handoff required.
         </div>
@@ -336,7 +337,7 @@ export function PacketViewer({ receipt }: PacketViewerProps) {
 
       {/* Mock blob warning */}
       {isMockBlob && useSeal && (
-        <div role="alert" style={warnBannerStyle}>
+        <div role="alert" className="alert warn mt-2 text-[0.85rem]">
           ⚠ This receipt references a mock Walrus blob. Decryption is only possible if the blob was
           uploaded in the same browser session.
         </div>
@@ -344,50 +345,48 @@ export function PacketViewer({ receipt }: PacketViewerProps) {
 
       {/* Action buttons */}
       {useSeal && (
-        <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           {(stage.type === "idle" || stage.type === "error") && (
-            <button
+            <Button
               onClick={handleRequestAccess}
               disabled={!account}
-              style={btnPrimary}
               title={!account ? "Connect your wallet first" : undefined}
             >
               Request access (sign session key)
-            </button>
+            </Button>
           )}
 
           {(stage.type === "creating_session") && (
-            <button disabled style={btnDisabled}>Creating session key…</button>
+            <Button disabled>Creating session key…</Button>
           )}
 
           {stage.type === "signing" && (
-            <button disabled style={btnDisabled}>Waiting for wallet signature…</button>
+            <Button disabled>Waiting for wallet signature…</Button>
           )}
 
           {(stage.type === "session_ready" || stage.type === "decrypted") && (
             <>
-              <button
+              <Button
                 onClick={handleDecrypt}
                 disabled={stage.type === "decrypted"}
-                style={stage.type === "decrypted" ? btnDisabled : btnSuccess}
               >
                 {stage.type === "decrypted" ? "Packet decrypted" : "Decrypt packet"}
-              </button>
-              <button onClick={handleRequestAccess} style={{ ...btnPrimary, background: "#64748b" }}>
+              </Button>
+              <Button variant="secondary" onClick={handleRequestAccess}>
                 New session
-              </button>
+              </Button>
             </>
           )}
 
           {stage.type === "decrypting" && (
-            <button disabled style={btnDisabled}>Fetching keys and decrypting…</button>
+            <Button disabled>Fetching keys and decrypting…</Button>
           )}
         </div>
       )}
 
       {/* Error display */}
       {stage.type === "error" && (
-        <div role="alert" style={{ marginTop: 10, color: "#dc2626", fontSize: "0.85rem" }}>
+        <div role="alert" className="mt-2 text-[0.85rem] text-red">
           <strong>Decryption failed:</strong> {stage.message}
           {(() => {
             // Prefer an abort code if one ever reaches us; otherwise fall back to
@@ -401,7 +400,7 @@ export function PacketViewer({ receipt }: PacketViewerProps) {
               <div
                 data-testid="seal-abort-name"
                 data-abort-code={named.code}
-                style={{ marginTop: 6 }}
+                className="mt-1.5"
               >
                 Denied by the on-chain policy: <strong>{named.name}</strong> (Move abort code{" "}
                 {named.code}).
@@ -409,28 +408,21 @@ export function PacketViewer({ receipt }: PacketViewerProps) {
             );
           })()}
           <br />
-          <button
+          <Button
+            size="sm"
+            className="mt-2 text-[0.85rem]"
             onClick={handleRequestAccess}
-            style={{ ...btnPrimary, marginTop: 8, fontSize: "0.85rem", padding: "0.4rem 0.8rem" }}
           >
             Try again
-          </button>
+          </Button>
         </div>
       )}
 
       {/* Decrypted document — plaintext stays in browser memory only */}
       {stage.type === "decrypted" && (
-        <div
-          style={{
-            marginTop: 16,
-            background: "#f0fdf4",
-            border: "1px solid #86efac",
-            borderRadius: 6,
-            padding: "1rem",
-          }}
-        >
-          <strong style={{ color: "#166534" }}>Application packet — synthetic data only</strong>
-          <p style={{ color: "#64748b", fontSize: "0.8rem", margin: "4px 0 12px" }}>
+        <div className="alert success mt-4">
+          <strong>Application packet — synthetic data only</strong>
+          <p className="mt-1 mb-3 text-[0.8rem] text-muted-ink">
             Plaintext is in browser memory only. Not logged, not sent anywhere.
           </p>
           <PacketDocumentView document={stage.document} />
@@ -456,68 +448,15 @@ function PacketDocumentView({ document }: { document: PacketDocument }) {
   ];
 
   return (
-    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
+    <table className="text-sm">
       <tbody>
         {rows.map((r) => (
           <tr key={r.label}>
-            <td style={tdLabel}>{r.label}</td>
-            <td style={{ ...tdValue, whiteSpace: "pre-wrap" }}>{r.value}</td>
+            <td className="pr-3 pb-1.5 font-semibold whitespace-nowrap align-top">{r.label}</td>
+            <td className="pb-1.5 whitespace-pre-wrap">{r.value}</td>
           </tr>
         ))}
       </tbody>
     </table>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Styles
-// ---------------------------------------------------------------------------
-
-const tdLabel: React.CSSProperties = {
-  fontWeight: 600,
-  paddingBottom: 6,
-  paddingRight: 12,
-  whiteSpace: "nowrap",
-  verticalAlign: "top",
-};
-
-const tdValue: React.CSSProperties = {
-  paddingBottom: 6,
-};
-
-const btnBase: React.CSSProperties = {
-  padding: "0.55rem 1rem",
-  border: "none",
-  borderRadius: 4,
-  fontSize: "0.9rem",
-  cursor: "pointer",
-  color: "#fff",
-};
-
-const btnPrimary: React.CSSProperties = { ...btnBase, background: "#2563eb" };
-const btnSuccess: React.CSSProperties = { ...btnBase, background: "#16a34a" };
-const btnDisabled: React.CSSProperties = {
-  ...btnBase,
-  background: "#94a3b8",
-  cursor: "not-allowed",
-};
-
-const fallbackBannerStyle: React.CSSProperties = {
-  marginTop: 10,
-  background: "#fef9c3",
-  border: "1px solid #fde047",
-  borderRadius: 4,
-  padding: "0.6rem 0.8rem",
-  fontSize: "0.85rem",
-  color: "#713f12",
-};
-
-const warnBannerStyle: React.CSSProperties = {
-  marginTop: 10,
-  background: "#fff7ed",
-  border: "1px solid #fed7aa",
-  borderRadius: 4,
-  padding: "0.6rem 0.8rem",
-  fontSize: "0.85rem",
-  color: "#9a3412",
-};

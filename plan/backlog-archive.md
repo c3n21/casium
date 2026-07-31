@@ -4,14 +4,14 @@ Parent index: `plan/backlog.md`.
 
 These tickets are **complete and frozen**. They are kept verbatim for their `Verification` fields,
 which are the evidence trail for the sponsor claims. Do not edit them to record new work — open a
-ticket in `plan/backlog-completion.md`, `plan/backlog-walrus.md`, or `plan/backlog-seal.md` instead.
+ticket in `plan/epics/C.md`, `plan/epics/W.md`, or `plan/epics/S.md` instead.
 
 Two tickets remain honestly incomplete and are tracked here rather than reopened:
 
 | Ticket | Remaining gap | Follow-up |
 |---|---|---|
 | RD-014 | Live same-human/two-agent proof needs a second EVM agent registered to the same World human. The controlled fixture proof is real; the live proof is not. | Still open. Do not claim live proof until it is run. |
-| RD-101 | The live Walrus upload was never executed. | Superseded by Epic W (`plan/backlog-walrus.md`), RD-121 … RD-126. |
+| RD-101 | The live Walrus upload was never executed. | Superseded by Epic W (`plan/epics/W.md`), RD-121 … RD-126. |
 
 ## P0 — Required For Sponsor Qualification (complete)
 

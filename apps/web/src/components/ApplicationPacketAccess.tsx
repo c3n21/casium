@@ -47,7 +47,7 @@ export function ApplicationPacketAccess({ application }: ApplicationPacketAccess
 
   if (isLoading) {
     return (
-      <p className="muted" data-testid="packet-access-loading" style={noteStyle}>
+      <p className="muted mx-0 mt-2 mb-0 text-[0.85rem]" data-testid="packet-access-loading">
         Reading receipt from testnet…
       </p>
     );
@@ -55,7 +55,7 @@ export function ApplicationPacketAccess({ application }: ApplicationPacketAccess
 
   if (error || !receipt) {
     return (
-      <p data-testid="packet-access-error" style={{ ...noteStyle, color: "#dc2626" }}>
+      <p data-testid="packet-access-error" className="mx-0 mt-2 mb-0 text-[0.85rem] text-red">
         Could not read receipt {receiptId.slice(0, 16)}… from testnet:{" "}
         {error instanceof Error ? error.message : "unknown error"}
       </p>
@@ -73,7 +73,7 @@ export function ApplicationPacketAccess({ application }: ApplicationPacketAccess
         <p
           role="alert"
           data-testid="packet-access-wrong-wallet"
-          style={{ ...noteStyle, color: "#b45309" }}
+          className="mx-0 mt-2 mb-0 text-[0.85rem] text-amber"
         >
           This receipt names landlord <code>{receipt.landlord.slice(0, 12)}…</code>, not the
           connected wallet. `seal_approve_packet` will deny with ESEAL_WRONG_SENDER (17).
@@ -83,8 +83,3 @@ export function ApplicationPacketAccess({ application }: ApplicationPacketAccess
     </>
   );
 }
-
-const noteStyle: React.CSSProperties = {
-  margin: "8px 0 0",
-  fontSize: "0.85rem",
-};

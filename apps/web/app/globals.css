@@ -1,3 +1,58 @@
+/* RD-214 U1: Tailwind v4 wired in without Preflight.
+   Reason: this file already hand-styles bare elements (body, a, button, input,
+   select, textarea, table, th/td, label) and the app has plain <p>/<h2>/<ul>
+   elements outside the .card/.hero classes that rely on browser default
+   margins. Preflight's universal margin reset and native
+   button/input-appearance strip would reflow those elements and break the
+   "materially unchanged" visual gate. So: theme + utilities layers only, no
+   preflight/base layer. Consequence for the next unit: shadcn primitives
+   must set border-style (and any other property preflight would normally
+   normalize) explicitly, since browsers default border-style to `none`. */
+@import "tailwindcss/theme" layer(theme);
+@import "tailwindcss/utilities" layer(utilities);
+@import "tw-animate-css";
+
+@theme {
+  /* App palette, exposed as Tailwind utilities (bg-ink, text-muted-ink, border-line, ...).
+     These reference the existing :root variables below — the variables
+     themselves are untouched. */
+  --color-ink: var(--ink);
+  --color-muted-ink: var(--muted);
+  --color-faint: var(--faint);
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-panel: var(--panel);
+  --color-line: var(--line);
+  --color-blue: var(--blue);
+  --color-blue-deep: var(--blue-deep);
+  --color-mint: var(--mint);
+  --color-amber: var(--amber);
+  --color-red: var(--red);
+
+  /* shadcn semantic tokens, mapped onto the app palette above under NEW
+     names. Never repurposes the app's own variable names (--ink, --muted,
+     --radius, ...) which keep their original values below. */
+  --color-background: var(--paper);
+  --color-foreground: var(--ink);
+  --color-card: var(--panel);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--panel);
+  --color-popover-foreground: var(--ink);
+  --color-primary: var(--ink);
+  --color-primary-foreground: var(--paper);
+  --color-secondary: var(--paper-2);
+  --color-secondary-foreground: var(--ink);
+  --color-muted: var(--paper-2);
+  --color-muted-foreground: var(--muted);
+  --color-accent: var(--blue);
+  --color-accent-foreground: var(--paper);
+  --color-destructive: var(--red);
+  --color-destructive-foreground: var(--paper);
+  --color-border: var(--line);
+  --color-input: var(--line);
+  --color-ring: var(--blue);
+}
+
 * { box-sizing: border-box; }
 
 :root {
@@ -71,7 +126,6 @@ code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; fo
 .hero h1, .page-title { margin: 0; font-size: clamp(2.3rem, 7vw, 5.8rem); line-height: .88; letter-spacing: -.08em; }
 .page-title { font-size: clamp(2.2rem, 6vw, 4.4rem); }
 .lede { color: var(--muted); font-size: clamp(1.02rem, 2vw, 1.25rem); line-height: 1.6; max-width: 720px; }
-.thesis { display: inline-flex; gap: 10px; flex-wrap: wrap; align-items: center; padding: 10px 14px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.5); color: var(--ink); font-weight: 800; }
 .grid { display: grid; gap: 18px; }
 .grid.cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -95,7 +149,9 @@ code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; fo
 .alert.success { background: #f0fdf4; border-color: #86efac; color: #14532d; }
 .alert.warn { background: #fffbeb; border-color: #fcd34d; color: #78350f; }
 .alert.error { background: #fef2f2; border-color: #fca5a5; color: #991b1b; }
-.field, input, select, textarea { border: 1px solid rgba(23,33,29,.18); border-radius: 14px; background: rgba(255,255,255,.72); color: var(--ink); padding: .72rem .8rem; width: 100%; }
+/* Bare-element styling, still load-bearing: Tailwind Preflight is not imported,
+   so nothing else resets or styles these. */
+input, select, textarea { border: 1px solid rgba(23,33,29,.18); border-radius: 14px; background: rgba(255,255,255,.72); color: var(--ink); padding: .72rem .8rem; width: 100%; }
 input[type="checkbox"], input[type="radio"] { width: auto; flex: 0 0 auto; padding: 0; }
 input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible { outline: 3px solid rgba(37,99,235,.28); outline-offset: 2px; }
 label { color: var(--ink); font-weight: 750; }

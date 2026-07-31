@@ -10,6 +10,9 @@ import { createWalrusHttpAdapter } from "@casium/walrus/http";
 import type { WalrusAdapter } from "@casium/walrus";
 import { createSealClient } from "@casium/seal";
 import { PACKAGE_ID } from "@casium/contracts-config";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 // Determine the active Walrus mode from the Next.js public env var.
 // This mirrors what getWalrusMode() returns server-side.
@@ -228,65 +231,62 @@ export function PacketBuilder({
       : "[MOCK encryption — AES-GCM, key in browser only]";
 
   return (
-    <section className="stack" style={{ maxWidth: 640, margin: "1rem 0" }}>
+    <section className="stack my-4 max-w-[640px]">
       <div role="alert" className="alert warn" data-testid="synthetic-data-badge">
         <strong>Synthetic data only.</strong> No real identity, financial, or tenant-screening data.
       </div>
 
-      <p className="muted" style={{ marginTop: 0 }} data-testid="encryption-mode-badge">
+      <p className="muted mt-0" data-testid="encryption-mode-badge">
         Encryption: <code>{encryptionBadge}</code>
       </p>
 
       <label>
         Renter name (synthetic)
-        <input data-testid="renter-name-input" type="text" value={form.renterName ?? "Alice Demo"} onChange={(e) => setForm((f) => ({ ...f, renterName: e.target.value }))} style={inputStyle} />
+        <Input data-testid="renter-name-input" type="text" value={form.renterName ?? "Alice Demo"} onChange={(e) => setForm((f) => ({ ...f, renterName: e.target.value }))} />
       </label>
 
-      <label style={{ display: "block", marginTop: 12 }}>
+      <label className="mt-3 block">
         Monthly net salary (EUR)
-        <input data-testid="salary-input" type="number" value={form.payslipMonthlyNetEur ?? 3200} onChange={(e) => setForm((f) => ({ ...f, payslipMonthlyNetEur: Number(e.target.value) }))} style={inputStyle} />
+        <Input data-testid="salary-input" type="number" value={form.payslipMonthlyNetEur ?? 3200} onChange={(e) => setForm((f) => ({ ...f, payslipMonthlyNetEur: Number(e.target.value) }))} />
       </label>
 
-      <label style={{ display: "block", marginTop: 12 }}>
+      <label className="mt-3 block">
         Cover letter
-        <textarea data-testid="cover-letter-input" value={form.coverLetter ?? "I am a reliable tenant…"} onChange={(e) => setForm((f) => ({ ...f, coverLetter: e.target.value }))} rows={3} style={{ ...inputStyle, fontFamily: "inherit" }} />
+        <Textarea data-testid="cover-letter-input" value={form.coverLetter ?? "I am a reliable tenant…"} onChange={(e) => setForm((f) => ({ ...f, coverLetter: e.target.value }))} rows={3} />
       </label>
 
-      <button data-testid={providerListingId ? `upload-packet-button-${providerListingId}` : "packet-upload-button"} data-ui="button" onClick={handleBuild} disabled={stage.type === "encrypting" || stage.type === "uploading"} style={{ marginTop: 12 }}>
+      <Button data-testid={providerListingId ? `upload-packet-button-${providerListingId}` : "packet-upload-button"} className="mt-3" onClick={handleBuild} disabled={stage.type === "encrypting" || stage.type === "uploading"}>
         {stage.type === "encrypting" ? "Encrypting…" : stage.type === "uploading" ? "Uploading…" : "Encrypt and upload packet"}
-      </button>
+      </Button>
 
-      {stage.type === "error" && <p role="alert" style={{ color: "red", marginTop: 12 }}>Error: {stage.message}</p>}
+      {stage.type === "error" && <p role="alert" className="mt-3 text-red">Error: {stage.message}</p>}
 
       {stage.type === "done" && (
-        <div className="alert success" style={{ marginTop: 24 }} data-testid={providerListingId ? `packet-uploaded-${providerListingId}` : "packet-uploaded"}>
+        <div className="alert success mt-6" data-testid={providerListingId ? `packet-uploaded-${providerListingId}` : "packet-uploaded"}>
           <strong>Packet uploaded</strong>
-          <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 8 }}>
+          <table className="mt-2">
             <tbody>
-              <tr><td style={{ fontWeight: 600, paddingRight: 12, paddingBottom: 6 }}>Walrus blob ID</td><td><code style={{ wordBreak: "break-all" }}>{stage.result.walrusBlobId}</code></td></tr>
-              <tr><td style={{ fontWeight: 600, paddingRight: 12, paddingBottom: 6 }}>Packet hash</td><td><code style={{ wordBreak: "break-all" }}>{stage.result.packetHash}</code></td></tr>
-              <tr><td style={{ fontWeight: 600, paddingRight: 12 }}>Size</td><td>{stage.result.sizeBytes} bytes</td></tr>
+              <tr><td className="pr-3 pb-1.5 font-semibold">Walrus blob ID</td><td><code className="break-all">{stage.result.walrusBlobId}</code></td></tr>
+              <tr><td className="pr-3 pb-1.5 font-semibold">Packet hash</td><td><code className="break-all">{stage.result.packetHash}</code></td></tr>
+              <tr><td className="pr-3 font-semibold">Size</td><td>{stage.result.sizeBytes} bytes</td></tr>
             </tbody>
           </table>
-          <p data-testid="privacy-confirmation" style={{ marginBottom: 0, marginTop: 8 }}>Only ciphertext was uploaded. Plaintext never sent to provider API.</p>
+          <p data-testid="privacy-confirmation" className="mt-2 mb-0">Only ciphertext was uploaded. Plaintext never sent to provider API.</p>
           {/* Hand off to the agent with this packet's mandate already filled in — the two
               pages must name the same mandate, and copying a 66-char ID by hand is where
               that goes wrong. */}
           {showAgentRunLink && (
-            <p style={{ marginBottom: 0, marginTop: 12 }}>
-              <a href={`/agent?mandateId=${encodeURIComponent(mandateId)}`} data-testid="start-agent-run-link" style={{ fontWeight: 600 }}>
+            <p className="mt-3 mb-0">
+              <a href={`/agent?mandateId=${encodeURIComponent(mandateId)}`} data-testid="start-agent-run-link" className="font-semibold">
                 Start the agent run on this packet →
               </a>
             </p>
           )}
           {stage.encrypted && stage.key && (
-            <button data-ui="button" onClick={handleVerifyDecrypt} style={{ marginTop: 12, background: "#16a34a" }}>Verify decryption round-trip</button>
+            <Button className="mt-3 bg-mint hover:bg-mint/90" onClick={handleVerifyDecrypt}>Verify decryption round-trip</Button>
           )}
         </div>
       )}
     </section>
   );
 }
-
-const inputStyle: React.CSSProperties = { display: "block", width: "100%", marginTop: 4, padding: "0.5rem", border: "1px solid #cbd5e1", borderRadius: 4, fontSize: "inherit" };
-const buttonStyle: React.CSSProperties = { padding: "0.7rem 1.2rem", background: "#2563eb", color: "#fff", border: "none", borderRadius: 4, fontSize: "inherit", cursor: "pointer" };

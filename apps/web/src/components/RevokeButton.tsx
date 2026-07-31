@@ -5,6 +5,7 @@ import { createCasiumClient } from "@casium/sui-client";
 import { useState } from "react";
 import { EXPLORER_TX, PACKAGE_ID } from "@/lib/constants";
 import { signAndExecuteWithExplicitGas } from "@/lib/walletTransaction";
+import { Button } from "@/components/ui/button";
 
 type RevokeButtonProps = {
   mandateId: string;
@@ -47,7 +48,7 @@ export function RevokeButton({ mandateId, ownerCapId, onRevoked }: RevokeButtonP
   }
 
   return (
-    <div style={{ marginTop: "1rem" }}>
+    <div className="mt-4">
       {txDigest ? (
         <p>
           ✅ Mandate revoked.{" "}
@@ -56,23 +57,11 @@ export function RevokeButton({ mandateId, ownerCapId, onRevoked }: RevokeButtonP
           </a>
         </p>
       ) : (
-        <button
-          onClick={handleRevoke}
-          disabled={busy}
-          style={{
-            padding: "0.6rem 1rem",
-            background: "#dc2626",
-            color: "#fff",
-            border: "none",
-            borderRadius: 4,
-            cursor: "pointer",
-            fontSize: "inherit",
-          }}
-        >
+        <Button variant="destructive" onClick={handleRevoke} disabled={busy}>
           {busy ? "Revoking…" : "Revoke mandate"}
-        </button>
+        </Button>
       )}
-      {error && <p role="alert" style={{ color: "#dc2626", marginTop: 8 }}>{error}</p>}
+      {error && <p role="alert" className="mt-2 text-red">{error}</p>}
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { createCasiumClient } from "@casium/sui-client";
 import { useState } from "react";
 import { EXPLORER_TX, LATEST_PACKAGE_ID } from "@/lib/constants";
 import { signAndExecuteWithExplicitGas } from "@/lib/walletTransaction";
+import { Button } from "@/components/ui/button";
 
 const PROVIDER_API = process.env.NEXT_PUBLIC_PROVIDER_API_URL ?? "http://localhost:4021";
 
@@ -66,7 +67,7 @@ export function WithdrawButton({
   }
 
   return (
-    <div style={{ display: "inline-block" }}>
+    <div className="inline-block">
       {txDigest ? (
         <span>
           Withdrawn.{" "}
@@ -75,24 +76,12 @@ export function WithdrawButton({
           </a>
         </span>
       ) : (
-        <button
-          onClick={handleWithdraw}
-          disabled={busy}
-          style={{
-            padding: "0.3rem 0.75rem",
-            background: busy ? "#94a3b8" : "#dc2626",
-            color: "#fff",
-            border: "none",
-            borderRadius: 4,
-            cursor: busy ? "default" : "pointer",
-            fontSize: "0.85rem",
-          }}
-        >
+        <Button variant="destructive" size="sm" className="text-[0.85rem]" onClick={handleWithdraw} disabled={busy}>
           {busy ? "Withdrawing…" : "Withdraw"}
-        </button>
+        </Button>
       )}
       {error && (
-        <p role="alert" style={{ color: "#dc2626", margin: "4px 0 0", fontSize: "0.85rem" }}>
+        <p role="alert" className="mx-0 mt-1 mb-0 text-[0.85rem] text-red">
           {error}
         </p>
       )}

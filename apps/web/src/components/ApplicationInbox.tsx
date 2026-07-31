@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { EXPLORER_TX, EXPLORER_OBJECT } from "@/lib/constants";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const PROVIDER_API_BASE = process.env.NEXT_PUBLIC_PROVIDER_API_URL ?? "http://localhost:4021";
 
@@ -85,13 +87,13 @@ export function ApplicationInbox({
     <div className="stack">
       {applications.map((a) => (
         <div key={a.id} className="card" data-testid={`application-card-${a.id}`}>
-          <div className="split" style={{ marginBottom: 8 }}>
-            <strong style={{ fontFamily: "monospace", fontSize: "0.9rem" }}>{a.id}</strong>
+          <div className="split mb-2">
+            <strong className="font-mono text-sm">{a.id}</strong>
             <StatusBadge status={a.status} />
           </div>
 
           {a.mandateId && (
-            <p style={{ margin: "0 0 4px", fontSize: "0.85rem", color: "#64748b" }}>
+            <p className="mx-0 mt-0 mb-1 text-[0.85rem] text-muted-ink">
               Mandate:{" "}
               <a href={EXPLORER_OBJECT(a.mandateId)} target="_blank" rel="noreferrer">
                 <code>{a.mandateId.slice(0, 16)}…</code>
@@ -102,10 +104,10 @@ export function ApplicationInbox({
           )}
 
           {role === "provider" && a.status === "reserved" && (
-            <details style={{ marginTop: 8 }}>
+            <details className="mt-2">
               <summary data-testid="verify-receipt-summary">Verify Sui receipt</summary>
-              <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
-                <input
+              <div className="mt-2 flex flex-col gap-2">
+                <Input
                   type="text"
                   placeholder="tx digest"
                   data-testid="tx-digest-input"
@@ -113,9 +115,8 @@ export function ApplicationInbox({
                   onChange={(e) =>
                     setVerifyInputs((v) => ({ ...v, [a.id]: { ...v[a.id], txDigest: e.target.value } }))
                   }
-                  style={inputStyle}
                 />
-                <input
+                <Input
                   type="text"
                   placeholder="receipt object ID (0x...)"
                   data-testid="receipt-id-input"
@@ -123,26 +124,25 @@ export function ApplicationInbox({
                   onChange={(e) =>
                     setVerifyInputs((v) => ({ ...v, [a.id]: { ...v[a.id], receiptId: e.target.value } }))
                   }
-                  style={inputStyle}
                 />
                 {verifyErrors[a.id] && (
-                  <p style={{ color: "#dc2626", margin: 0, fontSize: "0.85rem" }}>{verifyErrors[a.id]}</p>
+                  <p className="m-0 text-[0.85rem] text-red">{verifyErrors[a.id]}</p>
                 )}
-                <button data-ui="button" onClick={() => handleVerify(a.id)} disabled={verifying === a.id} style={buttonStyle}>
+                <Button onClick={() => handleVerify(a.id)} disabled={verifying === a.id}>
                   {verifying === a.id ? "Verifying…" : "Verify"}
-                </button>
+                </Button>
               </div>
             </details>
           )}
 
           {role === "landlord" && a.status === "reserved" && (
-            <p className="muted" data-testid="landlord-awaiting-receipt" style={{ margin: "8px 0 0", fontSize: "0.85rem" }}>
+            <p className="muted mx-0 mt-2 mb-0 text-[0.85rem]" data-testid="landlord-awaiting-receipt">
               Awaiting on-chain receipt verification by the provider.
             </p>
           )}
 
           {a.receipt && (
-            <p style={{ margin: "8px 0 0", fontSize: "0.85rem" }}>
+            <p className="mx-0 mt-2 mb-0 text-[0.85rem]">
               ✅ Receipt:{" "}
               <a href={EXPLORER_OBJECT(a.receipt.receiptId)} target="_blank" rel="noreferrer">
                 <code>{a.receipt.receiptId.slice(0, 16)}…</code>
@@ -177,20 +177,3 @@ function StatusBadge({ status }: { status: string }) {
     </span>
   );
 }
-
-const inputStyle: React.CSSProperties = {
-  padding: "0.4rem 0.5rem",
-  border: "1px solid #cbd5e1",
-  borderRadius: 4,
-  fontSize: "inherit",
-  width: "100%",
-};
-const buttonStyle: React.CSSProperties = {
-  padding: "0.5rem 1rem",
-  background: "#2563eb",
-  color: "#fff",
-  border: "none",
-  borderRadius: 4,
-  cursor: "pointer",
-  fontSize: "inherit",
-};

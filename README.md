@@ -2,7 +2,7 @@
 
 > **World limits who the agent represents. Sui limits what the agent can do.**
 
-Casium is a scoped rental application agent built for ETHGlobal Lisbon 2026.
+Casium is a scoped rental application agent built on Sui and World.
 A human renter creates a Sui `RentalMandate` that defines what the agent is allowed to do.
 World AgentKit proves the agent is backed by a verified human. The agent can only act within
 both constraints simultaneously — it cannot exceed mandate scope, and it cannot act on behalf
@@ -20,9 +20,9 @@ Frontend (apps/web)     → Renter, provider, landlord, and agent operator dashb
 Walrus                  → Encrypted document packet (mock/http/cli modes; live HTTP smoke verified)
 ```
 
-## Sponsor Integration Status
+## Integration Status
 
-| Sponsor | Integration | Evidence |
+| Component | Integration | Evidence |
 |---|---|---|
 | Sui | Live testnet Move package, on-chain mandate/listing/receipt objects | `packages/contracts-config/testnet.json`, `docs/sui-deployment.md` |
 | World | Live AgentKit verification on World Chain (`eip155:480`) | `docs/world-agentkit.md` |
@@ -59,13 +59,22 @@ docs/
 
 ## Prerequisites
 
+**Preferred (NixOS):** `nix develop` gives you `sui` 1.76.0, `walrus` 1.52.1, `node`, `pnpm`,
+`git`, `docker` + `docker compose`, `psql`, and `caddy` on `PATH`, all pinned via `flake.nix`.
+See `docs/nix.md` for the required host config (`programs.nix-ld.enable`, etc.) and how
+Playwright's browsers run under nix-ld.
+
+**Fallback (manual install):**
+
 | Tool | Version | Notes |
 |---|---|---|
 | Node.js | ≥ 22 | `node --version` |
 | pnpm | 11 | `pnpm --version` |
 | Sui CLI | testnet-compatible | `~/.local/bin/sui --version` |
 
-Do **not** export `~/.local/bin` to `PATH` for this repo. Use full paths.
+Do **not** export `~/.local/bin` to `PATH` for this repo. Use full paths. (This constraint
+applies outside `nix develop`; inside the devShell, `sui` and `walrus` are pinned `PATH`
+members by design — see `docs/nix.md`.)
 
 ## Install
 
@@ -224,9 +233,28 @@ pnpm -r --if-present build
 pnpm -r --if-present test
 
 # Move tests
-~/.local/bin/sui move build --path packages/move
-~/.local/bin/sui move test --path packages/move
+sui move build --path packages/move                # inside `nix develop`
+sui move test  --path packages/move                # inside `nix develop`
+~/.local/bin/sui move build --path packages/move   # outside the devShell
+~/.local/bin/sui move test  --path packages/move   # outside the devShell
 ```
+
+## Contributing
+
+Work is tracked as one file per ticket in `plan/tickets/`, with binding constraints in
+`plan/rules/` and background in `plan/epics/`. **Read `plan/START.md` before picking
+something up** — it is short, and it tells you exactly which files a given ticket needs so
+you are not reading the whole backlog to change one file.
+
+```bash
+node scripts/backlog.mjs help          # all commands
+pnpm backlog:next                      # what is ready to start
+pnpm backlog:show RD-215               # a ticket + the files to load
+pnpm backlog:new O "Title" --lane frontend
+pnpm backlog                           # validate before you hand off
+```
+
+`plan/state.md` is generated — edit tickets, then run `pnpm backlog:gen`.
 
 ## Run The Demo
 
