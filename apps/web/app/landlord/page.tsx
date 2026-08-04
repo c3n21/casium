@@ -25,7 +25,7 @@ export default function LandlordPage() {
   const suiClient = useCurrentClient();
   const account = useCurrentAccount();
   // The stubbed tier has no wallet, so it stands in a known address. It must be
-  // the LANDLORD's: this page filters applications by landlordSuiAddress, and
+  // the LANDLORD's: this address is sent as ?landlord= to the provider API, and
   // standing in the publisher (the provider) matched nothing, so the inbox
   // rendered empty and the role-scoping spec could never see a card.
   const connectedAddress = account?.address ?? (E2E_STUB_SUI ? LANDLORD_ADDRESS : null);
@@ -56,16 +56,18 @@ export default function LandlordPage() {
     refetchInterval: 30_000,
   });
 
-  // Fetch all applications and filter by connected landlord address
+  // Fetch applications filtered server-side by connected landlord address (RD-185).
   const {
     data: applicationsResponse,
     isLoading: appsLoading,
     error: appsError,
     refetch,
   } = useQuery({
-    queryKey: ["applications"],
+    queryKey: ["applications", connectedAddress],
     queryFn: async () => {
-      const response = await fetch(`${PROVIDER_API}/applications`);
+      const response = await fetch(
+        `${PROVIDER_API}/applications?landlord=${encodeURIComponent(connectedAddress ?? "")}`,
+      );
       if (!response.ok) throw new Error(`Failed to fetch applications: ${response.status}`);
       return response.json() as Promise<{ applications: ReservedApplication[] }>;
     },
@@ -73,9 +75,7 @@ export default function LandlordPage() {
     enabled: connectedAddress !== null,
   });
 
-  const landlordApplications: ReservedApplication[] = (applicationsResponse?.applications ?? []).filter(
-    (a) => a.landlordSuiAddress.toLowerCase() === connectedAddress?.toLowerCase(),
-  );
+  const landlordApplications: ReservedApplication[] = applicationsResponse?.applications ?? [];
 
   return (
     <main className="page">

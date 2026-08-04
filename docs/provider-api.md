@@ -92,8 +92,22 @@ Lists applications with optional query filters:
 - `?listingId=<id>` — filter by listing
 - `?mandateId=<id>` — filter by Sui mandate object ID
 - `?status=reserved|accepted|withdrawn` — filter by status
+- `?landlord=<address>` — filter to applications whose listing's `landlordSuiAddress` matches,
+  compared case-insensitively (RD-185). An unknown address returns `{ applications: [] }` with
+  HTTP 200, not a 404.
 
 Returns `{ applications: [...] }` ordered by creation time (newest last in DB mode).
+
+**This endpoint is unauthenticated.** The provider API has no authentication and no session
+concept anywhere (see `plan/rules/provider-api.md`), and `?landlord=` is no exception: it is a
+server-side filter, not a permission check — any caller can pass any address and read that
+address's applications back. An unauthenticated endpoint that looks scoped is worse than one
+that obviously is not, so the landlord page's use of this parameter must not be read, or
+described, as access control. The real access gate for the underlying application documents is
+`seal_approve_packet`, the on-chain Move policy function in `casium::rental` that Seal key
+servers dry-run before releasing a packet's decryption key — it independently checks that the
+transaction sender is the receipt's recorded landlord (among other conditions), so decryption is
+actually gated on-chain regardless of what this HTTP endpoint returns.
 
 `GET /applications/:id`
 
